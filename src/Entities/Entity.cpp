@@ -21,10 +21,25 @@
 
 
 
+/** The next entity ID to be handed out. Zero is reserved for cEntity::INVALID_ID, so IDs start at 1. */
+static std::atomic<UInt32> g_NextUniqueID(1);
+
+
+
+
+
 static UInt32 GetNextUniqueID(void)
 {
-	static std::atomic<UInt32> counter(1);
-	return counter.fetch_add(1);
+	return g_NextUniqueID.fetch_add(1);
+}
+
+
+
+
+
+UInt32 cEntity::ReserveUniqueIDs(UInt32 a_Count)
+{
+	return g_NextUniqueID.fetch_add(a_Count);
 }
 
 

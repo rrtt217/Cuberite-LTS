@@ -22,6 +22,7 @@
 #include "UI/EnchantingWindow.h"
 #include "Item.h"
 #include "Mobs/Monster.h"
+#include "Mobs/EnderDragon.h"
 #include "ChatColor.h"
 #include "Items/ItemHandler.h"
 #include "Blocks/BlockHandler.h"
@@ -42,6 +43,10 @@
 
 /** Maximum number of explosions to send this tick, server will start dropping if exceeded. */
 #define MAX_EXPLOSIONS_PER_TICK 20
+
+/** The ender dragon's bounding box is 16 blocks wide and 8 blocks tall, so search a generous box
+around the player when looking for the dragon that owns an attacked part ID. */
+static constexpr double ENDER_DRAGON_PART_SEARCH_RANGE = 32.0;
 
 /** Maximum number of block change interactions a player can perform per tick - exceeding this causes a kick. */
 #define MAX_BLOCK_CHANGE_INTERACTIONS 20
@@ -1798,7 +1803,8 @@ void cClientHandle::HandleUseEntity(UInt32 a_TargetEntityID, bool a_IsLeftClick)
 	}
 
 	// If it is a left click, attack the entity:
-	m_Player->GetWorld()->DoWithEntityByID(a_TargetEntityID, [=](cEntity & a_Entity)
+	cWorld * World = m_Player->GetWorld();
+	if (World->DoWithEntityByID(a_TargetEntityID, [=](cEntity & a_Entity)
 		{
 			if (!a_Entity.GetWorld()->IsPVPEnabled())
 			{
@@ -1815,6 +1821,40 @@ void cClientHandle::HandleUseEntity(UInt32 a_TargetEntityID, bool a_IsLeftClick)
 			{
 				m_Player->NotifyNearbyWolves(static_cast<cPawn*>(&a_Entity), true);
 			}
+			return true;
+		}
+	))
+	{
+		return;
+	}
+
+	// The vanilla client derives the entity IDs of the ender dragon's parts from the dragon's own ID
+	// and sends them back when a player attacks a part. Those parts have no server-side entity, so
+	// look for a nearby dragon that owns the targeted ID and forward the hit to it:
+	const Vector3d PlayerPos = m_Player->GetPosition();
+	const cBoundingBox SearchBox(
+		PlayerPos - Vector3d(ENDER_DRAGON_PART_SEARCH_RANGE, ENDER_DRAGON_PART_SEARCH_RANGE, ENDER_DRAGON_PART_SEARCH_RANGE),
+		PlayerPos + Vector3d(ENDER_DRAGON_PART_SEARCH_RANGE, ENDER_DRAGON_PART_SEARCH_RANGE, ENDER_DRAGON_PART_SEARCH_RANGE)
+	);
+	World->ForEachEntityInBox(SearchBox, [&](cEntity & a_Entity)
+		{
+			if (!a_Entity.IsMob() || (static_cast<cMonster &>(a_Entity).GetMobType() != mtEnderDragon))
+			{
+				// Keep searching:
+				return false;
+			}
+
+			auto & Dragon = static_cast<cEnderDragon &>(a_Entity);
+			if (!Dragon.IsPartID(a_TargetEntityID))
+			{
+				// Keep searching:
+				return false;
+			}
+
+			Dragon.TakeDamageFromPart(*m_Player);
+			m_Player->AddFoodExhaustion(0.3);
+
+			// Stop searching, the part has been handled:
 			return true;
 		}
 	);

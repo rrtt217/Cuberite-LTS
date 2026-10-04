@@ -561,6 +561,11 @@ public:
 
 protected:
 
+	/** Reserves a_Count consecutive entity IDs and returns the first one.
+	The whole block is guaranteed not to be handed out to any cEntity constructed afterwards.
+	Used for entities whose IDs are derived by the client and must therefore be known in advance. */
+	static UInt32 ReserveUniqueIDs(UInt32 a_Count);
+
 	/** Structure storing the portal delay timer and cooldown boolean */
 	struct sPortalCooldownData
 	{
