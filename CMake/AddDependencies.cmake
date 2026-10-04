@@ -28,6 +28,13 @@ function(build_dependencies)
 	set(ENABLE_PROGRAMS OFF CACHE BOOL "Build mbed TLS programs.")
 	set(ENABLE_TESTING OFF CACHE BOOL "Build mbed TLS tests.")
 
+	# GCC 16 promotes previously unseen warnings in the pinned mbedtls version to errors,
+	# and mbedtls turns warnings into errors by default. Since mbedtls is a vendored
+	# third-party library, a compiler upgrade should not break our build over it:
+	if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 16)
+		set(MBEDTLS_FATAL_WARNINGS OFF CACHE BOOL "Compiler warnings treated as errors" FORCE)
+	endif()
+
 	# Enumerate all submodule libraries
 	# SQLiteCpp needs to be included before sqlite so the lsqlite target is available:
 	set(DEPENDENCIES expat fmt jsoncpp libdeflate libevent lua luaexpat mbedtls SQLiteCpp sqlite tolua++)
