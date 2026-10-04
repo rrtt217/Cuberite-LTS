@@ -79,7 +79,10 @@
    cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=DEBUG -DSELF_TEST=Yes -DBUILD_TOOLS=Yes
    cmake --build build
    ```
-3. **测试**：`cd build && ctest --output-on-failure`（当前 28 个测试）
+3. **测试**：`cd build && ctest --output-on-failure -E "UrlClient-test|Google-test"`（当前 28 个测试，其中 2 个必须联网）
+   - `UrlClient-test` 访问 `github.com` / `cuberite.org` / `api.mojang.com`；**Debug 下超时被设为 `0xffffffff`（约 49 天）**（[tests/HTTP/UrlClientTest.cpp:18-22](tests/HTTP/UrlClientTest.cpp#L18-L22)），无外网时会永久挂起。
+   - `Google-test` 连接 `google.com:80`。
+   - 两者在无外网环境一律排除；CI 用 Release（`NDEBUG`，UrlClient 超时 10 秒），不受影响。
 4. **绑定依赖**（改了 `src/Bindings/` 时）：`cd src/Bindings && lua CheckBindingsDependencies.lua`
 5. **行为**：按写好的 vanilla 1.12.2 规格逐条核对，记录证据。
 6. **API 文档**（改了导出的 C++ API 时）：同步 [Server/Plugins/APIDump/](Server/Plugins/APIDump/)，并跑 APIDump 自检——
