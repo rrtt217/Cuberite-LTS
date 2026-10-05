@@ -165,7 +165,8 @@ void cSplashPotionEntity::CreateAreaEffectCloud(Vector3d a_HitPos)
 	}
 	Cloud->AddEffect(m_EntityEffectType, Duration, Intensity);
 
-	m_World->AddEntity(std::move(Cloud));
+	// Initialize() sets the world and registers the entity with it:
+	Cloud->Initialize(std::move(Cloud), *m_World);
 
 	m_World->BroadcastSoundParticleEffect(
 		EffectID::PARTICLE_SPLASH_POTION,
