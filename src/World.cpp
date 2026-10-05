@@ -63,6 +63,13 @@
 
 
 
+/** How far above the highest block at (0, 0) the ender dragon is spawned in the End. */
+static constexpr int ENDER_DRAGON_SPAWN_HEIGHT_OFFSET = 20;
+
+
+
+
+
 namespace World
 {
 	// Implement conversion functions from OpaqueWorld.h
@@ -161,6 +168,8 @@ cWorld::cWorld(
 	m_WorldAge(0),
 	m_WorldDate(0),
 	m_WorldTickAge(0),
+	m_EnderDragonSpawnCountdown(std::chrono::seconds(1)),
+	m_HasSpawnedEnderDragon(false),
 	m_LastChunkCheck(0),
 	m_LastSave(0),
 	m_SkyDarkness(0),
@@ -1079,6 +1088,12 @@ void cWorld::Tick(std::chrono::milliseconds a_Dt, std::chrono::milliseconds a_La
 	}
 
 	TickClients(a_Dt);
+
+	if (m_Dimension == dimEnd)
+	{
+		TickEnderDragonFight(a_Dt);
+	}
+
 	TickQueuedChunkDataSets();
 	TickQueuedBlocks();
 	m_ChunkMap.Tick(a_Dt);
@@ -1112,6 +1127,59 @@ void cWorld::Tick(std::chrono::milliseconds a_Dt, std::chrono::milliseconds a_La
 			SaveAllChunks();
 		}
 	}
+}
+
+
+
+
+
+void cWorld::TickEnderDragonFight(std::chrono::milliseconds a_Dt)
+{
+	if (m_HasSpawnedEnderDragon || m_Players.empty())
+	{
+		// The fight starts only once, and only after the first player has arrived in the End:
+		return;
+	}
+
+	// Vanilla spawns the dragon 20 game ticks (1 second) after the first entity arrives:
+	m_EnderDragonSpawnCountdown -= a_Dt;
+	if (m_EnderDragonSpawnCountdown > std::chrono::milliseconds::zero())
+	{
+		return;
+	}
+
+	m_HasSpawnedEnderDragon = true;
+
+	// A dragon may already be present (e.g. it was loaded from the save); don't spawn a second one:
+	if (HasEnderDragon())
+	{
+		return;
+	}
+
+	const int Height = GetHeight(0, 0).value_or(64);
+	SpawnMob(0.5, Height + ENDER_DRAGON_SPAWN_HEIGHT_OFFSET, 0.5, mtEnderDragon);
+}
+
+
+
+
+
+bool cWorld::HasEnderDragon(void)
+{
+	bool Found = false;
+	ForEachEntity([&Found](cEntity & a_Entity)
+		{
+			if (a_Entity.IsMob() && (static_cast<cMonster &>(a_Entity).GetMobType() == mtEnderDragon))
+			{
+				Found = true;
+				return true;  // Stop searching
+			}
+
+			// Keep searching:
+			return false;
+		}
+	);
+	return Found;
 }
 
 

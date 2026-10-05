@@ -140,6 +140,14 @@
 5. 受击后 0.5s（10 tick）内不施加接触伤害（复用 `cMonster::m_TicksSinceLastDamaged`）。
 6. `Circling` 调用 `SetYawFromSpeed()`，让朝向跟随飞行方向（头部判定与客户端朝向依赖它）。
 
+### 3.4 首次进末地自动生成龙（feature/mobs-ender-dragon-spawn，叠在 3.3 之上）
+
+来源：[Ender Dragon § Spawning](https://minecraft.wiki/w/Ender_Dragon)（“spawns 20 game ticks (1 second) after an entity first arrives in the End”）。
+
+1. `cWorld::Tick` 在 `dimEnd` 世界里调用 `TickEnderDragonFight`。
+2. 世界里已有玩家且本场尚未开始时，倒计时 1 秒（20 tick）；到点后在 `(0.5, 最高方块 + 20, 0.5)` `SpawnMob(mtEnderDragon)`。
+3. `m_HasSpawnedEnderDragon` 保证一场只生成一次；若世界里已有龙（例如从存档加载回来的）则不再生成第二条。
+
 ## 4. 验证方式
 
 - 静态：`src && lua CheckBasicStyle.lua`（通过，0 违规）。
@@ -164,3 +172,5 @@
 8. `Strafing` 只是朝目标飞行 3 秒后回绕，未实现 vanilla 的“进入 64 格即喷龙火球”；水晶被毁通过每 20 tick 的数量对比检测（最多 1 秒延迟）。
 9. `Perching` 的落点高度（70）与停留时长（85 tick）是近似；咆哮与龙息伤害（AreaEffectCloud）未实现，停驻阶段只是原地停留。
 10. `Charging`（仅 BE）与 `Dying` 的死亡飞行 / 传送门生成 / 经验掉落尚未实现。
+11. 自动生成用的 `m_HasSpawnedEnderDragon` **只在内存**，服务器重启后重置：重启前击杀的龙会重新生成（vanilla 用持久化 fight 状态记录 `DragonKilled`/`PreviouslyKilled`）。
+12. 没有完整的 fight 控制器（水晶被毁的概率切换、`ExitPortalLocation`/`Gateways`/`DragonKilled` 记录等），生成位置取 (0,0) 最高方块 + 20。
