@@ -133,6 +133,13 @@
 10. 阶段语义：`Hovering`(10) 是 `/summon` 龙的默认且**终点**态——原地悬停、无害、不进入 fight 逻辑（不统计水晶、不接触伤害、不切换）；
     fight 生成的龙在 `TickEnderDragonFight` 里被显式设为 `Circling`(0)，且所有转换（Strafing/Perching/Dying）只回落到 `Circling`，**从不进入 10**。
     删除了早期的“有目标→盘旋/否则悬停”占位切换。`DragonPhase` 随实体一起存/读档（NBT int `DragonPhase`）。
+11. 受击与免疫：龙只受**玩家造成的伤害**与**爆炸伤害**（`dtExplosion`），其余一律在 `DoTakeDamage` 返回 false；
+    不会被击退（覆写 `cEntity::CanBeKnockedBack()`），也不会被玩家近战暴击（覆写 `cEntity::CanBeCriticalHit()`）。
+12. 朝向：`FaceSpeedDirection()` 用引擎标准的 `VectorToEuler()`（与 `cMonster::SetPitchAndYawFromDestination` 一致），
+    而非 `cEntity::SetYawFromSpeed()`——后者用 `atan2(speed.x, speed.z)`，在 X 上与标准朝向镜像，是“倒着飞”的根因。
+13. Boss 栏颜色为 **Pink**（[Bossbar](https://minecraft.wiki/w/Bossbar)：the ender dragon has a pink bossbar；紫色是凋灵）。
+14. 末地水晶治疗（[Ender Crystal](https://minecraft.wiki/w/Ender_Crystal)）：水晶每 tick 找 32 格内最近的龙，
+    每 10 tick `Heal(1)`，并用 `BeamTarget` metadata 画出白色光柱；水晶被摧毁时若正在治疗龙，则对龙造成 10 点 `dtExplosion` 伤害。
 
 **故意不做的部分**（后续增量）：
 
@@ -187,4 +194,7 @@
 12. 没有完整的 fight 控制器（水晶被毁的概率切换、传送门/龙蛋/gateway 记录等），生成位置取 (0,0) 最高方块 + 20。
 13. 死亡序列只到“200 tick 后删龙 + 150 tick 一次性掉 12000 XP”；升天动画由客户端据死亡自行渲染（服务端只保证 200 tick 生命周期），
     出口传送门激活、龙蛋、End gateway 未实现；XP 未按 vanilla 每 5 tick 分批掉落。
+15. 未改动全局 `cEntity::SetYawFromSpeed()`（投射物仍在用）；若投射物朝向也有镜像问题，属另一改动。
+16. 水晶治疗用 32 格球形判定（vanilla 是 AABB 扩张），未区分方块阻挡（本就纯距离，wiki 也说明可穿方块）；摧毁治疗水晶的 10 点伤害可能与水晶自身爆炸伤害叠加。
+17. `dtPlugin`/`dtAdmin` 对龙的伤害也被免疫（严格按“只受玩家与爆炸”）；插件若需强改血量应直接 `SetHealth`。
 14. 致命伤时攻击者会被提前记入 `Killed` 统计（基类 `DoTakeDamage` 在 `KilledBy` 之后无条件调用），此时龙尚未真正死亡。
