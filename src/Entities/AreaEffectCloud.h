@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Entity.h"
+#include "EntityEffect.h"
 
 
 
@@ -34,6 +35,10 @@ public:
 	void SetRadius(float a_Radius);
 	void SetRadiusPerTick(float a_RadiusPerTick) { m_RadiusPerTick = a_RadiusPerTick; }
 	void SetRadiusOnUse(float a_RadiusOnUse) { m_RadiusOnUse = a_RadiusOnUse; }
+
+	/** Returns whether the cloud can be bottled for dragon's breath. */
+	bool CanBeCollected(void) const { return m_CanBeCollected; }
+	void SetCanBeCollected(bool a_CanBeCollected) { m_CanBeCollected = a_CanBeCollected; }
 
 	int GetAge(void) const { return m_Age; }
 	void SetAge(int a_Age) { m_Age = a_Age; }
@@ -70,6 +75,7 @@ public:
 	// cEntity overrides:
 	virtual void Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;
 	virtual void SpawnOn(cClientHandle & a_Client) override;
+	virtual void OnRightClicked(cPlayer & a_Player) override;
 
 private:
 
@@ -102,6 +108,9 @@ private:
 
 	/** Particle displayed by the cloud. */
 	AString m_Particle;
+
+	/** Whether the cloud can be bottled for dragon's breath (true for dragon / dragon fireball clouds). */
+	bool m_CanBeCollected;
 
 	/** Effects applied to pawns inside the cloud. */
 	std::vector<sEffect> m_Effects;

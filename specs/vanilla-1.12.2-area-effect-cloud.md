@@ -70,3 +70,11 @@
 - **物品表示**：`cProtocol_1_9_0::ParseItemMetadata` 不再把滞留药水(441)归一成 `E_ITEM_POTION + 0x4000`，而是保留 `E_ITEM_LINGERING_POTION`；`WriteItem` 对滞留写 441 并补上 `Potion` NBT。此前滞留会被写回 438（喷溅），在创造物品栏拿出来就变喷溅。
 - **不可饮用**：新增 `cItemLingeringPotionHandler`（`IsDrinkable`/`EatItem` 恒 false）。否则 `HandleUseItem`（右键空气）会走“喝药水”分支，导致必须对准方块才能掷出。
 - **半径同步**：`cAreaEffectCloud::Tick` 在半径变化后重发实体 metadata，客户端才会看到云随时间收缩/扩张（此前只在生成时发一次）。
+
+## 8. 龙息收集
+
+`cAreaEffectCloud` 增加 `CanBeCollected` 标记（仅末影龙 / 龙火球产生的云为 true；`cDragonFireballEntity` 与后续的龙息攻击会设置它）。
+玩家手持 `E_ITEM_GLASS_BOTTLE` 右键该云（`cAreaEffectCloud::OnRightClicked`）：玻璃瓶替换为 `E_ITEM_DRAGON_BREATH`（创造模式不消耗），
+云半径 **-0.5** 并重发 metadata，播放 `item.bottle.fill_dragonbreath`；半径 ≤ 0 时消散。来源：[Dragon's Breath](https://minecraft.wiki/w/Dragon%27s_Breath)。
+
+**偏差**：`CanBeCollected` 未写入 NBT（存读档后龙火球云会失去可收集标记）；滞留药水云按其来源本就不可收集。

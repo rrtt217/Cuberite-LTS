@@ -17,6 +17,7 @@
 #include "../NetherPortalScanner.h"
 #include "../BoundingBox.h"
 #include "../WorldStorage/NamespaceSerializer.h"
+#include "../Generating/EndPlatform.h"
 
 
 
@@ -1571,7 +1572,19 @@ bool cEntity::DetectPortal()
 					cWorld * TargetWorld = cRoot::Get()->GetWorld(GetWorld()->GetLinkedEndWorldName());
 					ASSERT(TargetWorld != nullptr);  // The linkage checker should have prevented this at startup. See cWorld::start()
 					LOGD("Jumping %s -> %s", DimensionToString(dimOverworld).c_str(), DimensionToString(TargetWorld->GetDimension()).c_str());
-					return MoveToWorld(*TargetWorld, false);
+
+					// Refresh the obsidian platform and put the entity on top of it:
+					cEndPlatform::Generate(TargetWorld);
+					Vector3d SpawnPos(cEndPlatform::ENTITY_SPAWN_X, cEndPlatform::ENTITY_SPAWN_Y, cEndPlatform::ENTITY_SPAWN_Z);
+					if (IsPlayer())
+					{
+						// Players arrive slightly differently and face west, towards the main island:
+						SpawnPos = Vector3d(cEndPlatform::PLAYER_SPAWN_X, cEndPlatform::PLAYER_SPAWN_Y, cEndPlatform::PLAYER_SPAWN_Z);
+						cPlayer * Player = static_cast<cPlayer *>(this);
+						Player->SetYaw(90.0);
+						Player->SetPitch(0.0);
+					}
+					return MoveToWorld(*TargetWorld, SpawnPos);
 				}
 
 			}

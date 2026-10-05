@@ -98,6 +98,9 @@ protected:
 	/** Angle at the previous circling tick, used to detect a completed orbit. */
 	double m_LastOrbitAngle;
 
+	/** Whether the dragon has already fired its fireball during the current strafe. */
+	bool m_FireballFired;
+
 	/** Ticks the dragon has been dead for; drives the experience drop and entity removal (vanilla DragonDeathTime). */
 	int m_DragonDeathTime;
 
@@ -112,6 +115,9 @@ protected:
 
 	/** Flies the dragon towards its target while strafing. */
 	void Strafe(double a_Dt);
+
+	/** Shoots a dragon fireball towards a_Target. */
+	void FireFireball(cEntity & a_Target);
 
 	/** Enters the strafing phase (e.g. after an End crystal was destroyed), if there is a target. */
 	void StartStrafing(void);
