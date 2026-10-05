@@ -18,7 +18,17 @@
 - 触发：末影龙 200 tick 死亡动画结束时（`cEnderDragon::TickDeath`）调 `cWorld::SpawnEnderDragonGateway()`。
 - 已生成的网关位置持久化在 `[EnderDragon] Gateways`。
 
+## 传送
+
+- 实体每 tick 在 `cEntity::DetectPortal()` 检查脚下方块；若为 `E_BLOCK_END_GATEWAY`，则传送到其**链接**的折跃门 +2 Y。
+- **首次激活**某个主岛网关时，生成其外岛回程网关（`cWorld::GetLinkedEnderDragonGateway`）：沿该网关方向距中心 **1024** 格处，扫描该列最高非空气方块、在其上 **10** 格放置同样的网关结构；链接双向存储。
+- 链接表 `m_EnderDragonGatewayLinks` 持久化到 `[EnderDragon] GatewayLinks`（`first>second` 坐标对）。
+- 传送后设置 `m_PortalCooldownData.m_ShouldPreventTeleportation`，同一实体不会立刻来回弹。
+- 主岛网关 ↔ 外岛回程网关双向互传。
+
 ## 偏差 / 后续
 
 - 生成顺序 PRNG 与 vanilla 不同（仅影响“第几次击杀生成哪一个”）。
-- **传送逻辑**（进入方块传送到外岛、首次激活生成回程网关、光柱）为后续增量。
+- 外岛网关位置用**简化算法**（固定距离 1024 + 扫描列高 + 10），未实现 vanilla 逐 16 格收缩/扩张选块的完整逻辑；目标是落在该方向的外岛上。
+- 光柱（生成 200 tick 紫色、进入 40 tick、每 2400 tick）尚未实现。
+- 自然生成于外岛的 `end_gateway_return`（回到末地平台）尚未实现。

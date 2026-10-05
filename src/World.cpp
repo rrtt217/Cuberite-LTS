@@ -144,8 +144,72 @@ static std::vector<Vector3i> DeserializeEndGateways(const AString & a_Value)
 
 
 
+/** Serializes the End gateway links as semicolon-separated "first>second" coordinate pairs. */
+static AString SerializeEndGatewayLinks(const std::vector<std::pair<Vector3i, Vector3i>> & a_Links)
+{
+	AString Result;
+	for (const auto & Link : a_Links)
+	{
+		if (!Result.empty())
+		{
+			Result += ";";
+		}
+		Result += std::to_string(Link.first.x) + "," + std::to_string(Link.first.y) + "," + std::to_string(Link.first.z) + ">"
+			+ std::to_string(Link.second.x) + "," + std::to_string(Link.second.y) + "," + std::to_string(Link.second.z);
+	}
+	return Result;
+}
+
+
+
+
+
+/** Parses the string produced by SerializeEndGatewayLinks(). */
+static std::vector<std::pair<Vector3i, Vector3i>> DeserializeEndGatewayLinks(const AString & a_Value)
+{
+	std::vector<std::pair<Vector3i, Vector3i>> Result;
+	for (const auto & Entry : StringSplitAndTrim(a_Value, ";"))
+	{
+		const auto Pair = StringSplitAndTrim(Entry, ">");
+		if (Pair.size() != 2)
+		{
+			continue;
+		}
+
+		const auto First = StringSplitAndTrim(Pair[0], ",");
+		const auto Second = StringSplitAndTrim(Pair[1], ",");
+		if ((First.size() != 3) || (Second.size() != 3))
+		{
+			continue;
+		}
+
+		try
+		{
+			Result.emplace_back(
+				Vector3i(std::stoi(First[0]), std::stoi(First[1]), std::stoi(First[2])),
+				Vector3i(std::stoi(Second[0]), std::stoi(Second[1]), std::stoi(Second[2]))
+			);
+		}
+		catch (const std::exception &)
+		{
+			// Ignore malformed entries
+		}
+	}
+	return Result;
+}
+
+
+
+
+
 /** Y at which the End gateways spawn around the central island. */
 static constexpr int ENDER_DRAGON_GATEWAY_Y = 75;
+
+/** Distance from the centre at which a linked outer-island gateway is generated. */
+static constexpr double ENDER_DRAGON_GATEWAY_OUTER_DISTANCE = 1024.0;
+
+/** How far above the local surface the outer-island gateway is placed. */
+static constexpr int ENDER_DRAGON_GATEWAY_OUTER_Y_OFFSET = 10;
 
 /** The 20 fixed End gateway positions around the central island (ref: the End Gateway wiki table). */
 static const std::array<Vector3d, 20> ENDER_DRAGON_GATEWAY_POSITIONS =
@@ -416,6 +480,7 @@ cWorld::cWorld(
 		IniFile.GetValueSetI("EnderDragon", "ExitPortalZ", 0)
 	);
 	m_EnderDragonGateways = DeserializeEndGateways(IniFile.GetValue("EnderDragon", "Gateways", ""));
+	m_EnderDragonGatewayLinks = DeserializeEndGatewayLinks(IniFile.GetValue("EnderDragon", "GatewayLinks", ""));
 
 	SetMaxViewDistance(IniFile.GetValueSetI("SpawnPosition", "MaxViewDistance", cClientHandle::DEFAULT_VIEW_DISTANCE));
 
@@ -1774,6 +1839,58 @@ void cWorld::SpawnEnderDragonGateway(void)
 
 
 
+Vector3i cWorld::GetLinkedEnderDragonGateway(const Vector3i & a_GatewayPos)
+{
+	// An existing link connects the two gateways in both directions:
+	for (const auto & Link : m_EnderDragonGatewayLinks)
+	{
+		if (Link.first == a_GatewayPos)
+		{
+			return Link.second;
+		}
+		if (Link.second == a_GatewayPos)
+		{
+			return Link.first;
+		}
+	}
+
+	// First activation: generate the outer-island counterpart in the gateway's direction:
+	Vector3d Direction(a_GatewayPos.x, 0, a_GatewayPos.z);
+	const double Length = Direction.Length();
+	if (Length < 0.001)
+	{
+		Direction = Vector3d(1, 0, 0);
+	}
+	else
+	{
+		Direction = Direction / Length;
+	}
+
+	const int OuterX = FloorC(Direction.x * ENDER_DRAGON_GATEWAY_OUTER_DISTANCE);
+	const int OuterZ = FloorC(Direction.z * ENDER_DRAGON_GATEWAY_OUTER_DISTANCE);
+
+	// Place the return gateway above the local surface (falling back to the central gateway height):
+	int OuterY = ENDER_DRAGON_GATEWAY_Y;
+	for (int y = cChunkDef::Height - 1; y >= 0; y--)
+	{
+		if (GetBlock({OuterX, y, OuterZ}) != E_BLOCK_AIR)
+		{
+			OuterY = y + ENDER_DRAGON_GATEWAY_OUTER_Y_OFFSET;
+			break;
+		}
+	}
+
+	const Vector3i OuterPos(OuterX, OuterY, OuterZ);
+	PlaceEnderDragonGatewayStructure(*this, OuterPos);
+	m_EnderDragonGatewayLinks.emplace_back(a_GatewayPos, OuterPos);
+	SaveEnderDragonFightState();
+	return OuterPos;
+}
+
+
+
+
+
 void cWorld::SaveEnderDragonFightState(void)
 {
 	cIniFile IniFile;
@@ -1785,6 +1902,7 @@ void cWorld::SaveEnderDragonFightState(void)
 	IniFile.SetValueI("EnderDragon", "ExitPortalY", m_EnderDragonExitPortalPos.y);
 	IniFile.SetValueI("EnderDragon", "ExitPortalZ", m_EnderDragonExitPortalPos.z);
 	IniFile.SetValue("EnderDragon", "Gateways", SerializeEndGateways(m_EnderDragonGateways));
+	IniFile.SetValue("EnderDragon", "GatewayLinks", SerializeEndGatewayLinks(m_EnderDragonGatewayLinks));
 	if (!IniFile.WriteFile(m_IniFileName))
 	{
 		LOGWARNING("Could not write ender dragon fight state to %s", m_IniFileName.c_str());
