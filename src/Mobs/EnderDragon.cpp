@@ -545,9 +545,11 @@ void cEnderDragon::TickDeath(void)
 		m_World->SpawnSplitExperienceOrbs(GetPosX(), GetPosY(), GetPosZ(), 12000);
 	}
 
-	// Remove the dragon once the 10-second (200-tick) death animation is over:
+	// Once the 10-second (200-tick) death animation is over, activate the exit portal, place the
+	// dragon egg and remove the dragon:
 	if (m_DragonDeathTime >= ENDER_DRAGON_DEATH_TIME)
 	{
+		m_World->ActivateEnderDragonExitPortal();
 		Destroy();
 	}
 }

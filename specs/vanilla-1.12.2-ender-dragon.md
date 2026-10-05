@@ -140,6 +140,10 @@
 13. Boss 栏颜色为 **Pink**（[Bossbar](https://minecraft.wiki/w/Bossbar)：the ender dragon has a pink bossbar；紫色是凋灵）。
 14. 末地水晶治疗（[Ender Crystal](https://minecraft.wiki/w/Ender_Crystal)）：水晶每 tick 找 32 格内最近的龙，
     每 10 tick `Heal(1)`，并用 `BeamTarget` metadata 画出白色光柱；水晶被摧毁时若正在治疗龙，则对龙造成 10 点 `dtExplosion` 伤害。
+15. 出口传送门与龙蛋（[End Podium](https://minecraft.wiki/w/End_Podium) / [Structure](https://minecraft.wiki/w/End_Podium/Structure)）：
+    死亡计时到 200 tick、销毁龙之前，`cWorld::ActivateEnderDragonExitPortal()` 把祭坛碗内（`dx²+dz² ≤ 6` 去掉中心柱，共 20 格，
+    Y=63）填成 `E_BLOCK_END_PORTAL`，并在中心柱顶 (0,67,0) 放 `E_BLOCK_DRAGON_EGG`。
+    祭坛由 `cEnderDragonFightStructuresGen` 在 Y=62 生成（初始为未激活的空碗）。
 
 **故意不做的部分**（后续增量）：
 
@@ -198,4 +202,5 @@
 16. 水晶治疗用 32 格球形判定（vanilla 是 AABB 扩张），未区分方块阻挡（本就纯距离，wiki 也说明可穿方块）；摧毁治疗水晶的 10 点伤害可能与水晶自身爆炸伤害叠加。
 17. `dtPlugin`/`dtAdmin` 对龙的伤害也被免疫（严格按“只受玩家与爆炸”）；插件若需强改血量应直接 `SetHealth`。
 18. 护甲耐久改为在 `cEntity::DoTakeDamage` 真正落地后结算（原先在 4 参 `TakeDamage` 里、绕过 `m_InvulnerableTicks`，导致龙的每 tick 接触伤害把护甲按约 20/s 磨损）；这是引擎级战斗修复，影响所有伤害来源。
+19. 出口传送门/龙蛋的 Y 硬编码为生成器祭坛 Y=62 加偏移（63 / 67）；若生成器挪动祭坛需同步。未实现“战斗开始时传送门失活”“击败时重新生成 End Stone / 方块复位”和 End gateway（均依赖下次召唤/完整 fight 控制器）。
 14. 致命伤时攻击者会被提前记入 `Killed` 统计（基类 `DoTakeDamage` 在 `KilledBy` 之后无条件调用），此时龙尚未真正死亡。

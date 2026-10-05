@@ -873,6 +873,9 @@ public:
 	/** Records that the ender dragon has been killed, so that it does not respawn after a restart. */
 	void SetEnderDragonKilled(void);
 
+	/** Activates the End exit portal (fills its bowl with End Portal blocks and places the dragon egg). */
+	void ActivateEnderDragonExitPortal(void);
+
 	/** Creates a projectile of the specified type. Returns the projectile's UniqueID if successful, cEntity::INVALID_ID otherwise
 	Item parameter is currently used for Fireworks to correctly set entity metadata based on item metadata. */
 	UInt32 CreateProjectile(Vector3d a_Pos, cProjectileEntity::eKind a_Kind, cEntity * a_Creator, const cItem * a_Item, const Vector3d * a_Speed = nullptr);  // tolua_export
