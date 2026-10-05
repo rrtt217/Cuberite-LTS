@@ -149,11 +149,19 @@ cEnderDragon * cEnderCrystal::GetHealingDragon(void)
 		{
 			if (a_Entity.IsMob() && (static_cast<cMonster &>(a_Entity).GetMobType() == mtEnderDragon))
 			{
+				auto & Dragon = static_cast<cEnderDragon &>(a_Entity);
+
+				// Never heal a dead or dying dragon, that would resurrect it or undo its death:
+				if ((Dragon.GetHealth() <= 0) || (Dragon.GetDragonPhase() == cEnderDragon::eDragonPhase::Dying))
+				{
+					return false;
+				}
+
 				const double Sqr = (a_Entity.GetPosition() - Pos).SqrLength();
 				if (Sqr < NearestSqr)
 				{
 					NearestSqr = Sqr;
-					NearestDragon = static_cast<cEnderDragon *>(&a_Entity);
+					NearestDragon = &Dragon;
 				}
 			}
 
