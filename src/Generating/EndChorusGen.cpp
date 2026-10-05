@@ -9,7 +9,7 @@
 
 #include <random>
 
-/** Number of chunks in each direction whose terrain is regenerated to catch trees rooted there. */
+/** Number of chunks in each direction whose trees may reach into the current chunk. */
 static constexpr int CHORUS_GEN_NEIGHBORHOOD = 1;
 
 
@@ -31,11 +31,9 @@ static std::minstd_rand MakeChunkRng(int a_Seed, int a_ChunkX, int a_ChunkZ)
 
 
 
-cEndChorusGen::cEndChorusGen(int a_Seed, cBiomeGen & a_BiomeGen, cTerrainShapeGen & a_ShapeGen, cTerrainCompositionGen & a_CompositionGen) :
+cEndChorusGen::cEndChorusGen(int a_Seed, cTerrainHeightGen & a_HeightGen) :
 	m_Seed(a_Seed),
-	m_BiomeGen(a_BiomeGen),
-	m_ShapeGen(a_ShapeGen),
-	m_CompositionGen(a_CompositionGen)
+	m_HeightGen(a_HeightGen)
 {
 }
 
@@ -53,18 +51,22 @@ void cEndChorusGen::GenFinish(cChunkDesc & a_ChunkDesc)
 			const cChunkCoords Neighbor(Coords.m_ChunkX + x, Coords.m_ChunkZ + z);
 			if ((x == 0) && (z == 0))
 			{
-				GenerateChunkTrees(Neighbor, a_ChunkDesc, a_ChunkDesc);
+				// The current chunk already has its heightmap:
+				GenerateChunkTrees(Neighbor, a_ChunkDesc.GetHeightMap(), a_ChunkDesc);
 				continue;
 			}
 
-			// Regenerate the neighbouring terrain so that trees rooted there can be grown here:
-			cChunkDesc Worker(Neighbor);
-			m_BiomeGen.GenBiomes(Neighbor, Worker.GetBiomeMap());
-			cChunkDesc::Shape Shape;
-			m_ShapeGen.GenShape(Neighbor, Shape);
-			Worker.SetHeightFromShape(Shape);
-			m_CompositionGen.ComposeTerrain(Worker, Shape);
-			GenerateChunkTrees(Neighbor, Worker, a_ChunkDesc);
+			// The attempt count does not depend on the heights, so skip chunks without any trees
+			// before asking the shared composited-heightmap cache:
+			auto Rng = MakeChunkRng(m_Seed, Neighbor.m_ChunkX, Neighbor.m_ChunkZ);
+			if ((Rng() % (MAX_TREE_ATTEMPTS + 1)) == 0)
+			{
+				continue;
+			}
+
+			cChunkDef::HeightMap NeighborHeights;
+			m_HeightGen.GenHeightMap(Neighbor, NeighborHeights);
+			GenerateChunkTrees(Neighbor, NeighborHeights, a_ChunkDesc);
 		}
 	}
 	a_ChunkDesc.UpdateHeightmap();
@@ -74,7 +76,7 @@ void cEndChorusGen::GenFinish(cChunkDesc & a_ChunkDesc)
 
 
 
-void cEndChorusGen::GenerateChunkTrees(const cChunkCoords & a_Coords, cChunkDesc & a_TreeDesc, cChunkDesc & a_Target)
+void cEndChorusGen::GenerateChunkTrees(const cChunkCoords & a_Coords, const cChunkDef::HeightMap & a_HeightMap, cChunkDesc & a_Target)
 {
 	auto Rng = MakeChunkRng(m_Seed, a_Coords.m_ChunkX, a_Coords.m_ChunkZ);
 	const int Attempts = static_cast<int>(Rng() % (MAX_TREE_ATTEMPTS + 1));
@@ -85,16 +87,13 @@ void cEndChorusGen::GenerateChunkTrees(const cChunkCoords & a_Coords, cChunkDesc
 		const int RelZ = static_cast<int>(Rng() % cChunkDef::Width);
 		const int TreeSeed = static_cast<int>(Rng() & 0x7fffffff);
 
-		const int SurfaceY = a_TreeDesc.GetHeight(RelX, RelZ);
+		// The End's surface is End stone, so the heightmap's top block is a valid soil:
+		const int SurfaceY = cChunkDef::GetHeight(a_HeightMap, RelX, RelZ);
 		if (SurfaceY < MIN_LAND_Y)
 		{
 			continue;
 		}
-		if (a_TreeDesc.GetBlockType(RelX, SurfaceY, RelZ) != E_BLOCK_END_STONE)
-		{
-			continue;
-		}
-		if ((SurfaceY + 1 >= cChunkDef::Height) || (a_TreeDesc.GetBlockType(RelX, SurfaceY + 1, RelZ) != E_BLOCK_AIR))
+		if (SurfaceY + 1 >= cChunkDef::Height)
 		{
 			continue;
 		}

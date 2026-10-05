@@ -2,8 +2,10 @@
 #include "Generating/BioGen.h"
 #include "Generating/ChorusPlantTree.h"
 #include "Generating/ChunkDesc.h"
+#include "Generating/CompositedHeiGen.h"
 #include "Generating/EndChorusGen.h"
 #include "Generating/EndGen.h"
+#include "Generating/HeiGen.h"
 #include "Blocks/ChorusRules.h"
 #include "../TestHelpers.h"
 
@@ -138,7 +140,8 @@ static void testFinisherSmoke(void)
 {
 	cEndGen EndGen(12345);
 	cBioGenConstant BiomeGen;
-	cEndChorusGen Finisher(12345, BiomeGen, EndGen, EndGen);
+	cHeiGenMultiCache HeightCache(std::make_unique<cCompositedHeiGen>(BiomeGen, EndGen, EndGen), 16, 128);
+	cEndChorusGen Finisher(12345, HeightCache);
 
 	int TotalChorus = 0;
 	for (int ChunkX = 64; ChunkX < 72; ChunkX++)

@@ -248,7 +248,7 @@ Cuberite 落点：
 - 平均花数偏低：500 棵样本约 2.1 朵/棵，wiki 统计约 3.7 朵/棵。因为每朵花只模拟一次生长步，真实 feature 的步数与处理顺序未知。
 - 树高仅验证了上界（样本最大 20，wiki 上界 22），未逐点对齐 vanilla。
 
-跨区块处理沿用 `cStructGenTrees` 的做法：finisher 对 3×3 邻域重新生成地形（`GenBiomes` + `GenShape` + `ComposeTerrain`），同一棵树由覆盖它的每个区块各自重建，只写入落在本区块内的部分。
+跨区块处理：finisher 对 3×3 邻域取**共享的合成高度图缓存**（`cComposableGenerator::m_CompositedHeightCache`，`cHeiGenMultiCache`），而不是重新生成完整地形；同一棵树由覆盖它的每个区块各自重建，只写入落在本区块内的部分。首版曾对 8 个邻区块各做一次完整地形重生成，实测生成速度 50→16 chunks/s、旁观者模式跟不上；改用高度图缓存并跳过尝试数为 0 的邻区块后，本地 64 区块基准从 4.09s 降到 1.20s。
 
 ### 4.4 Cuberite 接入点
 

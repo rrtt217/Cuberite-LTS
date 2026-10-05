@@ -470,7 +470,7 @@ void cComposableGenerator::InitFinishGens(cIniFile & a_IniFile)
 			m_FinishGens.push_back(std::make_unique<cEnderDragonReturnGatewayGen>(m_Seed));
 
 			// Natural chorus trees are part of the End's generated terrain:
-			m_FinishGens.push_back(std::make_unique<cEndChorusGen>(m_Seed, *m_BiomeGen, *m_ShapeGen, *m_CompositionGen));
+			m_FinishGens.push_back(std::make_unique<cEndChorusGen>(m_Seed, *m_CompositedHeightCache));
 		}
 		else if (NoCaseCompare(finisher, "ForestRocks") == 0)
 		{
