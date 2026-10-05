@@ -52,3 +52,15 @@
 3. 粒子仍用 1.8 粒子表（`mobspell` 等），未按 1.9+ 重新编号；自定义粒子参数固定为 0。
 4. 未实现“用玻璃瓶右键云获得龙息并让半径 -0.5”。
 5. 尚未接入任何生成来源（滞留药水、苦力怕、龙火球）——本增量只做通用实体本身。
+
+## 7. 滞留药水集成
+
+`cItemPotionHandler` 现在允许掷出 `E_ITEM_LINGERING_POTION`（其伤害值不置 splash 位，因此原先会被当作可饮用而不掷出）；
+`cSplashPotionEntity` 命中实体/方块时，若物品为滞留药水，则改为生成区域效果云：
+
+- 半径 3，30 秒（600 tick）线性缩到 0；`RadiusPerTick = -3/600`、`RadiusOnUse = -0.5`、`DurationOnUse = -100`（-5s）、`ReapplicationDelay = 10`。
+- 颜色取药水颜色；粒子 `mobspell`。
+- 非即时效果时长取普通药水的 1/4；即时效果（瞬间治疗/伤害/饱和）效力取 1/2。
+- 命中实体仍先造成 1 点 `dtRangedAttack`（沿用 splash 逻辑）。
+
+**偏差**：掷出的滞留药水仍复用 `pkSplashPotion` 投射物（Spawn Object 类型 73），靠实体元数据里的物品区分渲染；破裂粒子用 splash 的粒子而非龙息粒子。

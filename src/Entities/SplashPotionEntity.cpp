@@ -1,8 +1,45 @@
 #include "Globals.h"  // NOTE: MSVC stupidness requires this to be the same across all modules
 
 #include "SplashPotionEntity.h"
+#include "AreaEffectCloud.h"
 #include "Pawn.h"
 #include "../EffectID.h"
+
+
+
+
+
+/** Returns whether the given status effect is applied instantly (so its potency, not duration, scales). */
+static bool IsInstantEffect(cEntityEffect::eType a_Type)
+{
+	return (
+		(a_Type == cEntityEffect::effInstantHealth) ||
+		(a_Type == cEntityEffect::effInstantDamage) ||
+		(a_Type == cEntityEffect::effSaturation)
+	);
+}
+
+
+
+
+
+/** Radius of the cloud left behind by a lingering potion, in blocks. */
+static constexpr float LINGERING_POTION_RADIUS = 3.0f;
+
+/** Lifetime of a lingering potion's cloud, in ticks (30 seconds). */
+static constexpr int LINGERING_POTION_DURATION = 600;
+
+/** Radius change of a lingering potion's cloud whenever it affects an entity, in blocks. */
+static constexpr float LINGERING_POTION_RADIUS_ON_USE = -0.5f;
+
+/** Duration change of a lingering potion's cloud whenever it affects an entity, in ticks (-5 seconds). */
+static constexpr int LINGERING_POTION_DURATION_ON_USE = -100;
+
+/** Delay between two applications of a lingering potion's cloud to the same entity, in ticks. */
+static constexpr int LINGERING_POTION_REAPPLICATION_DELAY = 10;
+
+/** Particle displayed by a lingering potion's cloud. */
+static constexpr const char * LINGERING_POTION_PARTICLE = "mobspell";
 
 
 
@@ -67,7 +104,15 @@ void cSplashPotionEntity::OnHitEntity(cEntity & a_EntityHit, Vector3d a_HitPos)
 	Super::OnHitEntity(a_EntityHit, a_HitPos);
 
 	a_EntityHit.TakeDamage(dtRangedAttack, this, 0, 1);
-	Splash(a_HitPos);
+
+	if (IsLingering())
+	{
+		CreateAreaEffectCloud(a_HitPos);
+	}
+	else
+	{
+		Splash(a_HitPos);
+	}
 	Destroy();
 }
 
@@ -79,6 +124,52 @@ void cSplashPotionEntity::OnHitSolidBlock(Vector3d a_HitPos, eBlockFace a_HitFac
 {
 	Super::OnHitSolidBlock(a_HitPos, a_HitFace);
 
-	Splash(a_HitPos);
+	if (IsLingering())
+	{
+		CreateAreaEffectCloud(a_HitPos);
+	}
+	else
+	{
+		Splash(a_HitPos);
+	}
 	Destroy();
+}
+
+
+
+
+
+void cSplashPotionEntity::CreateAreaEffectCloud(Vector3d a_HitPos)
+{
+	auto Cloud = std::make_unique<cAreaEffectCloud>(a_HitPos);
+	Cloud->SetRadius(LINGERING_POTION_RADIUS);
+	Cloud->SetDuration(LINGERING_POTION_DURATION);
+	Cloud->SetRadiusPerTick(-LINGERING_POTION_RADIUS / LINGERING_POTION_DURATION);
+	Cloud->SetRadiusOnUse(LINGERING_POTION_RADIUS_ON_USE);
+	Cloud->SetDurationOnUse(LINGERING_POTION_DURATION_ON_USE);
+	Cloud->SetReapplicationDelay(LINGERING_POTION_REAPPLICATION_DELAY);
+	Cloud->SetColor(m_PotionColor);
+	Cloud->SetParticle(LINGERING_POTION_PARTICLE);
+
+	// Vanilla applies non-instant effects for a quarter of the potion's duration and instant effects
+	// at half potency:
+	int Duration = m_EntityEffect.GetDuration();
+	short Intensity = m_EntityEffect.GetIntensity();
+	if (IsInstantEffect(m_EntityEffectType))
+	{
+		Intensity = static_cast<short>(Intensity / 2);
+	}
+	else
+	{
+		Duration /= 4;
+	}
+	Cloud->AddEffect(m_EntityEffectType, Duration, Intensity);
+
+	m_World->AddEntity(std::move(Cloud));
+
+	m_World->BroadcastSoundParticleEffect(
+		EffectID::PARTICLE_SPLASH_POTION,
+		a_HitPos.Floor(),
+		m_PotionColor
+	);
 }

@@ -40,8 +40,8 @@ public:
 	{
 		short PotionDamage = a_HeldItem.m_ItemDamage;
 
-		// Do not throw non-splash potions:
-		if (cEntityEffect::IsPotionDrinkable(PotionDamage))
+		// Only splash and lingering potions can be thrown:
+		if ((a_HeldItem.m_ItemType != E_ITEM_LINGERING_POTION) && cEntityEffect::IsPotionDrinkable(PotionDamage))
 		{
 			return false;
 		}
