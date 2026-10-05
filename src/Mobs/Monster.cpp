@@ -307,7 +307,7 @@ void cMonster::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 	HandleDaylightBurning(*Chunk, WouldBurnAt(GetPosition(), *Chunk));
 
 	bool a_IsFollowingPath = false;
-	if (m_PathfinderActivated && (GetMobType() != mtGhast))  // Pathfinder is currently disabled for ghasts, which have their own flying mechanism
+	if (m_PathfinderActivated && (GetMobType() != mtGhast) && (GetMobType() != mtEnderDragon))  // Pathfinder is disabled for mobs with their own flying mechanism
 	{
 		if (ReachedFinalDestination() || (m_LeashToPos != nullptr))
 		{

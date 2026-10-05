@@ -21,10 +21,25 @@
 
 
 
+/** The next entity ID to be handed out. Zero is reserved for cEntity::INVALID_ID, so IDs start at 1. */
+static std::atomic<UInt32> g_NextUniqueID(1);
+
+
+
+
+
 static UInt32 GetNextUniqueID(void)
 {
-	static std::atomic<UInt32> counter(1);
-	return counter.fetch_add(1);
+	return g_NextUniqueID.fetch_add(1);
+}
+
+
+
+
+
+UInt32 cEntity::ReserveUniqueIDs(UInt32 a_Count)
+{
+	return g_NextUniqueID.fetch_add(a_Count);
 }
 
 
@@ -282,10 +297,9 @@ void cEntity::TakeDamage(cEntity & a_Attacker)
 void cEntity::TakeDamage(eDamageType a_DamageType, cEntity * a_Attacker, int a_RawDamage, double a_KnockbackAmount)
 {
 	float FinalDamage = static_cast<float>(a_RawDamage);
-	float ArmorCover = GetArmorCoverAgainst(a_Attacker, a_DamageType, a_RawDamage);
 
-	ApplyArmorDamage(static_cast<int>(ArmorCover));
-
+	// Note: armor durability is handled in DoTakeDamage(), once the hit is known to actually land;
+	// otherwise every contact-damage tick would wear the armor down even while invulnerable.
 	cEntity::TakeDamage(a_DamageType, a_Attacker, a_RawDamage, FinalDamage, a_KnockbackAmount);
 }
 
@@ -420,6 +434,11 @@ bool cEntity::DoTakeDamage(TakeDamageInfo & a_TDI)
 		return false;
 	}
 
+	// The hit landed, wear down the armor that covers it (vanilla damages armor for every hit that
+	// is actually applied, before the armor's damage reduction):
+	const float ArmorCover = GetArmorCoverAgainst(a_TDI.Attacker, a_TDI.DamageType, a_TDI.RawDamage);
+	ApplyArmorDamage(static_cast<int>(ArmorCover));
+
 	if (IsPainting())
 	{
 		KilledBy(a_TDI);
@@ -443,7 +462,7 @@ bool cEntity::DoTakeDamage(TakeDamageInfo & a_TDI)
 
 		// IsOnGround() only is false if the player is moving downwards
 		// Ref: https://minecraft.wiki/w/Damage#Critical_Hits
-		if (!Player->IsOnGround())
+		if (!Player->IsOnGround() && CanBeCriticalHit())
 		{
 			if ((a_TDI.DamageType == dtAttack) || (a_TDI.DamageType == dtArrowAttack))
 			{
@@ -578,7 +597,7 @@ bool cEntity::DoTakeDamage(TakeDamageInfo & a_TDI)
 	m_Health = std::max(m_Health, 0.0f);
 
 	// Add knockback:
-	if ((IsMob() || IsPlayer()) && (a_TDI.Attacker != nullptr))
+	if ((IsMob() || IsPlayer()) && (a_TDI.Attacker != nullptr) && CanBeKnockedBack())
 	{
 		SetSpeed(a_TDI.Knockback);
 	}
