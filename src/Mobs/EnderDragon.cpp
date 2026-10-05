@@ -561,12 +561,15 @@ void cEnderDragon::TickDeath(void)
 void cEnderDragon::FaceSpeedDirection(void)
 {
 	// cEntity::SetYawFromSpeed() uses atan2(speed.x, speed.z), which is mirrored in X relative to the
-	// engine's canonical direction (VectorToEuler, used by cMonster for mobs). Use the canonical formula
-	// so that the dragon actually faces the way it flies:
+	// engine's canonical direction (VectorToEuler, used by cMonster for mobs). The ender dragon's model
+	// is additionally rotated 180 degrees relative to ordinary mobs, so the canonical direction gets a
+	// half turn. Measured in-game: with the plain canonical yaw the dragon flies head-first backwards.
 	double Yaw, Pitch;
 	const Vector3d & Speed = GetSpeed();
 	VectorToEuler(Speed.x, Speed.y, Speed.z, Yaw, Pitch);
+	Yaw += 180.0;
 	SetYaw(static_cast<float>(Yaw));
+	SetHeadYaw(Yaw);
 	SetPitch(static_cast<float>(Pitch));
 }
 
@@ -594,8 +597,10 @@ void cEnderDragon::AttackEntities(void)
 		return;
 	}
 
-	// Approximate the head as a point at the front of the bounding box, at half the dragon's height:
-	const Vector3d HeadPos = GetPosition().addedY(GetHeight() / 2) + (GetLookVector() * (GetWidth() / 2));
+	// Approximate the head as a point at the front of the bounding box, at half the dragon's height.
+	// FaceSpeedDirection() stores the yaw with a half turn offset (relative to the model), so the
+	// look vector points at the back of the model; the head is at its opposite end:
+	const Vector3d HeadPos = GetPosition().addedY(GetHeight() / 2) - (GetLookVector() * (GetWidth() / 2));
 
 	m_World->ForEachEntityInBox(GetBoundingBox(), [&](cEntity & a_Entity)
 		{

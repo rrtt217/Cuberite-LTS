@@ -135,8 +135,9 @@
     删除了早期的“有目标→盘旋/否则悬停”占位切换。`DragonPhase` 随实体一起存/读档（NBT int `DragonPhase`）。
 11. 受击与免疫：龙只受**玩家造成的伤害**与**爆炸伤害**（`dtExplosion`），其余一律在 `DoTakeDamage` 返回 false；
     不会被击退（覆写 `cEntity::CanBeKnockedBack()`），也不会被玩家近战暴击（覆写 `cEntity::CanBeCriticalHit()`）。
-12. 朝向：`FaceSpeedDirection()` 用引擎标准的 `VectorToEuler()`（与 `cMonster::SetPitchAndYawFromDestination` 一致），
-    而非 `cEntity::SetYawFromSpeed()`——后者用 `atan2(speed.x, speed.z)`，在 X 上与标准朝向镜像，是“倒着飞”的根因。
+12. 朝向：`FaceSpeedDirection()` 用引擎标准的 `VectorToEuler()`（与 `cMonster::SetPitchAndYawFromDestination` 一致）算出飞行方向，
+    再加 **180°**（龙模型相对普通生物整体偏半圈；实机验证：只用标准 yaw 会“头朝后”飞），同时写 `SetYaw`/`SetHeadYaw`/`SetPitch`；
+    `AttackEntities()` 的头部接触点相应取 `-GetLookVector()`（否则会落到尾部）。
 13. Boss 栏颜色为 **Pink**（[Bossbar](https://minecraft.wiki/w/Bossbar)：the ender dragon has a pink bossbar；紫色是凋灵）。
 14. 末地水晶治疗（[Ender Crystal](https://minecraft.wiki/w/Ender_Crystal)）：水晶每 tick 找 32 格内最近的龙，
     每 10 tick `Heal(1)`，并用 `BeamTarget` metadata 画出白色光柱；水晶被摧毁时若正在治疗龙，则对龙造成 10 点 `dtExplosion` 伤害。
