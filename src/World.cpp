@@ -170,6 +170,7 @@ cWorld::cWorld(
 	m_WorldTickAge(0),
 	m_EnderDragonSpawnCountdown(std::chrono::seconds(1)),
 	m_HasSpawnedEnderDragon(false),
+	m_EnderDragonKilled(false),
 	m_LastChunkCheck(0),
 	m_LastSave(0),
 	m_SkyDarkness(0),
@@ -262,6 +263,9 @@ cWorld::cWorld(
 
 	m_BroadcastDeathMessages = IniFile.GetValueSetB("Broadcasting", "BroadcastDeathMessages", true);
 	m_BroadcastAchievementMessages = IniFile.GetValueSetB("Broadcasting", "BroadcastAchievementMessages", true);
+
+	m_HasSpawnedEnderDragon = IniFile.GetValueSetB("EnderDragon", "HasSpawned", false);
+	m_EnderDragonKilled = IniFile.GetValueSetB("EnderDragon", "DragonKilled", false);
 
 	SetMaxViewDistance(IniFile.GetValueSetI("SpawnPosition", "MaxViewDistance", cClientHandle::DEFAULT_VIEW_DISTANCE));
 
@@ -1135,7 +1139,7 @@ void cWorld::Tick(std::chrono::milliseconds a_Dt, std::chrono::milliseconds a_La
 
 void cWorld::TickEnderDragonFight(std::chrono::milliseconds a_Dt)
 {
-	if (m_HasSpawnedEnderDragon || m_Players.empty())
+	if (m_HasSpawnedEnderDragon || m_EnderDragonKilled || m_Players.empty())
 	{
 		// The fight starts only once, and only after the first player has arrived in the End:
 		return;
@@ -1149,6 +1153,7 @@ void cWorld::TickEnderDragonFight(std::chrono::milliseconds a_Dt)
 	}
 
 	m_HasSpawnedEnderDragon = true;
+	SaveEnderDragonFightState();
 
 	// A dragon may already be present (e.g. it was loaded from the save); don't spawn a second one:
 	if (HasEnderDragon())
@@ -1158,6 +1163,32 @@ void cWorld::TickEnderDragonFight(std::chrono::milliseconds a_Dt)
 
 	const int Height = GetHeight(0, 0).value_or(64);
 	SpawnMob(0.5, Height + ENDER_DRAGON_SPAWN_HEIGHT_OFFSET, 0.5, mtEnderDragon);
+}
+
+
+
+
+
+void cWorld::SetEnderDragonKilled(void)
+{
+	m_EnderDragonKilled = true;
+	SaveEnderDragonFightState();
+}
+
+
+
+
+
+void cWorld::SaveEnderDragonFightState(void)
+{
+	cIniFile IniFile;
+	IniFile.ReadFile(m_IniFileName);
+	IniFile.SetValueB("EnderDragon", "HasSpawned", m_HasSpawnedEnderDragon);
+	IniFile.SetValueB("EnderDragon", "DragonKilled", m_EnderDragonKilled);
+	if (!IniFile.WriteFile(m_IniFileName))
+	{
+		LOGWARNING("Could not write ender dragon fight state to %s", m_IniFileName.c_str());
+	}
 }
 
 

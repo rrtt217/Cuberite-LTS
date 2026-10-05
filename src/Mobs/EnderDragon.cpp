@@ -502,6 +502,9 @@ void cEnderDragon::FinishDying(void)
 
 	Super::KilledBy(TDI);
 
+	// Record the kill so that the dragon does not respawn after a server restart:
+	m_World->SetEnderDragonKilled();
+
 	// Vanilla drops a large amount of experience, but only when a player was involved in the kill:
 	if (m_DyingAttackerID != cEntity::INVALID_ID)
 	{

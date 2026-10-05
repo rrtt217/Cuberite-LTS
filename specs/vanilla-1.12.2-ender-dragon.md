@@ -151,6 +151,7 @@
 1. `cWorld::Tick` 在 `dimEnd` 世界里调用 `TickEnderDragonFight`。
 2. 世界里已有玩家且本场尚未开始时，倒计时 1 秒（20 tick）；到点后在 `(0.5, 最高方块 + 20, 0.5)` `SpawnMob(mtEnderDragon)`。
 3. `m_HasSpawnedEnderDragon` 保证一场只生成一次；若世界里已有龙（例如从存档加载回来的）则不再生成第二条。
+   fight 状态（`HasSpawned` / `DragonKilled`）持久化到 `world.ini` 的 `[EnderDragon]` 段，重启后不会重新生成。
 
 ## 4. 验证方式
 
@@ -175,8 +176,8 @@
 7. Cuberite 没有难度设置，接触伤害恒取 **Normal**（头 10 / 翅膀 5）；vanilla 会按难度取 6/10/15 与 3.5/5/7.5。
 8. `Strafing` 只是朝目标飞行 3 秒后回绕，未实现 vanilla 的“进入 64 格即喷龙火球”；水晶被毁通过每 20 tick 的数量对比检测（最多 1 秒延迟）。
 9. `Perching` 的落点高度（70）是近似；`LandedBreath` 的 3 秒只有计时，没有龙息伤害云（AreaEffectCloud 未实现）；咆哮没有独立的声音/粒子。
-10. `Charging`（仅 BE）与 `Dying` 的死亡飞行 / 传送门生成 / 经验掉落尚未实现。
-11. 自动生成用的 `m_HasSpawnedEnderDragon` **只在内存**，服务器重启后重置：重启前击杀的龙会重新生成（vanilla 用持久化 fight 状态记录 `DragonKilled`/`PreviouslyKilled`）。
-12. 没有完整的 fight 控制器（水晶被毁的概率切换、`ExitPortalLocation`/`Gateways`/`DragonKilled` 记录等），生成位置取 (0,0) 最高方块 + 20。
+10. `Charging`（仅 BE）尚未实现（JE 本就没有该状态）。
+11. fight 状态用 `world.ini` 的 `[EnderDragon]` 段（`HasSpawned`/`DragonKilled`）持久化，只是两个布尔；未实现 vanilla 的 `PreviouslyKilled`、`ExitPortalLocation`、`Gateways`、`respawn_crystals`/重召唤等完整状态。
+12. 没有完整的 fight 控制器（水晶被毁的概率切换、传送门/龙蛋/gateway 记录等），生成位置取 (0,0) 最高方块 + 20。
 13. `Dying` 只做“飞到传送门再死 + 12000 XP”；10 秒升天动画、出口传送门激活、龙蛋、End gateway，以及 `DragonDeathTime` 的每 5 tick 分批掉落经验都未实现（XP 在死亡点一次性掉落）。
 14. 致命伤时攻击者会被提前记入 `Killed` 统计（基类 `DoTakeDamage` 在 `KilledBy` 之后无条件调用），此时龙尚未真正死亡。

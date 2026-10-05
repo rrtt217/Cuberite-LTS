@@ -870,6 +870,9 @@ public:
 	Takes ownership of the given Monster reference. */
 	UInt32 SpawnMobFinalize(std::unique_ptr<cMonster> a_Monster);
 
+	/** Records that the ender dragon has been killed, so that it does not respawn after a restart. */
+	void SetEnderDragonKilled(void);
+
 	/** Creates a projectile of the specified type. Returns the projectile's UniqueID if successful, cEntity::INVALID_ID otherwise
 	Item parameter is currently used for Fireworks to correctly set entity metadata based on item metadata. */
 	UInt32 CreateProjectile(Vector3d a_Pos, cProjectileEntity::eKind a_Kind, cEntity * a_Creator, const cItem * a_Item, const Vector3d * a_Speed = nullptr);  // tolua_export
@@ -1000,8 +1003,11 @@ private:
 	/** Milliseconds left before the ender dragon is spawned after the first player arrived in the End. */
 	std::chrono::milliseconds m_EnderDragonSpawnCountdown;
 
-	/** Whether the ender dragon fight has already been started in this world (in-memory only). */
+	/** Whether the ender dragon fight has already been started in this world (persisted). */
 	bool m_HasSpawnedEnderDragon;
+
+	/** Whether the ender dragon has already been killed in this world (persisted). */
+	bool m_EnderDragonKilled;
 
 	std::chrono::milliseconds m_LastChunkCheck;  // The last WorldAge in which unloading and possibly saving was triggered.
 	std::chrono::milliseconds m_LastSave;  // The last WorldAge in which save-all was triggerred.
@@ -1129,6 +1135,9 @@ private:
 
 	/** Starts the ender dragon fight after the first player arrives in the End. */
 	void TickEnderDragonFight(std::chrono::milliseconds a_Dt);
+
+	/** Writes the ender dragon fight state to the world's ini file. */
+	void SaveEnderDragonFightState(void);
 
 	/** Returns whether an ender dragon is currently present in this world. */
 	bool HasEnderDragon(void);
