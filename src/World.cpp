@@ -10,6 +10,8 @@
 #include "IniFile.h"
 #include "Generating/ChunkDesc.h"
 #include "Generating/ComposableGenerator.h"
+#include "Generating/EndGateway.h"
+#include "Generating/EndPlatform.h"
 #include "Generating/EnderDragonFightStructuresGen.h"
 #include "SetChunkData.h"
 #include "DeadlockDetect.h"
@@ -246,17 +248,6 @@ static const std::array<Vector3d, 20> ENDER_DRAGON_GATEWAY_POSITIONS =
 	Vector3d( 56, ENDER_DRAGON_GATEWAY_Y, -78),
 	Vector3d( 77, ENDER_DRAGON_GATEWAY_Y, -57),
 	Vector3d( 91, ENDER_DRAGON_GATEWAY_Y, -30),
-};
-
-
-
-
-
-/** Offsets of the plus-shaped bedrock layers directly around an End gateway block. */
-static const std::array<Vector3i, 10> ENDER_DRAGON_GATEWAY_BEDROCK_OFFSETS =
-{
-	Vector3i(0, -1, 0), Vector3i(-1, -1, 0), Vector3i(1, -1, 0), Vector3i(0, -1, -1), Vector3i(0, -1, 1),
-	Vector3i(0, 1, 0), Vector3i(-1, 1, 0), Vector3i(1, 1, 0), Vector3i(0, 1, -1), Vector3i(0, 1, 1),
 };
 
 
@@ -1854,26 +1845,57 @@ void cWorld::SpawnEnderDragonGateway(void)
 
 
 
-bool cWorld::TryGetLinkedEnderDragonGateway(const Vector3i & a_GatewayPos, Vector3i & a_Target)
+bool cWorld::IsEnderDragonCentralGateway(const Vector3i & a_GatewayPos) const
 {
-	// An existing link connects the two gateways in both directions:
+	for (const auto & Gateway : m_EnderDragonGateways)
+	{
+		if (Gateway == a_GatewayPos)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+
+
+
+
+bool cWorld::GetEnderDragonGatewayExit(const Vector3i & a_GatewayPos, bool a_IsPlayer, Vector3d & a_ExitPos)
+{
+	// An existing link connects the two gateways in both directions, so the entity arrives at the counterpart:
 	for (const auto & Link : m_EnderDragonGatewayLinks)
 	{
 		if (Link.first == a_GatewayPos)
 		{
-			a_Target = Link.second;
+			a_ExitPos = Vector3d(Link.second) + Vector3d(0.5, 2.0, 0.5);
 			return true;
 		}
 		if (Link.second == a_GatewayPos)
 		{
-			a_Target = Link.first;
+			a_ExitPos = Vector3d(Link.first) + Vector3d(0.5, 2.0, 0.5);
 			return true;
 		}
 	}
 
-	// Not generated yet: start generating it and report that there is no destination yet.
-	EnsureEnderDragonGatewayLink(a_GatewayPos);
-	return false;
+	if (IsEnderDragonCentralGateway(a_GatewayPos))
+	{
+		// The outer counterpart is not generated yet; start generating it and don't teleport the entity into the void:
+		EnsureEnderDragonGatewayLink(a_GatewayPos);
+		return false;
+	}
+
+	// A natural outer-island return gateway sends the entity back to the End platform,
+	// without regenerating it (unlike the End portal):
+	if (a_IsPlayer)
+	{
+		a_ExitPos = Vector3d(cEndPlatform::PLAYER_SPAWN_X, cEndPlatform::PLAYER_SPAWN_Y, cEndPlatform::PLAYER_SPAWN_Z);
+	}
+	else
+	{
+		a_ExitPos = Vector3d(cEndPlatform::ENTITY_SPAWN_X, cEndPlatform::ENTITY_SPAWN_Y, cEndPlatform::ENTITY_SPAWN_Z);
+	}
+	return true;
 }
 
 

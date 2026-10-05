@@ -36,7 +36,7 @@ private:
 	void TeleportCreator(Vector3d a_HitPos);
 
 	/** Teleports the creator through an End gateway, without fall damage or other effects */
-	void TeleportCreatorToGateway(Vector3i a_Target);
+	void TeleportCreatorToGateway(Vector3d a_ExitPos);
 
 	// cEntity overrides:
 	virtual bool DetectPortal(void) override;

@@ -24,6 +24,7 @@
 #include "DungeonRoomsFinisher.h"
 #include "EndGen.h"
 #include "EnderDragonFightStructuresGen.h"
+#include "EnderDragonReturnGatewayGen.h"
 #include "MineShafts.h"
 #include "Noise3DGenerator.h"
 #include "Ravines.h"
@@ -463,6 +464,9 @@ void cComposableGenerator::InitFinishGens(cIniFile & a_IniFile)
 			auto Gen = std::make_unique<cEnderDragonFightStructuresGen>(m_Seed);
 			Gen->Init(Pillars, Radius);
 			m_FinishGens.push_back(std::move(Gen));
+
+			// The natural outer-island return gateways are part of the End's generated terrain:
+			m_FinishGens.push_back(std::make_unique<cEnderDragonReturnGatewayGen>(m_Seed));
 		}
 		else if (NoCaseCompare(finisher, "ForestRocks") == 0)
 		{

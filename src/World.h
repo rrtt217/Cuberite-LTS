@@ -882,8 +882,12 @@ public:
 	/** Spawns one End gateway around the central island (called once per dragon defeat). */
 	void SpawnEnderDragonGateway(void);
 
-	/** Looks up the End gateway linked to a_GatewayPos; returns false (and starts generating it) if unknown. */
-	bool TryGetLinkedEnderDragonGateway(const Vector3i & a_GatewayPos, Vector3i & a_Target);
+	/** Returns whether a_GatewayPos is one of the central-island gateways spawned by the dragon fight. */
+	bool IsEnderDragonCentralGateway(const Vector3i & a_GatewayPos) const;
+
+	/** Resolves where an entity entering the End gateway at a_GatewayPos should arrive.
+	Returns false when the gateway is a central one whose outer counterpart is still being generated. */
+	bool GetEnderDragonGatewayExit(const Vector3i & a_GatewayPos, bool a_IsPlayer, Vector3d & a_ExitPos);
 
 	/** Starts generating the outer-island counterpart of a central gateway, if it does not exist yet. */
 	void EnsureEnderDragonGatewayLink(const Vector3i & a_GatewayPos);
