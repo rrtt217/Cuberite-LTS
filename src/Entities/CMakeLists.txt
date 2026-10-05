@@ -1,6 +1,7 @@
 target_sources(
 	${CMAKE_PROJECT_NAME} PRIVATE
 
+	AreaEffectCloud.cpp
 	ArrowEntity.cpp
 	Boat.cpp
 	EnderCrystal.cpp
@@ -29,6 +30,7 @@ target_sources(
 	ThrownSnowballEntity.cpp
 	WitherSkullEntity.cpp
 
+	AreaEffectCloud.h
 	ArrowEntity.h
 	Boat.h
 	EnderCrystal.h

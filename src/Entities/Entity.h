@@ -102,6 +102,7 @@ public:
 		etItemFrame,
 		etPainting,
 		etLeashKnot,
+		etAreaEffectCloud,
 
 		// Common variations
 		etMob = etMonster,  // DEPRECATED, use etMonster instead!
@@ -170,6 +171,7 @@ public:
 	bool IsFloater     (void) const { return (m_EntityType == etFloater);      }
 	bool IsItemFrame   (void) const { return (m_EntityType == etItemFrame);    }
 	bool IsLeashKnot   (void) const { return (m_EntityType == etLeashKnot);    }
+	bool IsAreaEffectCloud(void) const { return (m_EntityType == etAreaEffectCloud); }
 	bool IsPainting    (void) const { return (m_EntityType == etPainting);     }
 
 	/** Returns true if the entity is of the specified class or a subclass (cPawn's IsA("cEntity") returns true) */
@@ -566,6 +568,9 @@ public:
 	void BroadcastDeathMessage(TakeDamageInfo & a_TDI);
 
 protected:
+
+	/** Sets the entity width; used by entities whose width changes at runtime (e.g. area effect clouds). */
+	void SetWidth(float a_Width) { m_Width = a_Width; }
 
 	/** Reserves a_Count consecutive entity IDs and returns the first one.
 	The whole block is guaranteed not to be handed out to any cEntity constructed afterwards.

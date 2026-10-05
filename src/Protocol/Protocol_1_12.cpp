@@ -13,6 +13,7 @@ Implements the 1.12 protocol classes:
 #include "Packetizer.h"
 
 #include "../Entities/Boat.h"
+#include "../Entities/AreaEffectCloud.h"
 #include "../Entities/EnderCrystal.h"
 #include "../Entities/Minecart.h"
 #include "../Entities/Pickup.h"
@@ -346,6 +347,35 @@ void cProtocol_1_12::WriteEntityMetadata(cPacketizer & a_Pkt, const cEntity & a_
 
 	switch (a_Entity.GetEntityType())
 	{
+		case cEntity::etAreaEffectCloud:
+		{
+			const auto & Cloud = static_cast<const cAreaEffectCloud &>(a_Entity);
+
+			a_Pkt.WriteBEUInt8(AREA_EFFECT_CLOUD_RADIUS);
+			a_Pkt.WriteBEUInt8(METADATA_TYPE_FLOAT);
+			a_Pkt.WriteBEFloat(Cloud.GetRadius());
+
+			a_Pkt.WriteBEUInt8(AREA_EFFECT_CLOUD_COLOR);
+			a_Pkt.WriteBEUInt8(METADATA_TYPE_VARINT);
+			a_Pkt.WriteVarInt32(static_cast<UInt32>(Cloud.GetColor()));
+
+			a_Pkt.WriteBEUInt8(AREA_EFFECT_CLOUD_SINGLE_POINT_EFFECT);
+			a_Pkt.WriteBEUInt8(METADATA_TYPE_BOOL);
+			a_Pkt.WriteBool(Cloud.GetAge() <= Cloud.GetWaitTime());
+
+			a_Pkt.WriteBEUInt8(AREA_EFFECT_CLOUD_PARTICLE_ID);
+			a_Pkt.WriteBEUInt8(METADATA_TYPE_VARINT);
+			a_Pkt.WriteVarInt32(static_cast<UInt32>(GetProtocolParticleID(Cloud.GetParticle())));
+
+			a_Pkt.WriteBEUInt8(AREA_EFFECT_CLOUD_PARTICLE_PARAMETER1);
+			a_Pkt.WriteBEUInt8(METADATA_TYPE_VARINT);
+			a_Pkt.WriteVarInt32(0);
+
+			a_Pkt.WriteBEUInt8(AREA_EFFECT_CLOUD_PARTICLE_PARAMETER2);
+			a_Pkt.WriteBEUInt8(METADATA_TYPE_VARINT);
+			a_Pkt.WriteVarInt32(0);
+			break;
+		}
 		case cEntity::etPlayer:
 		{
 			auto & Player = static_cast<const cPlayer &>(a_Entity);

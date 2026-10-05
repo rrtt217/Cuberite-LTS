@@ -28,6 +28,7 @@ Implements the 1.9 protocol classes:
 
 #include "../WorldStorage/FastNBT.h"
 
+#include "../Entities/AreaEffectCloud.h"
 #include "../Entities/EnderCrystal.h"
 #include "../Entities/ExpOrb.h"
 #include "../Entities/Minecart.h"
@@ -1587,6 +1588,35 @@ void cProtocol_1_9_0::WriteEntityMetadata(cPacketizer & a_Pkt, const cEntity & a
 
 	switch (a_Entity.GetEntityType())
 	{
+		case cEntity::etAreaEffectCloud:
+		{
+			const auto & Cloud = static_cast<const cAreaEffectCloud &>(a_Entity);
+
+			a_Pkt.WriteBEUInt8(5);  // Radius
+			a_Pkt.WriteBEUInt8(METADATA_TYPE_FLOAT);
+			a_Pkt.WriteBEFloat(Cloud.GetRadius());
+
+			a_Pkt.WriteBEUInt8(6);  // Color
+			a_Pkt.WriteBEUInt8(METADATA_TYPE_VARINT);
+			a_Pkt.WriteVarInt32(static_cast<UInt32>(Cloud.GetColor()));
+
+			a_Pkt.WriteBEUInt8(7);  // Single point effect (the cloud is still waiting)
+			a_Pkt.WriteBEUInt8(METADATA_TYPE_BOOL);
+			a_Pkt.WriteBool(Cloud.GetAge() <= Cloud.GetWaitTime());
+
+			a_Pkt.WriteBEUInt8(8);  // Particle ID
+			a_Pkt.WriteBEUInt8(METADATA_TYPE_VARINT);
+			a_Pkt.WriteVarInt32(static_cast<UInt32>(GetProtocolParticleID(Cloud.GetParticle())));
+
+			a_Pkt.WriteBEUInt8(9);  // Particle parameter 1
+			a_Pkt.WriteBEUInt8(METADATA_TYPE_VARINT);
+			a_Pkt.WriteVarInt32(0);
+
+			a_Pkt.WriteBEUInt8(10);  // Particle parameter 2
+			a_Pkt.WriteBEUInt8(METADATA_TYPE_VARINT);
+			a_Pkt.WriteVarInt32(0);
+			break;
+		}
 		case cEntity::etPlayer:
 		{
 			auto & Player = static_cast<const cPlayer &>(a_Entity);
