@@ -51,6 +51,51 @@ void cThrownEnderPearlEntity::OnHitSolidBlock(Vector3d a_HitPos, eBlockFace a_Hi
 
 
 
+bool cThrownEnderPearlEntity::DetectPortal(void)
+{
+	const auto Position = GetPosition().Floor();
+	const bool InGateway = cChunkDef::IsValidHeight(Position) && (GetWorld()->GetBlock(Position) == E_BLOCK_END_GATEWAY);
+	if (!InGateway)
+	{
+		return Super::DetectPortal();
+	}
+
+	// A pearl thrown into an End gateway activates the gateway for its thrower and is consumed,
+	// without any of the usual ender pearl effects (fall damage, endermites):
+	Vector3i Target;
+	if (GetWorld()->TryGetLinkedEnderDragonGateway(Position, Target))
+	{
+		TeleportCreatorToGateway(Target);
+		Destroy();
+		return true;
+	}
+
+	// The linked gateway is still being generated; let the pearl keep flying for now:
+	return false;
+}
+
+
+
+
+
+void cThrownEnderPearlEntity::TeleportCreatorToGateway(Vector3i a_Target)
+{
+	if (m_CreatorData.m_Name.empty())
+	{
+		return;
+	}
+
+	GetWorld()->FindAndDoWithPlayer(m_CreatorData.m_Name, [a_Target](cPlayer & a_Entity)
+	{
+		a_Entity.TeleportToCoords(a_Target.x + 0.5, a_Target.y + 2.0, a_Target.z + 0.5);
+		return false;
+	});
+}
+
+
+
+
+
 void cThrownEnderPearlEntity::TeleportCreator(Vector3d a_HitPos)
 {
 	if (m_CreatorData.m_Name.empty())
