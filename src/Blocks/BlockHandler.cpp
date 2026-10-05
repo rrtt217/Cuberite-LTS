@@ -17,6 +17,8 @@
 #include "BlockCarpet.h"
 #include "BlockCauldron.h"
 #include "BlockChest.h"
+#include "BlockChorusFlower.h"
+#include "BlockChorusPlant.h"
 #include "BlockCloth.h"
 #include "BlockCobWeb.h"
 #include "BlockCocoaPod.h"
@@ -233,8 +235,8 @@ namespace
 	constexpr cBlockCauldronHandler           BlockCauldronHandler              (E_BLOCK_CAULDRON);
 	constexpr cBlockCommandBlockHandler       BlockChainCommandBlockHandler     (E_BLOCK_CHAIN_COMMAND_BLOCK);
 	constexpr cBlockChestHandler              BlockChestHandler                 (E_BLOCK_CHEST);
-	constexpr cDefaultBlockHandler            BlockChorusFlowerHandler          (E_BLOCK_CHORUS_FLOWER);
-	constexpr cDefaultBlockHandler            BlockChorusPlantHandler           (E_BLOCK_CHORUS_PLANT);
+	constexpr cChorusFlowerHandler            BlockChorusFlowerHandler          (E_BLOCK_CHORUS_FLOWER);
+	constexpr cChorusPlantHandler             BlockChorusPlantHandler           (E_BLOCK_CHORUS_PLANT);
 	constexpr cDefaultOreHandler              BlockClayHandler                  (E_BLOCK_CLAY);
 	constexpr cDefaultBlockHandler            BlockCoalBlockHandler             (E_BLOCK_BLOCK_OF_COAL);
 	constexpr cDefaultOreHandler              BlockCoalOreHandler               (E_BLOCK_COAL_ORE);
