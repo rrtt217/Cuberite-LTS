@@ -19,6 +19,10 @@ public:
 	placement in the ID space must match the client's expectation. */
 	static constexpr UInt32 PART_COUNT = 8;
 
+	/** Zero-based index of the head within the dragon's parts, i.e. the only part that takes full
+	damage in vanilla. Measured in-game with a 1.12.2 client: hitting the head sent partID = dragonID + 2. */
+	static constexpr UInt32 HEAD_PART_INDEX = 1;
+
 	cEnderDragon();
 
 	CLASS_PROTODEF(cEnderDragon)
@@ -30,8 +34,8 @@ public:
 
 	/** Applies damage dealt by a player hitting one of the dragon's parts.
 	Vanilla reduces all damage taken to a quarter (plus a small constant) unless the hit lands on
-	the head; the head exception is not implemented yet, see the feature spec document for this branch. */
-	void TakeDamageFromPart(cEntity & a_Attacker);
+	the head, which takes full damage. a_IsHead tells whether the hit part is the head. */
+	void TakeDamageFromPart(cEntity & a_Attacker, bool a_IsHead);
 
 	virtual bool DoTakeDamage(TakeDamageInfo & a_TDI) override;
 	virtual void GetDrops(cItems & a_Drops, cEntity * a_Killer = nullptr) override;

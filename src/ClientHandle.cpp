@@ -1851,7 +1851,10 @@ void cClientHandle::HandleUseEntity(UInt32 a_TargetEntityID, bool a_IsLeftClick)
 				return false;
 			}
 
-			Dragon.TakeDamageFromPart(*m_Player);
+			// The part IDs are contiguous, so the offset from the dragon's own ID gives the part index:
+			const UInt32 PartIndex = a_TargetEntityID - Dragon.GetUniqueID() - 1;
+
+			Dragon.TakeDamageFromPart(*m_Player, (PartIndex == cEnderDragon::HEAD_PART_INDEX));
 			m_Player->AddFoodExhaustion(0.3);
 
 			// Stop searching, the part has been handled:

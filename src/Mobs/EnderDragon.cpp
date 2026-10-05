@@ -33,15 +33,17 @@ bool cEnderDragon::IsPartID(UInt32 a_ID) const
 
 
 
-void cEnderDragon::TakeDamageFromPart(cEntity & a_Attacker)
+void cEnderDragon::TakeDamageFromPart(cEntity & a_Attacker, bool a_IsHead)
 {
 	const int RawDamage = a_Attacker.GetRawDamageAgainst(*this);
 
-	// Vanilla applies original / 4 + min(1, original) to damage from all parts except the head.
-	// TODO: the head's part ID has not been identified yet, so every part currently takes reduced damage.
-	const float ReducedDamage = (RawDamage / 4.0f) + std::min(1.0f, static_cast<float>(RawDamage));
+	// Vanilla applies original / 4 + min(1, original) to every part except the head, which takes full damage.
+	// Ref: https://minecraft.wiki/w/Ender_Dragon (Behavior)
+	const float FinalDamage = a_IsHead ?
+		static_cast<float>(RawDamage) :
+		((RawDamage / 4.0f) + std::min(1.0f, static_cast<float>(RawDamage)));
 
-	TakeDamage(dtAttack, &a_Attacker, RawDamage, ReducedDamage, a_Attacker.GetKnockbackAmountAgainst(*this));
+	TakeDamage(dtAttack, &a_Attacker, RawDamage, FinalDamage, a_Attacker.GetKnockbackAmountAgainst(*this));
 }
 
 
