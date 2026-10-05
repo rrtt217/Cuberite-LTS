@@ -197,4 +197,5 @@
 15. 未改动全局 `cEntity::SetYawFromSpeed()`（投射物仍在用）；若投射物朝向也有镜像问题，属另一改动。
 16. 水晶治疗用 32 格球形判定（vanilla 是 AABB 扩张），未区分方块阻挡（本就纯距离，wiki 也说明可穿方块）；摧毁治疗水晶的 10 点伤害可能与水晶自身爆炸伤害叠加。
 17. `dtPlugin`/`dtAdmin` 对龙的伤害也被免疫（严格按“只受玩家与爆炸”）；插件若需强改血量应直接 `SetHealth`。
+18. 护甲耐久改为在 `cEntity::DoTakeDamage` 真正落地后结算（原先在 4 参 `TakeDamage` 里、绕过 `m_InvulnerableTicks`，导致龙的每 tick 接触伤害把护甲按约 20/s 磨损）；这是引擎级战斗修复，影响所有伤害来源。
 14. 致命伤时攻击者会被提前记入 `Killed` 统计（基类 `DoTakeDamage` 在 `KilledBy` 之后无条件调用），此时龙尚未真正死亡。
