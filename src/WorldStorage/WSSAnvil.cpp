@@ -2478,6 +2478,12 @@ void cWSSAnvil::LoadEnderDragonFromNBT(cEntityList & a_Entities, const cParsedNB
 		return;
 	}
 
+	int DragonPhase = a_NBT.FindChildByName(a_TagIdx, "DragonPhase");
+	if (DragonPhase > 0)
+	{
+		Monster->SetDragonPhase(static_cast<cEnderDragon::eDragonPhase>(a_NBT.GetInt(DragonPhase)));
+	}
+
 	a_Entities.emplace_back(std::move(Monster));
 }
 

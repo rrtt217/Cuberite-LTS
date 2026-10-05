@@ -910,10 +910,18 @@ void cProtocol_1_12::WriteMobMetadata(cPacketizer & a_Pkt, const cMonster & a_Mo
 			break;
 		}  // case mtZombieVillager
 
+		case mtEnderDragon:
+		{
+			auto & Dragon = static_cast<const cEnderDragon &>(a_Mob);
+			a_Pkt.WriteBEUInt8(ENDER_DRAGON_DRAGON_PHASE);
+			a_Pkt.WriteBEUInt8(METADATA_TYPE_VARINT);
+			a_Pkt.WriteVarInt32(static_cast<UInt32>(Dragon.GetDragonPhase()));
+			break;
+		}  // case mtEnderDragon
+
 		case mtBlaze:
 		case mtCaveSpider:
 		case mtElderGuardian:
-		case mtEnderDragon:
 		case mtGuardian:
 		case mtIronGolem:
 		case mtSnowGolem:

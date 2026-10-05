@@ -308,6 +308,12 @@ public:
 	If it returns false, the entity hasn't receive any damage. */
 	virtual bool DoTakeDamage(TakeDamageInfo & a_TDI);
 
+	/** Returns whether this entity gets knocked back when it takes damage. */
+	virtual bool CanBeKnockedBack(void) const { return true; }
+
+	/** Returns whether this entity can receive critical hits from players. */
+	virtual bool CanBeCriticalHit(void) const { return true; }
+
 	// tolua_begin
 
 	/** Returns the hitpoints that this pawn can deal to a_Receiver using its equipped items */
@@ -560,6 +566,11 @@ public:
 	void BroadcastDeathMessage(TakeDamageInfo & a_TDI);
 
 protected:
+
+	/** Reserves a_Count consecutive entity IDs and returns the first one.
+	The whole block is guaranteed not to be handed out to any cEntity constructed afterwards.
+	Used for entities whose IDs are derived by the client and must therefore be known in advance. */
+	static UInt32 ReserveUniqueIDs(UInt32 a_Count);
 
 	/** Structure storing the portal delay timer and cooldown boolean */
 	struct sPortalCooldownData
