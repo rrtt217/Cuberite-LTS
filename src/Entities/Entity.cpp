@@ -458,7 +458,7 @@ bool cEntity::DoTakeDamage(TakeDamageInfo & a_TDI)
 
 		// IsOnGround() only is false if the player is moving downwards
 		// Ref: https://minecraft.wiki/w/Damage#Critical_Hits
-		if (!Player->IsOnGround())
+		if (!Player->IsOnGround() && CanBeCriticalHit())
 		{
 			if ((a_TDI.DamageType == dtAttack) || (a_TDI.DamageType == dtArrowAttack))
 			{
@@ -593,7 +593,7 @@ bool cEntity::DoTakeDamage(TakeDamageInfo & a_TDI)
 	m_Health = std::max(m_Health, 0.0f);
 
 	// Add knockback:
-	if ((IsMob() || IsPlayer()) && (a_TDI.Attacker != nullptr))
+	if ((IsMob() || IsPlayer()) && (a_TDI.Attacker != nullptr) && CanBeKnockedBack())
 	{
 		SetSpeed(a_TDI.Knockback);
 	}

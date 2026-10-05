@@ -346,7 +346,7 @@ void cEnderDragon::Circling(double a_Dt)
 	);
 
 	// Face the direction of flight, so that the head (and its contact damage) points forward:
-	SetYawFromSpeed();
+	FaceSpeedDirection();
 }
 
 
@@ -373,7 +373,7 @@ void cEnderDragon::Strafe(double a_Dt)
 	}
 
 	SetSpeed(ToTarget);
-	SetYawFromSpeed();
+	FaceSpeedDirection();
 }
 
 
@@ -424,7 +424,7 @@ void cEnderDragon::FlyToPortal(double a_Dt)
 
 	ToPortal *= (PERCH_FLIGHT_SPEED / Distance);
 	SetSpeed(ToPortal);
-	SetYawFromSpeed();
+	FaceSpeedDirection();
 }
 
 
@@ -500,7 +500,7 @@ void cEnderDragon::Dying(double a_Dt)
 
 	ToPortal *= (PERCH_FLIGHT_SPEED / Distance);
 	SetSpeed(ToPortal);
-	SetYawFromSpeed();
+	FaceSpeedDirection();
 }
 
 
@@ -550,6 +550,22 @@ void cEnderDragon::TickDeath(void)
 	{
 		Destroy();
 	}
+}
+
+
+
+
+
+void cEnderDragon::FaceSpeedDirection(void)
+{
+	// cEntity::SetYawFromSpeed() uses atan2(speed.x, speed.z), which is mirrored in X relative to the
+	// engine's canonical direction (VectorToEuler, used by cMonster for mobs). Use the canonical formula
+	// so that the dragon actually faces the way it flies:
+	double Yaw, Pitch;
+	const Vector3d & Speed = GetSpeed();
+	VectorToEuler(Speed.x, Speed.y, Speed.z, Yaw, Pitch);
+	SetYaw(static_cast<float>(Yaw));
+	SetPitch(static_cast<float>(Pitch));
 }
 
 
@@ -658,8 +674,30 @@ void cEnderDragon::TakeDamageFromPart(cEntity & a_Attacker, bool a_IsHead)
 
 
 
+bool cEnderDragon::IsDamageSourceAllowed(const TakeDamageInfo & a_TDI) const
+{
+	// Explosions always hurt the dragon:
+	if (a_TDI.DamageType == dtExplosion)
+	{
+		return true;
+	}
+
+	// Any damage dealt by a player (melee, arrows, ...) hurts the dragon:
+	return ((a_TDI.Attacker != nullptr) && a_TDI.Attacker->IsPlayer());
+}
+
+
+
+
+
 bool cEnderDragon::DoTakeDamage(TakeDamageInfo & a_TDI)
 {
+	// The ender dragon is immune to everything except explosions and damage dealt by players:
+	if (!IsDamageSourceAllowed(a_TDI))
+	{
+		return false;
+	}
+
 	// While perched, vanilla makes the dragon immune to arrows and thrown tridents:
 	if (IsPerched() && (a_TDI.DamageType == dtRangedAttack))
 	{
@@ -723,6 +761,7 @@ void cEnderDragon::SpawnOn(cClientHandle & a_Client)
 {
 	Super::SpawnOn(a_Client);
 
-	// Red boss bar with no divisions that plays boss music and creates fog:
-	a_Client.SendBossBarAdd(GetUniqueID(), cCompositeChat("Ender Dragon"), GetHealth() / GetMaxHealth(), BossBarColor::Red, BossBarDivisionType::None, false, true, true);
+	// The ender dragon's boss bar is pink (not red), has no divisions and plays boss music / creates fog:
+	// Ref: https://minecraft.wiki/w/Bossbar ("the ender dragon has a pink bossbar")
+	a_Client.SendBossBarAdd(GetUniqueID(), cCompositeChat("Ender Dragon"), GetHealth() / GetMaxHealth(), BossBarColor::Pink, BossBarDivisionType::None, false, true, true);
 }

@@ -63,6 +63,8 @@ public:
 	virtual bool DoTakeDamage(TakeDamageInfo & a_TDI) override;
 	virtual void GetDrops(cItems & a_Drops, cEntity * a_Killer = nullptr) override;
 	virtual void KilledBy(TakeDamageInfo & a_TDI) override;
+	virtual bool CanBeKnockedBack(void) const override { return false; }
+	virtual bool CanBeCriticalHit(void) const override { return false; }
 	virtual void HandlePhysics(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;
 	virtual void SpawnOn(cClientHandle & a_Client) override;
 	virtual void Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;
@@ -128,6 +130,12 @@ protected:
 
 	/** Runs the server-side death timer; removes the dragon after the vanilla 200-tick death animation. */
 	void TickDeath(void);
+
+	/** Orients the dragon so that it faces its current speed vector (yaw and pitch). */
+	void FaceSpeedDirection(void);
+
+	/** Returns whether the given damage is one of the few sources the dragon is vulnerable to. */
+	bool IsDamageSourceAllowed(const TakeDamageInfo & a_TDI) const;
 
 	/** Leaves the perch and takes off again. */
 	void StartTakeoff(void);
