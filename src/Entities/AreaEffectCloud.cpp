@@ -132,6 +132,7 @@ void cAreaEffectCloud::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 	}
 
 	// Grow or shrink the cloud by its per-tick radius change:
+	const float PreviousRadius = m_Radius;
 	SetRadius(m_Radius + m_RadiusPerTick);
 	if (m_Radius <= 0.0f)
 	{
@@ -187,5 +188,11 @@ void cAreaEffectCloud::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 	{
 		SetRadius(m_Radius + m_RadiusOnUse);
 		m_Duration += m_DurationOnUse;
+	}
+
+	// Keep the client's rendered circle in sync with the server-side radius:
+	if (m_Radius != PreviousRadius)
+	{
+		m_World->BroadcastEntityMetadata(*this);
 	}
 }

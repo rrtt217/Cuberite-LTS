@@ -1482,13 +1482,13 @@ void cProtocol_1_9_0::ParseItemMetadata(cItem & a_Item, const ContiguousByteBuff
 					}
 
 					// Ugly special case with the changed splash potion ID in 1.9
-					if ((a_Item.m_ItemType == 438) || (a_Item.m_ItemType == 441))
+					if (a_Item.m_ItemType == 438)
 					{
-						// Splash or lingering potions - change the ID to the normal one and mark as splash potions
+						// Splash potions changed their ID in 1.9; use the normal ID and mark as splash:
 						a_Item.m_ItemType = E_ITEM_POTION;
 						a_Item.m_ItemDamage |= 0x4000;  // Is splash potion
 					}
-					else
+					else if (a_Item.m_ItemType != E_ITEM_LINGERING_POTION)
 					{
 						a_Item.m_ItemDamage |= 0x2000;  // Is drinkable
 					}
@@ -1832,7 +1832,7 @@ void cProtocol_1_9_0::WriteItem(cPacketizer & a_Pkt, const cItem & a_Item) const
 		a_Pkt.WriteBEInt16(ItemType);
 	}
 	a_Pkt.WriteBEInt8(a_Item.m_ItemCount);
-	if ((ItemType == E_ITEM_POTION) || (ItemType == E_ITEM_SPAWN_EGG))
+	if ((ItemType == E_ITEM_POTION) || (ItemType == E_ITEM_LINGERING_POTION) || (ItemType == E_ITEM_SPAWN_EGG))
 	{
 		// These items lost their metadata; if it is sent they don't render correctly.
 		a_Pkt.WriteBEInt16(0);
@@ -1842,7 +1842,7 @@ void cProtocol_1_9_0::WriteItem(cPacketizer & a_Pkt, const cItem & a_Item) const
 		a_Pkt.WriteBEInt16(a_Item.m_ItemDamage);
 	}
 
-	if (a_Item.m_Enchantments.IsEmpty() && a_Item.IsBothNameAndLoreEmpty() && (ItemType != E_ITEM_FIREWORK_ROCKET) && (ItemType != E_ITEM_FIREWORK_STAR) && !a_Item.m_ItemColor.IsValid() && (ItemType != E_ITEM_POTION) && (ItemType != E_ITEM_SPAWN_EGG))
+	if (a_Item.m_Enchantments.IsEmpty() && a_Item.IsBothNameAndLoreEmpty() && (ItemType != E_ITEM_FIREWORK_ROCKET) && (ItemType != E_ITEM_FIREWORK_STAR) && !a_Item.m_ItemColor.IsValid() && (ItemType != E_ITEM_POTION) && (ItemType != E_ITEM_LINGERING_POTION) && (ItemType != E_ITEM_SPAWN_EGG))
 	{
 		a_Pkt.WriteBEInt8(0);
 		return;
@@ -1889,7 +1889,7 @@ void cProtocol_1_9_0::WriteItem(cPacketizer & a_Pkt, const cItem & a_Item) const
 	{
 		cFireworkItem::WriteToNBTCompound(a_Item.m_FireworkItem, Writer, static_cast<ENUM_ITEM_TYPE>(a_Item.m_ItemType));
 	}
-	if (a_Item.m_ItemType == E_ITEM_POTION)
+	if ((a_Item.m_ItemType == E_ITEM_POTION) || (a_Item.m_ItemType == E_ITEM_LINGERING_POTION))
 	{
 		// 1.9 potions use a different format.  In the future (when only 1.9+ is supported) this should be its own class
 		AString PotionID = "empty";  // Fallback of "Uncraftable potion" for unhandled cases

@@ -64,3 +64,9 @@
 - 命中实体仍先造成 1 点 `dtRangedAttack`（沿用 splash 逻辑）。
 
 **偏差**：掷出的滞留药水仍复用 `pkSplashPotion` 投射物（Spawn Object 类型 73），靠实体元数据里的物品区分渲染；破裂粒子用 splash 的粒子而非龙息粒子。
+
+### 7.1 Bug 修复
+
+- **物品表示**：`cProtocol_1_9_0::ParseItemMetadata` 不再把滞留药水(441)归一成 `E_ITEM_POTION + 0x4000`，而是保留 `E_ITEM_LINGERING_POTION`；`WriteItem` 对滞留写 441 并补上 `Potion` NBT。此前滞留会被写回 438（喷溅），在创造物品栏拿出来就变喷溅。
+- **不可饮用**：新增 `cItemLingeringPotionHandler`（`IsDrinkable`/`EatItem` 恒 false）。否则 `HandleUseItem`（右键空气）会走“喝药水”分支，导致必须对准方块才能掷出。
+- **半径同步**：`cAreaEffectCloud::Tick` 在半径变化后重发实体 metadata，客户端才会看到云随时间收缩/扩张（此前只在生成时发一次）。
