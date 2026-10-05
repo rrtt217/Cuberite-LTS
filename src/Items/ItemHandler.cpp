@@ -358,7 +358,7 @@ namespace
 	constexpr cItemLilypadHandler           ItemLilypadHandler                         (E_BLOCK_LILY_PAD);
 	constexpr cItemGlazedTerracottaHandler  ItemLimeGlazedTerracottaHandler            (E_BLOCK_LIME_GLAZED_TERRACOTTA);
 	constexpr cDefaultItemHandler           ItemLimeShulkerBoxHandler                  (E_BLOCK_LIME_SHULKER_BOX);
-	constexpr cItemPotionHandler            ItemLingeringPotionHandler                 (E_ITEM_LINGERING_POTION);
+	constexpr cItemLingeringPotionHandler   ItemLingeringPotionHandler                 (E_ITEM_LINGERING_POTION);
 	constexpr cDefaultItemHandler           ItemLitFurnaceHandler                      (E_BLOCK_LIT_FURNACE);
 	constexpr cItemSidewaysHandler          ItemLogHandler                             (E_BLOCK_LOG);
 	constexpr cItemGlazedTerracottaHandler  ItemMagentaGlazedTerracottaHandler         (E_BLOCK_MAGENTA_GLAZED_TERRACOTTA);

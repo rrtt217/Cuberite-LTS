@@ -36,6 +36,7 @@
 
 #include "../Mobs/IncludeAllMonsters.h"
 
+#include "../Entities/AreaEffectCloud.h"
 #include "../Entities/Boat.h"
 #include "../Entities/EnderCrystal.h"
 #include "../Entities/FallingBlock.h"
@@ -1616,7 +1617,9 @@ void cWSSAnvil::LoadEntityFromNBT(cEntityList & a_Entities, const cParsedNBT & a
 		{ "SmallFireball",                 &cWSSAnvil::LoadFireChargeFromNBT },
 		{ "minecraft:small_fireball",      &cWSSAnvil::LoadFireChargeFromNBT },
 		{ "ThrownEnderpearl",              &cWSSAnvil::LoadThrownEnderpearlFromNBT },
-		{ "minecraft:ender_pearl",         &cWSSAnvil::LoadThrownEnderpearlFromNBT }
+		{ "minecraft:ender_pearl",         &cWSSAnvil::LoadThrownEnderpearlFromNBT },
+		{ "AreaEffectCloud",               &cWSSAnvil::LoadAreaEffectCloudFromNBT },
+		{ "minecraft:area_effect_cloud",   &cWSSAnvil::LoadAreaEffectCloudFromNBT }
 	};
 
 	// TODO: flatten monster\projectile into one entity type enum
@@ -1751,6 +1754,106 @@ void cWSSAnvil::LoadBoatFromNBT(cEntityList & a_Entities, const cParsedNBT & a_N
 		Boat->SetMaterial(cBoat::StringToMaterial(a_NBT.GetString(TypeIdx)));
 	}
 	a_Entities.emplace_back(std::move(Boat));
+}
+
+
+
+
+
+void cWSSAnvil::LoadAreaEffectCloudFromNBT(cEntityList & a_Entities, const cParsedNBT & a_NBT, int a_TagIdx)
+{
+	std::unique_ptr<cAreaEffectCloud> Cloud = std::make_unique<cAreaEffectCloud>(Vector3d());
+	if (!LoadEntityBaseFromNBT(*Cloud, a_NBT, a_TagIdx))
+	{
+		return;
+	}
+
+	int CurrLine = a_NBT.FindChildByName(a_TagIdx, "Age");
+	if (CurrLine > 0)
+	{
+		Cloud->SetAge(a_NBT.GetInt(CurrLine));
+	}
+
+	CurrLine = a_NBT.FindChildByName(a_TagIdx, "Duration");
+	if (CurrLine > 0)
+	{
+		Cloud->SetDuration(a_NBT.GetInt(CurrLine));
+	}
+
+	CurrLine = a_NBT.FindChildByName(a_TagIdx, "DurationOnUse");
+	if (CurrLine > 0)
+	{
+		Cloud->SetDurationOnUse(a_NBT.GetInt(CurrLine));
+	}
+
+	CurrLine = a_NBT.FindChildByName(a_TagIdx, "ReapplicationDelay");
+	if (CurrLine > 0)
+	{
+		Cloud->SetReapplicationDelay(a_NBT.GetInt(CurrLine));
+	}
+
+	CurrLine = a_NBT.FindChildByName(a_TagIdx, "WaitTime");
+	if (CurrLine > 0)
+	{
+		Cloud->SetWaitTime(a_NBT.GetInt(CurrLine));
+	}
+
+	CurrLine = a_NBT.FindChildByName(a_TagIdx, "Radius");
+	if (CurrLine > 0)
+	{
+		Cloud->SetRadius(a_NBT.GetFloat(CurrLine));
+	}
+
+	CurrLine = a_NBT.FindChildByName(a_TagIdx, "RadiusOnUse");
+	if (CurrLine > 0)
+	{
+		Cloud->SetRadiusOnUse(a_NBT.GetFloat(CurrLine));
+	}
+
+	CurrLine = a_NBT.FindChildByName(a_TagIdx, "RadiusPerTick");
+	if (CurrLine > 0)
+	{
+		Cloud->SetRadiusPerTick(a_NBT.GetFloat(CurrLine));
+	}
+
+	CurrLine = a_NBT.FindChildByName(a_TagIdx, "Color");
+	if (CurrLine > 0)
+	{
+		Cloud->SetColor(a_NBT.GetInt(CurrLine));
+	}
+
+	CurrLine = a_NBT.FindChildByName(a_TagIdx, "Particle");
+	if (CurrLine > 0)
+	{
+		Cloud->SetParticle(a_NBT.GetString(CurrLine));
+	}
+
+	CurrLine = a_NBT.FindChildByName(a_TagIdx, "CustomPotionEffects");
+	if (CurrLine > 0)
+	{
+		for (int Child = a_NBT.GetFirstChild(CurrLine); Child > 0; Child = a_NBT.GetNextSibling(Child))
+		{
+			int EffectID = 0, Duration = 0, Amplifier = 0;
+			int Value = a_NBT.FindChildByName(Child, "Id");
+			if (Value > 0)
+			{
+				EffectID = a_NBT.GetInt(Value);
+			}
+			Value = a_NBT.FindChildByName(Child, "Duration");
+			if (Value > 0)
+			{
+				Duration = a_NBT.GetInt(Value);
+			}
+			Value = a_NBT.FindChildByName(Child, "Amplifier");
+			if (Value > 0)
+			{
+				Amplifier = a_NBT.GetInt(Value);
+			}
+			Cloud->AddEffect(static_cast<cEntityEffect::eType>(EffectID), Duration, static_cast<short>(Amplifier));
+		}
+	}
+
+	a_Entities.emplace_back(std::move(Cloud));
 }
 
 

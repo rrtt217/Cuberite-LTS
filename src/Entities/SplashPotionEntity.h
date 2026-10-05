@@ -63,6 +63,13 @@ private:
 	@param a_HitPos     The position where the potion will splash */
 	void Splash(Vector3d a_HitPos);
 
+	/** Creates the area effect cloud left behind by a lingering potion.
+	@param a_HitPos     The position where the potion broke */
+	void CreateAreaEffectCloud(Vector3d a_HitPos);
+
+	/** Returns true if this projectile is a lingering potion rather than a splash potion. */
+	bool IsLingering(void) const { return (m_Item.m_ItemType == E_ITEM_LINGERING_POTION); }
+
 	// cProjectileEntity overrides:
 	virtual void OnHitEntity(cEntity & a_EntityHit, Vector3d a_HitPos) override;
 	virtual void OnHitSolidBlock(Vector3d a_HitPos, eBlockFace a_HitFace) override;

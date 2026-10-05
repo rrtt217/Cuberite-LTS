@@ -47,6 +47,7 @@
 #include "../Entities/LeashKnot.h"
 #include "../Entities/Painting.h"
 
+#include "../Entities/AreaEffectCloud.h"
 #include "../Mobs/IncludeAllMonsters.h"
 
 
@@ -162,6 +163,7 @@ public:
 		switch (a_Entity->GetEntityType())
 		{
 			case cEntity::etBoat:         AddBoatEntity        (static_cast<cBoat *>            (a_Entity)); break;
+			case cEntity::etAreaEffectCloud: AddAreaEffectCloudEntity(static_cast<cAreaEffectCloud *>(a_Entity)); break;
 			case cEntity::etEnderCrystal: AddEnderCrystalEntity(static_cast<cEnderCrystal *>    (a_Entity)); break;
 			case cEntity::etFallingBlock: AddFallingBlockEntity(static_cast<cFallingBlock *>    (a_Entity)); break;
 			case cEntity::etMinecart:     AddMinecartEntity    (static_cast<cMinecart *>        (a_Entity)); break;
@@ -681,6 +683,37 @@ public:
 		mWriter.BeginCompound("");
 			AddBasicEntity(a_Boat, "Boat");
 			mWriter.AddString("Type", cBoat::MaterialToString(a_Boat->GetMaterial()));
+		mWriter.EndCompound();
+	}
+
+
+
+
+
+	void AddAreaEffectCloudEntity(cAreaEffectCloud * a_Cloud)
+	{
+		mWriter.BeginCompound("");
+			AddBasicEntity(a_Cloud, "AreaEffectCloud");
+			mWriter.AddInt("Age", a_Cloud->GetAge());
+			mWriter.AddInt("Duration", a_Cloud->GetDuration());
+			mWriter.AddInt("DurationOnUse", a_Cloud->GetDurationOnUse());
+			mWriter.AddInt("ReapplicationDelay", a_Cloud->GetReapplicationDelay());
+			mWriter.AddInt("WaitTime", a_Cloud->GetWaitTime());
+			mWriter.AddFloat("Radius", a_Cloud->GetRadius());
+			mWriter.AddFloat("RadiusOnUse", a_Cloud->GetRadiusOnUse());
+			mWriter.AddFloat("RadiusPerTick", a_Cloud->GetRadiusPerTick());
+			mWriter.AddInt("Color", a_Cloud->GetColor());
+			mWriter.AddString("Particle", a_Cloud->GetParticle());
+			mWriter.BeginList("CustomPotionEffects", TAG_Compound);
+				for (const auto & Effect : a_Cloud->GetEffects())
+				{
+					mWriter.BeginCompound("");
+						mWriter.AddInt("Id", static_cast<int>(Effect.m_Type));
+						mWriter.AddInt("Duration", Effect.m_Duration);
+						mWriter.AddInt("Amplifier", Effect.m_Amplifier);
+					mWriter.EndCompound();
+				}
+			mWriter.EndList();
 		mWriter.EndCompound();
 	}
 
