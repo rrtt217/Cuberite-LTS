@@ -7,6 +7,13 @@
 
 
 
+// Forward declaration; the healing target is only needed as a pointer here.
+class cEnderDragon;
+
+
+
+
+
 // tolua_begin
 class cEnderCrystal :
 	public cEntity
@@ -42,6 +49,15 @@ private:
 
 	// If the bedrock base should be displayed.
 	bool m_ShowBottom;
+
+	// Ticks since this crystal last healed its dragon (vanilla: 1 HP every 10 ticks).
+	int m_HealingTimer;
+
+	/** Returns the nearest ender dragon within the healing range, or nullptr if there is none. */
+	cEnderDragon * GetHealingDragon(void);
+
+	/** Heals the nearby ender dragon and updates the healing beam. */
+	void UpdateHealing(void);
 
 	// cEntity overrides:
 	virtual void SpawnOn(cClientHandle & a_ClientHandle) override;
