@@ -30,6 +30,8 @@
 - 链接表 `m_EnderDragonGatewayLinks` 持久化到 `[EnderDragon] GatewayLinks`（`first>second` 坐标对）。
 - 传送后设置 `m_PortalCooldownData.m_ShouldPreventTeleportation`，同一实体不会立刻来回弹。
 - 主岛网关 ↔ 外岛回程网关双向互传。
+- **末影珍珠**：掷入折跃门方块时 `cThrownEnderPearlEntity::DetectPortal` 拦截——对**投掷者**激活该折跃门的传送（送到链接网关 +2 Y）并**移除珍珠**，
+  不产生摔落伤害、末影螨等任何其它效果（对应 vanilla）。链接未就绪时珍珠继续飞行，不做错误传送。
 
 ## 偏差 / 后续
 
