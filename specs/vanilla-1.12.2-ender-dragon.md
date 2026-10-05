@@ -115,13 +115,12 @@
 2. 构造时 `SetGravity(0); SetAirDrag(0);`；重写 `HandlePhysics` 做穿墙自由飞行（不在方块上停下）。
 3. 重写 `Tick`：`Circling`（绕世界中心水平盘旋）与 `Hovering`（原地悬停、清零速度）。
 4. `cMonster::Tick` 的寻路对末影龙禁用（与 Ghast 同样处理）。
-5. 协议 1.11、1.12：`WriteMobMetadata` 写 `ENDER_DRAGON_DRAGON_PHASE`（沿用已有的 `Metadata_1_11/1_12` 常量）。
+5. 协议 1.9–1.12.2：`WriteMobMetadata` 写 `ENDER_DRAGON_DRAGON_PHASE`（1.10–1.12 用各自的 `Metadata` 常量；1.9 用其 writer 的裸索引 11）。
 
 **故意不做的部分**（后续增量）：
 
 - 8 个部件作为真实服务端实体（`/kill` 计 9、爆炸对部件的结算等）。
 - 除 Circling/Hovering 外的阶段行为（Strafing/Perching/Charge/Death）、水晶治疗、重生流程。
-- 1.9/1.10 客户端的 DragonPhase metadata。
 
 ## 4. 验证方式
 
@@ -141,4 +140,3 @@
 3. 1.8 客户端是否使用同一部件 ID 公式与头部索引未验证（本分支按 1.12.2）。
 4. **阶段选择是占位逻辑**（有目标 → 盘旋，否则悬停），不是 vanilla 战斗状态机；等真正的 fight 逻辑接管。
 5. 盘旋参数（半径 40、高度 80、速度 8 格/秒、每 tick 5% 修正）是便于测试的初值，未经 vanilla 实测校准。
-6. 1.9/1.10 客户端不收到 DragonPhase metadata。
