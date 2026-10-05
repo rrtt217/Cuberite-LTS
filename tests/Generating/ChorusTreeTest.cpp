@@ -1,5 +1,9 @@
 #include "Globals.h"
+#include "Generating/BioGen.h"
 #include "Generating/ChorusPlantTree.h"
+#include "Generating/ChunkDesc.h"
+#include "Generating/EndChorusGen.h"
+#include "Generating/EndGen.h"
 #include "Blocks/ChorusRules.h"
 #include "../TestHelpers.h"
 
@@ -129,6 +133,57 @@ static void testTreeGeneration(void)
 
 
 
+/** Runs the finisher over a block of End chunks and checks that it produces chorus blocks without crashing. */
+static void testFinisherSmoke(void)
+{
+	cEndGen EndGen(12345);
+	cBioGenConstant BiomeGen;
+	cEndChorusGen Finisher(12345, BiomeGen, EndGen, EndGen);
+
+	int TotalChorus = 0;
+	for (int ChunkX = 64; ChunkX < 72; ChunkX++)
+	{
+		for (int ChunkZ = 64; ChunkZ < 72; ChunkZ++)
+		{
+			const cChunkCoords Coords(ChunkX, ChunkZ);
+			cChunkDesc Desc(Coords);
+			cChunkDesc::Shape Shape;
+			cTerrainShapeGen & ShapeGen = EndGen;
+			ShapeGen.GenShape(Coords, Shape);
+			Desc.SetHeightFromShape(Shape);
+			cTerrainCompositionGen & CompGen = EndGen;
+			CompGen.ComposeTerrain(Desc, Shape);
+
+			// GenFinish is protected in the derived class, but public in the cFinishGen interface:
+			cFinishGen & Finish = Finisher;
+			Finish.GenFinish(Desc);
+
+			for (int Y = 0; Y < cChunkDef::Height; Y++)
+			{
+				for (int Z = 0; Z < cChunkDef::Width; Z++)
+				{
+					for (int X = 0; X < cChunkDef::Width; X++)
+					{
+						const BLOCKTYPE Type = Desc.GetBlockType(X, Y, Z);
+						if ((Type == E_BLOCK_CHORUS_PLANT) || (Type == E_BLOCK_CHORUS_FLOWER))
+						{
+							TotalChorus++;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	LOG("Chorus finisher smoke: %d chorus blocks in 64 chunks", TotalChorus);
+	TEST_GREATER_THAN_OR_EQUAL(TotalChorus, 1);
+}
+
+
+
+
+
 IMPLEMENT_TEST_MAIN("ChorusTreeTest",
 	testTreeGeneration();
+	testFinisherSmoke();
 )
