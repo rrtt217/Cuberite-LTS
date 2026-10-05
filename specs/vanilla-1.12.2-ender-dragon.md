@@ -93,7 +93,9 @@
 > （一度被误判为头部），可佐证顺序以 `head(0), neck(1)` 开头；其余部件顺序仍未逐一确认，
 > 但头部（唯一享受全额伤害的部件）已足以实现伤害例外。
 
-## 3. 本分支增量范围（最小改动）
+## 3. 增量范围
+
+### 3.1 部件命中（feature/mobs-ender-dragon-parts）
 
 目标：修复 #4906 的 “player can't damage them”。
 
@@ -104,10 +106,22 @@
    则把这次命中转交该龙（`cEnderDragon::TakeDamageFromPart`）。
 4. `TakeDamageFromPart` 对非头部部件施加 vanilla 的 `原伤/4 + min(1, 原伤)` 减免，头部（索引 0）全额伤害。
 
+### 3.2 DragonPhase 状态机基础（feature/mobs-ender-dragon-phases，叠在 3.1 之上）
+
+目标：让龙能飞、能悬停，并建立可扩展的阶段字段与客户端同步。
+
+1. 新增 `cEnderDragon::eDragonPhase`（0–10，对应 vanilla `DragonPhase`）、`m_DragonPhase`、
+   `GetDragonPhase()`、`SetDragonPhase()`（变化时广播 entity metadata）。
+2. 构造时 `SetGravity(0); SetAirDrag(0);`；重写 `HandlePhysics` 做穿墙自由飞行（不在方块上停下）。
+3. 重写 `Tick`：`Circling`（绕世界中心水平盘旋）与 `Hovering`（原地悬停、清零速度）。
+4. `cMonster::Tick` 的寻路对末影龙禁用（与 Ghast 同样处理）。
+5. 协议 1.11、1.12：`WriteMobMetadata` 写 `ENDER_DRAGON_DRAGON_PHASE`（沿用已有的 `Metadata_1_11/1_12` 常量）。
+
 **故意不做的部分**（后续增量）：
 
 - 8 个部件作为真实服务端实体（`/kill` 计 9、爆炸对部件的结算等）。
-- 真实飞行 / 状态机 `DragonPhase` / 水晶治疗 / 重生流程。
+- 除 Circling/Hovering 外的阶段行为（Strafing/Perching/Charge/Death）、水晶治疗、重生流程。
+- 1.9/1.10 客户端的 DragonPhase metadata。
 
 ## 4. 验证方式
 
@@ -117,6 +131,7 @@
   `dragonID+1 .. dragonID+8` 范围得到验证；正确瞄准头部回传 `partID = dragonID + 1`，确定头部索引为 0（索引 1 为颈部）。
 - **未做自动化单测**：现有测试框架只编译孤立源文件，无法链接实体引擎做有意义的 `cEnderDragon` 测试。
 - 其余 7 个部件的顺序未逐一确认（不影响头部全额伤害；如需可加临时日志或抓包逐部件核对）。
+- 状态机分支：`lua CheckBasicStyle.lua` 0 违规；`cmake --build build` exit 0；`ctest` 26/26。飞行/悬停观感需实机确认。
 
 ### 已知偏差
 
@@ -124,3 +139,6 @@
 2. 非头部减免施加在**基础伤害**上；附魔（Sharpness 等）/暴击加成由 `cEntity::DoTakeDamage` 之后再加，未被减免
    （vanilla 减免的是最终值）。无附魔的普通攻击不受影响；修正需要给 `cEntity::DoTakeDamage` 增加一个伤害后处理钩子，属独立改动。
 3. 1.8 客户端是否使用同一部件 ID 公式与头部索引未验证（本分支按 1.12.2）。
+4. **阶段选择是占位逻辑**（有目标 → 盘旋，否则悬停），不是 vanilla 战斗状态机；等真正的 fight 逻辑接管。
+5. 盘旋参数（半径 40、高度 80、速度 8 格/秒、每 tick 5% 修正）是便于测试的初值，未经 vanilla 实测校准。
+6. 1.9/1.10 客户端不收到 DragonPhase metadata。
