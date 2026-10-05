@@ -77,8 +77,17 @@ protected:
 	/** Ticks until the End crystal count is refreshed again. */
 	int m_CrystalCountCooldown;
 
+	/** Ticks left in the current strafing run. */
+	int m_StrafingTicksLeft;
+
 	/** Moves the dragon along its circling path around the world centre. */
 	void Circling(double a_Dt);
+
+	/** Flies the dragon towards its target while strafing. */
+	void Strafe(double a_Dt);
+
+	/** Enters the strafing phase (e.g. after an End crystal was destroyed), if there is a target. */
+	void StartStrafing(void);
 
 	/** Damages the living entities the dragon is currently touching (wings / head contact). */
 	void AttackEntities(void);

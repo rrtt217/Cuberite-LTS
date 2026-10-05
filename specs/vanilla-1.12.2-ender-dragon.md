@@ -118,11 +118,13 @@
 5. 协议 1.9–1.12.2：`WriteMobMetadata` 写 `ENDER_DRAGON_DRAGON_PHASE`（1.10–1.12 用各自的 `Metadata` 常量；1.9 用其 writer 的裸索引 11）。
 6. `Circling` 按 wiki 区分柱环内侧/外侧：竞技场仍有末影水晶时绕外侧（半径 48），水晶清空后绕内侧（半径 20）；
    每 20 tick 统计一次世界中心 ±64 格内的 `cEnderCrystal` 数量。
+7. `Strafing`（phase 1）：水晶数量减少（检测到被摧毁）且**有目标**时进入，持续 60 tick，朝目标头部直线飞行，
+   随后回到 Circling/Hovering。Vanilla 在进入 64 格内时喷龙火球——该投射物本分支未实现（见偏差 8）。
 
 **故意不做的部分**（后续增量）：
 
 - 8 个部件作为真实服务端实体（`/kill` 计 9、爆炸对部件的结算等）。
-- 除 Circling/Hovering 外的阶段行为（Strafing/Perching/Charge/Death）、水晶治疗、重生流程。
+- Strafing 的龙火球、Perching/Charge/Death 等阶段行为、水晶治疗、重生流程。
 
 ### 3.3 接触（近战）伤害（feature/mobs-ender-dragon-phases）
 
@@ -156,3 +158,4 @@
    柱子环本身按生成器默认半径 43 生成，两者都是可配置量。
 6. 接触伤害的头部/翅膀用**几何近似**（头点 = 前方半宽、半径 3 格），不是真实部件；抛起强度沿用基础击退，未按 vanilla 校准。
 7. Cuberite 没有难度设置，接触伤害恒取 **Normal**（头 10 / 翅膀 5）；vanilla 会按难度取 6/10/15 与 3.5/5/7.5。
+8. `Strafing` 只是朝目标飞行 3 秒后回绕，未实现 vanilla 的“进入 64 格即喷龙火球”；水晶被毁通过每 20 tick 的数量对比检测（最多 1 秒延迟）。

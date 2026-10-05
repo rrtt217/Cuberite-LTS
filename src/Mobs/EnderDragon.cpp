@@ -45,6 +45,12 @@ static constexpr double HEAD_CONTACT_RADIUS = 3.0;
 /** Ticks after the dragon takes damage during which it deals no contact damage (0.5 seconds). */
 static constexpr int CONTACT_GRACE_TICKS = 10;
 
+/** Horizontal speed of the dragon while strafing towards its target, in blocks per second. */
+static constexpr double STRAFING_SPEED = 12.0;
+
+/** How long a strafing run lasts; the dragon resumes circling afterwards. */
+static constexpr int STRAFING_DURATION_TICKS = 60;
+
 
 
 
@@ -53,7 +59,8 @@ cEnderDragon::cEnderDragon(void) :
 	Super("EnderDragon", mtEnderDragon, "entity.enderdragon.hurt", "entity.enderdragon.death", "entity.enderdragon.ambient", 16, 8),
 	m_DragonPhase(eDragonPhase::Hovering),
 	m_CrystalCount(0),
-	m_CrystalCountCooldown(0)
+	m_CrystalCountCooldown(0),
+	m_StrafingTicksLeft(0)
 {
 	// Fly freely: the flight code in Tick() controls our speed, so disable gravity and air drag:
 	SetGravity(0);
@@ -109,18 +116,36 @@ void cEnderDragon::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 		return;
 	}
 
-	// Recount the End crystals around the arena (throttled internally):
+	// Recount the End crystals around the arena (throttled internally); this may start a strafe:
 	UpdateCrystalCount();
 
-	// Placeholder phase selection until the actual fight logic exists: circle while a player is
-	// targeted, otherwise hover in place.
-	SetDragonPhase((GetTarget() != nullptr) ? eDragonPhase::Circling : eDragonPhase::Hovering);
+	// Phase selection. A strafing run lasts for a fixed time and then resumes circling / hovering:
+	if (m_DragonPhase == eDragonPhase::Strafing)
+	{
+		if ((--m_StrafingTicksLeft <= 0) || (GetTarget() == nullptr))
+		{
+			SetDragonPhase((GetTarget() != nullptr) ? eDragonPhase::Circling : eDragonPhase::Hovering);
+		}
+	}
+	else
+	{
+		// Placeholder phase selection until the actual fight logic exists: circle while a player is
+		// targeted, otherwise hover in place.
+		SetDragonPhase((GetTarget() != nullptr) ? eDragonPhase::Circling : eDragonPhase::Hovering);
+	}
+
+	const double DtSec = std::chrono::duration_cast<std::chrono::duration<double>>(a_Dt).count();
 
 	switch (m_DragonPhase)
 	{
 		case eDragonPhase::Circling:
 		{
-			Circling(std::chrono::duration_cast<std::chrono::duration<double>>(a_Dt).count());
+			Circling(DtSec);
+			break;
+		}
+		case eDragonPhase::Strafing:
+		{
+			Strafe(DtSec);
 			break;
 		}
 		case eDragonPhase::Hovering:
@@ -178,6 +203,49 @@ void cEnderDragon::Circling(double a_Dt)
 
 	// Face the direction of flight, so that the head (and its contact damage) points forward:
 	SetYawFromSpeed();
+}
+
+
+
+
+
+void cEnderDragon::Strafe(double a_Dt)
+{
+	UNUSED(a_Dt);
+
+	const cEntity * Target = GetTarget();
+	if (Target == nullptr)
+	{
+		return;
+	}
+
+	// Fly straight at the target's head. Vanilla shoots a dragon fireball once within 64 blocks;
+	// that projectile is not implemented yet, so the run simply ends after STRAFING_DURATION_TICKS:
+	Vector3d ToTarget = Target->GetPosition().addedY(Target->GetHeight()) - GetPosition();
+	const double Distance = ToTarget.Length();
+	if (Distance > 0.01)
+	{
+		ToTarget *= (STRAFING_SPEED / Distance);
+	}
+
+	SetSpeed(ToTarget);
+	SetYawFromSpeed();
+}
+
+
+
+
+
+void cEnderDragon::StartStrafing(void)
+{
+	// Vanilla strafes towards the player; without a target there is nothing to strafe at:
+	if (GetTarget() == nullptr)
+	{
+		return;
+	}
+
+	m_StrafingTicksLeft = STRAFING_DURATION_TICKS;
+	SetDragonPhase(eDragonPhase::Strafing);
 }
 
 
@@ -253,6 +321,12 @@ void cEnderDragon::UpdateCrystalCount(void)
 			return false;
 		}
 	);
+
+	if (Count < m_CrystalCount)
+	{
+		// An End crystal was destroyed (vanilla switches to strafing when that happens):
+		StartStrafing();
+	}
 
 	m_CrystalCount = Count;
 }
