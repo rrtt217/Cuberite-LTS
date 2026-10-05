@@ -211,6 +211,18 @@ static constexpr double ENDER_DRAGON_GATEWAY_OUTER_DISTANCE = 1024.0;
 /** How far above the local surface the outer-island gateway is placed. */
 static constexpr int ENDER_DRAGON_GATEWAY_OUTER_Y_OFFSET = 10;
 
+/** Step by which the outer gateway search distance is adjusted when a chunk is void. */
+static constexpr int ENDER_DRAGON_GATEWAY_OUTER_STEP = 16;
+
+/** Nearest distance from the centre at which the outer gateway search stops, in blocks. */
+static constexpr int ENDER_DRAGON_GATEWAY_OUTER_MIN = 768;
+
+/** Farthest distance from the centre at which the outer gateway search stops, in blocks. */
+static constexpr int ENDER_DRAGON_GATEWAY_OUTER_MAX = 1280;
+
+/** A chunk counts as land for the outer gateway search when it has blocks above this Y. */
+static constexpr int ENDER_DRAGON_GATEWAY_MIN_LAND_Y = 15;
+
 /** The 20 fixed End gateway positions around the central island (ref: the End Gateway wiki table). */
 static const std::array<Vector3d, 20> ENDER_DRAGON_GATEWAY_POSITIONS =
 {
@@ -1868,17 +1880,19 @@ bool cWorld::TryGetLinkedEnderDragonGateway(const Vector3i & a_GatewayPos, Vecto
 
 
 
-/** Places the outer-island counterpart of a central gateway once its chunk has been generated. */
+/** Places the outer-island counterpart of a central gateway once a candidate chunk has been generated.
+If the candidate chunk is void, it moves on to the next candidate distance. */
 class cEndGatewayLinkCallback:
 	public cChunkCoordCallback
 {
 public:
 
-	cEndGatewayLinkCallback(cWorld & a_World, const Vector3i & a_Central, int a_TargetX, int a_TargetZ):
+	cEndGatewayLinkCallback(cWorld & a_World, const Vector3i & a_Central, const Vector3d & a_Direction, const std::vector<int> & a_Distances, size_t a_Index):
 		m_World(a_World),
 		m_Central(a_Central),
-		m_TargetX(a_TargetX),
-		m_TargetZ(a_TargetZ)
+		m_Direction(a_Direction),
+		m_Distances(a_Distances),
+		m_Index(a_Index)
 	{
 	}
 
@@ -1889,10 +1903,10 @@ public:
 			return;
 		}
 
-		// Place the return gateway above the highest block of the generated chunk (vanilla searches 16 either way):
+		// Find the highest block of the generated chunk:
 		int SurfaceY = -1;
-		int SurfaceX = m_TargetX;
-		int SurfaceZ = m_TargetZ;
+		int SurfaceX = 0;
+		int SurfaceZ = 0;
 		for (int x = 0; x < cChunkDef::Width; x++)
 		{
 			for (int z = 0; z < cChunkDef::Width; z++)
@@ -1912,12 +1926,25 @@ public:
 			}
 		}
 
-		// An entirely void chunk: keep the target column at the default gateway height:
-		if (SurfaceY < 0)
+		if (SurfaceY < ENDER_DRAGON_GATEWAY_MIN_LAND_Y)
 		{
+			// This candidate chunk has no land; try the next candidate distance:
+			if ((m_Index + 1) < m_Distances.size())
+			{
+				const size_t NextIndex = m_Index + 1;
+				const int NextDistance = m_Distances[NextIndex];
+				const int NextX = FloorC(m_Direction.x * NextDistance);
+				const int NextZ = FloorC(m_Direction.z * NextDistance);
+				const auto NextChunk = cChunkDef::BlockToChunk({NextX, 0, NextZ});
+				m_World.PrepareChunk(NextChunk.m_ChunkX, NextChunk.m_ChunkZ,
+					std::make_unique<cEndGatewayLinkCallback>(m_World, m_Central, m_Direction, m_Distances, NextIndex));
+				return;
+			}
+
+			// No land anywhere: keep the default distance near the centre at the default height:
 			SurfaceY = ENDER_DRAGON_GATEWAY_Y - ENDER_DRAGON_GATEWAY_OUTER_Y_OFFSET;
-			SurfaceX = m_TargetX;
-			SurfaceZ = m_TargetZ;
+			SurfaceX = FloorC(m_Direction.x * m_Distances.front());
+			SurfaceZ = FloorC(m_Direction.z * m_Distances.front());
 		}
 
 		const Vector3i TargetPos(SurfaceX, SurfaceY + ENDER_DRAGON_GATEWAY_OUTER_Y_OFFSET, SurfaceZ);
@@ -1929,8 +1956,9 @@ private:
 
 	cWorld & m_World;
 	Vector3i m_Central;
-	int m_TargetX;
-	int m_TargetZ;
+	Vector3d m_Direction;
+	std::vector<int> m_Distances;
+	size_t m_Index;
 };
 
 
@@ -1953,12 +1981,34 @@ void cWorld::EnsureEnderDragonGatewayLink(const Vector3i & a_GatewayPos)
 	const double Length = Direction.Length();
 	Direction = (Length < 0.001) ? Vector3d(1, 0, 0) : (Direction / Length);
 
-	const int TargetX = FloorC(Direction.x * ENDER_DRAGON_GATEWAY_OUTER_DISTANCE);
-	const int TargetZ = FloorC(Direction.z * ENDER_DRAGON_GATEWAY_OUTER_DISTANCE);
+	// Candidate distances are tried closest-first around the default, to skip void chunks:
+	const int DefaultDistance = static_cast<int>(ENDER_DRAGON_GATEWAY_OUTER_DISTANCE);
+	std::vector<int> Distances;
+	Distances.push_back(DefaultDistance);
+	for (int Step = 1; ; Step++)
+	{
+		const int Larger = DefaultDistance + (Step * ENDER_DRAGON_GATEWAY_OUTER_STEP);
+		const int Smaller = DefaultDistance - (Step * ENDER_DRAGON_GATEWAY_OUTER_STEP);
+		if ((Larger > ENDER_DRAGON_GATEWAY_OUTER_MAX) && (Smaller < ENDER_DRAGON_GATEWAY_OUTER_MIN))
+		{
+			break;
+		}
+		if (Larger <= ENDER_DRAGON_GATEWAY_OUTER_MAX)
+		{
+			Distances.push_back(Larger);
+		}
+		if (Smaller >= ENDER_DRAGON_GATEWAY_OUTER_MIN)
+		{
+			Distances.push_back(Smaller);
+		}
+	}
 
 	// The destination chunk must be generated before its surface can be found and built upon:
+	const int TargetX = FloorC(Direction.x * DefaultDistance);
+	const int TargetZ = FloorC(Direction.z * DefaultDistance);
 	const auto Chunk = cChunkDef::BlockToChunk({TargetX, 0, TargetZ});
-	PrepareChunk(Chunk.m_ChunkX, Chunk.m_ChunkZ, std::make_unique<cEndGatewayLinkCallback>(*this, a_GatewayPos, TargetX, TargetZ));
+	PrepareChunk(Chunk.m_ChunkX, Chunk.m_ChunkZ,
+		std::make_unique<cEndGatewayLinkCallback>(*this, a_GatewayPos, Direction, Distances, 0));
 }
 
 
