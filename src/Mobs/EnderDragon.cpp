@@ -39,6 +39,8 @@ void cEnderDragon::TakeDamageFromPart(cEntity & a_Attacker, bool a_IsHead)
 
 	// Vanilla applies original / 4 + min(1, original) to every part except the head, which takes full damage.
 	// Ref: https://minecraft.wiki/w/Ender_Dragon (Behavior)
+	// Note: this reduces the base damage only; enchantment / critical-hit bonuses are added later by
+	// cEntity::DoTakeDamage and therefore are not reduced, unlike vanilla, which reduces the total.
 	const float FinalDamage = a_IsHead ?
 		static_cast<float>(RawDamage) :
 		((RawDamage / 4.0f) + std::min(1.0f, static_cast<float>(RawDamage)));
