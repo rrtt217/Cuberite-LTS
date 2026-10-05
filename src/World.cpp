@@ -144,6 +144,70 @@ static std::vector<Vector3i> DeserializeEndGateways(const AString & a_Value)
 
 
 
+/** Y at which the End gateways spawn around the central island. */
+static constexpr int ENDER_DRAGON_GATEWAY_Y = 75;
+
+/** The 20 fixed End gateway positions around the central island (ref: the End Gateway wiki table). */
+static const std::array<Vector3d, 20> ENDER_DRAGON_GATEWAY_POSITIONS =
+{
+	Vector3d( 96, ENDER_DRAGON_GATEWAY_Y,   0),
+	Vector3d( 91, ENDER_DRAGON_GATEWAY_Y,  29),
+	Vector3d( 77, ENDER_DRAGON_GATEWAY_Y,  56),
+	Vector3d( 56, ENDER_DRAGON_GATEWAY_Y,  77),
+	Vector3d( 29, ENDER_DRAGON_GATEWAY_Y,  91),
+	Vector3d( -1, ENDER_DRAGON_GATEWAY_Y,  96),
+	Vector3d(-30, ENDER_DRAGON_GATEWAY_Y,  91),
+	Vector3d(-57, ENDER_DRAGON_GATEWAY_Y,  77),
+	Vector3d(-78, ENDER_DRAGON_GATEWAY_Y,  56),
+	Vector3d(-92, ENDER_DRAGON_GATEWAY_Y,  29),
+	Vector3d(-96, ENDER_DRAGON_GATEWAY_Y,  -1),
+	Vector3d(-92, ENDER_DRAGON_GATEWAY_Y, -30),
+	Vector3d(-78, ENDER_DRAGON_GATEWAY_Y, -57),
+	Vector3d(-57, ENDER_DRAGON_GATEWAY_Y, -78),
+	Vector3d(-30, ENDER_DRAGON_GATEWAY_Y, -92),
+	Vector3d(  0, ENDER_DRAGON_GATEWAY_Y, -96),
+	Vector3d( 29, ENDER_DRAGON_GATEWAY_Y, -92),
+	Vector3d( 56, ENDER_DRAGON_GATEWAY_Y, -78),
+	Vector3d( 77, ENDER_DRAGON_GATEWAY_Y, -57),
+	Vector3d( 91, ENDER_DRAGON_GATEWAY_Y, -30),
+};
+
+
+
+
+
+/** Offsets of the plus-shaped bedrock layers directly around an End gateway block. */
+static const std::array<Vector3i, 10> ENDER_DRAGON_GATEWAY_BEDROCK_OFFSETS =
+{
+	Vector3i(0, -1, 0), Vector3i(-1, -1, 0), Vector3i(1, -1, 0), Vector3i(0, -1, -1), Vector3i(0, -1, 1),
+	Vector3i(0, 1, 0), Vector3i(-1, 1, 0), Vector3i(1, 1, 0), Vector3i(0, 1, -1), Vector3i(0, 1, 1),
+};
+
+
+
+
+
+/** Builds the bedrock / gateway block structure of one End gateway (ref: the End Gateway structure blueprint). */
+static void PlaceEnderDragonGatewayStructure(cWorld & a_World, const Vector3i & a_Pos)
+{
+	// The single bedrock caps above and below:
+	a_World.SetBlock(a_Pos.addedY(-2), E_BLOCK_BEDROCK, 0);
+	a_World.SetBlock(a_Pos.addedY(2), E_BLOCK_BEDROCK, 0);
+
+	// The plus-shaped bedrock layers directly around the gateway block:
+	for (const auto & Offset : ENDER_DRAGON_GATEWAY_BEDROCK_OFFSETS)
+	{
+		a_World.SetBlock(a_Pos + Offset, E_BLOCK_BEDROCK, 0);
+	}
+
+	// The gateway block itself:
+	a_World.SetBlock(a_Pos, E_BLOCK_END_GATEWAY, 0);
+}
+
+
+
+
+
 namespace World
 {
 	// Implement conversion functions from OpaqueWorld.h
@@ -1673,6 +1737,37 @@ void cWorld::ActivateEnderDragonExitPortal(void)
 void cWorld::DeactivateEnderDragonExitPortal(void)
 {
 	SetEnderDragonExitPortalBlocks(false);
+}
+
+
+
+
+
+void cWorld::SpawnEnderDragonGateway(void)
+{
+	if (m_Dimension != dimEnd)
+	{
+		return;
+	}
+
+	if (m_EnderDragonGateways.size() >= ENDER_DRAGON_GATEWAY_POSITIONS.size())
+	{
+		// All 20 gateways have already been spawned:
+		return;
+	}
+
+	// Pick the next gateway in a deterministic, seed-dependent order:
+	std::array<size_t, ENDER_DRAGON_GATEWAY_POSITIONS.size()> Order;
+	for (size_t i = 0; i < Order.size(); i++)
+	{
+		Order[i] = i;
+	}
+	std::shuffle(Order.begin(), Order.end(), std::default_random_engine(static_cast<std::default_random_engine::result_type>(GetSeed())));
+
+	const Vector3i GatewayPos = ENDER_DRAGON_GATEWAY_POSITIONS[Order[m_EnderDragonGateways.size()]].Floor();
+	PlaceEnderDragonGatewayStructure(*this, GatewayPos);
+	m_EnderDragonGateways.push_back(GatewayPos);
+	SaveEnderDragonFightState();
 }
 
 

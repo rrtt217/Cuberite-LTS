@@ -879,6 +879,9 @@ public:
 	/** Returns the positions of the End gateways spawned by defeating the dragon so far. */
 	const std::vector<Vector3i> & GetEnderDragonGateways(void) const { return m_EnderDragonGateways; }
 
+	/** Spawns one End gateway around the central island (called once per dragon defeat). */
+	void SpawnEnderDragonGateway(void);
+
 	/** Activates the End exit portal (fills its bowl with End Portal blocks and places the dragon egg). */
 	void ActivateEnderDragonExitPortal(void);
 

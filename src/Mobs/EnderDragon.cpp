@@ -588,6 +588,7 @@ void cEnderDragon::TickDeath(void)
 	if (m_DragonDeathTime >= ENDER_DRAGON_DEATH_TIME)
 	{
 		m_World->ActivateEnderDragonExitPortal();
+		m_World->SpawnEnderDragonGateway();
 		Destroy();
 	}
 }
