@@ -45,6 +45,7 @@ set (GENERATING_SRCS
 	${PROJECT_SOURCE_DIR}/src/Generating/DungeonRoomsFinisher.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EndGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EnderDragonFightStructuresGen.cpp
+	${PROJECT_SOURCE_DIR}/src/Generating/EnderDragonReturnGatewayGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/FinishGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/GridStructGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/HeiGen.cpp
@@ -113,6 +114,8 @@ set (GENERATING_HDRS
 	${PROJECT_SOURCE_DIR}/src/Generating/DistortedHeightmap.h
 	${PROJECT_SOURCE_DIR}/src/Generating/DungeonRoomsFinisher.h
 	${PROJECT_SOURCE_DIR}/src/Generating/EndGen.h
+	${PROJECT_SOURCE_DIR}/src/Generating/EndGateway.h
+	${PROJECT_SOURCE_DIR}/src/Generating/EnderDragonReturnGatewayGen.h
 	${PROJECT_SOURCE_DIR}/src/Generating/FinishGen.h
 	${PROJECT_SOURCE_DIR}/src/Generating/GridStructGen.h
 	${PROJECT_SOURCE_DIR}/src/Generating/HeiGen.h
@@ -186,6 +189,20 @@ add_test(
 
 
 
+# ReturnGatewayTest:
+add_executable(ReturnGatewayTest
+	ReturnGatewayTest.cpp
+)
+target_link_libraries(ReturnGatewayTest GeneratorTestingSupport)
+add_test(
+	NAME ReturnGatewayTest
+	COMMAND ReturnGatewayTest
+)
+
+
+
+
+
 # LoadablePieces test:
 source_group("Data files" FILES Test.cubeset Test1.schematic)
 add_executable(LoadablePieces
@@ -250,5 +267,6 @@ set_target_properties(
 	LoadablePieces
 	PieceGeneratorBFSTree
 	PieceRotation
+	ReturnGatewayTest
 	PROPERTIES FOLDER Tests/Generating
 )

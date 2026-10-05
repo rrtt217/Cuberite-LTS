@@ -13,6 +13,7 @@ target_sources(
 	EndGen.cpp
 	EndPlatform.cpp
 	EnderDragonFightStructuresGen.cpp
+	EnderDragonReturnGatewayGen.cpp
 	FinishGen.cpp
 	GridStructGen.cpp
 	HeiGen.cpp
@@ -46,7 +47,9 @@ target_sources(
 	DistortedHeightmap.h
 	DungeonRoomsFinisher.h
 	EndGen.h
+	EndGateway.h
 	EnderDragonFightStructuresGen.h
+	EnderDragonReturnGatewayGen.h
 	FinishGen.h
 	GridStructGen.h
 	HeiGen.h
