@@ -1884,24 +1884,43 @@ public:
 
 	virtual void Call(cChunkCoords a_Coords, bool a_IsSuccess) override
 	{
-		UNUSED(a_Coords);
 		if (!a_IsSuccess)
 		{
 			return;
 		}
 
-		// Find the local surface and place the return gateway above it:
-		int TargetY = ENDER_DRAGON_GATEWAY_Y;
-		for (int y = cChunkDef::Height - 1; y >= 0; y--)
+		// Place the return gateway above the highest block of the generated chunk (vanilla searches 16 either way):
+		int SurfaceY = -1;
+		int SurfaceX = m_TargetX;
+		int SurfaceZ = m_TargetZ;
+		for (int x = 0; x < cChunkDef::Width; x++)
 		{
-			if (m_World.GetBlock({m_TargetX, y, m_TargetZ}) != E_BLOCK_AIR)
+			for (int z = 0; z < cChunkDef::Width; z++)
 			{
-				TargetY = y + ENDER_DRAGON_GATEWAY_OUTER_Y_OFFSET;
-				break;
+				const int WorldX = (a_Coords.m_ChunkX * cChunkDef::Width) + x;
+				const int WorldZ = (a_Coords.m_ChunkZ * cChunkDef::Width) + z;
+				for (int y = cChunkDef::Height - 1; y > SurfaceY; y--)
+				{
+					if (m_World.GetBlock({WorldX, y, WorldZ}) != E_BLOCK_AIR)
+					{
+						SurfaceY = y;
+						SurfaceX = WorldX;
+						SurfaceZ = WorldZ;
+						break;
+					}
+				}
 			}
 		}
 
-		const Vector3i TargetPos(m_TargetX, TargetY, m_TargetZ);
+		// An entirely void chunk: keep the target column at the default gateway height:
+		if (SurfaceY < 0)
+		{
+			SurfaceY = ENDER_DRAGON_GATEWAY_Y - ENDER_DRAGON_GATEWAY_OUTER_Y_OFFSET;
+			SurfaceX = m_TargetX;
+			SurfaceZ = m_TargetZ;
+		}
+
+		const Vector3i TargetPos(SurfaceX, SurfaceY + ENDER_DRAGON_GATEWAY_OUTER_Y_OFFSET, SurfaceZ);
 		PlaceEnderDragonGatewayStructure(m_World, TargetPos);
 		m_World.LinkEnderDragonGateways(m_Central, TargetPos);
 	}
