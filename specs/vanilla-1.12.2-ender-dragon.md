@@ -169,11 +169,17 @@
     - 伤害水晶时若用 `TakeDamage(dtExplosion, cEntity::INVALID_ID, …)` 会因 `DoWithEntityByID(INVALID_ID)` 永不回调而**不生效**，改用 `nullptr` 攻击者重载；
     - **1.11 / 1.12 的 `BeamTarget` metadata 只在 `DisplaysBeam()` 为真时写出**，导致光柱关闭时客户端收不到清除指令、把光柱留在最后一个目标（龙离开治疗范围或复活刚结束时尤其明显）。改为**总是**写出 `ENDER_CRYSTAL_BEAM_TARGET` 索引 + `OPTIONAL_POSITION`，关闭时显式写 `false`（1.10 本来就是这样，1.9 亦然）。
 
+18. fights 状态持久化（[Ender Dragon § Data values](https://minecraft.wiki/w/Ender_Dragon)，vanilla `EnderDragon` 存档标签）：
+    - 世界 ini 的 `[EnderDragon]` 段保存并读取：`HasSpawned`、`DragonKilled`、`PreviouslyKilled`、`ExitPortalX/Y/Z`、
+      `Gateways`（分号分隔的坐标三元组，供 End gateway 增量使用）。
+    - `PreviouslyKilled` 在首次击杀落地（`SetEnderDragonKilled`）时置真，使**下一次**击杀只掉 **500 XP**（首次 12000 在死亡后 150 tick 掉落时该标志仍为假）。
+    - `ExitPortal` 固定为祭坛 `(0, 63, 0)`，读档时随之恢复。
+
 **故意不做的部分**（后续增量）：
 
 - 8 个部件作为真实服务端实体（`/kill` 计 9、爆炸对部件的结算等）。
-- Perching 的咆哮/龙息伤害、Charge、End gateway、完整 fight 控制器。
-- 复活的龙吼/爆炸音效、JE“角落末地石复原”彩蛋、取消后新放水晶不发光的 quirk；`PreviouslyKilled` 未持久化。
+- Perching 的咆哮/龙息伤害、Charge、完整 fight 控制器（End gateway 见下一节）。
+- 复活的龙吼/爆炸音效、JE“角落末地石复原”彩蛋、取消后新放水晶不发光的 quirk。
 
 ### 3.3 接触（近战）伤害（feature/mobs-ender-dragon-phases）
 

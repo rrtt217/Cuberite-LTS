@@ -35,6 +35,12 @@ private:
 	/** Teleports the creator where the ender pearl lands */
 	void TeleportCreator(Vector3d a_HitPos);
 
+	/** Teleports the creator through an End gateway, without fall damage or other effects */
+	void TeleportCreatorToGateway(Vector3i a_Target);
+
+	// cEntity overrides:
+	virtual bool DetectPortal(void) override;
+
 	// cProjectileEntity overrides:
 	virtual void OnHitEntity(cEntity & a_EntityHit, Vector3d a_HitPos) override;
 	virtual void OnHitSolidBlock(Vector3d a_HitPos, eBlockFace a_HitFace) override;

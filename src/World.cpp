@@ -97,6 +97,193 @@ static constexpr double ENDER_DRAGON_RESPAWN_HEIGHT = 128.0;
 
 
 
+/** Serializes End gateway positions as semicolon-separated coordinate triples. */
+static AString SerializeEndGateways(const std::vector<Vector3i> & a_Gateways)
+{
+	AString Result;
+	for (const auto & Gateway : a_Gateways)
+	{
+		if (!Result.empty())
+		{
+			Result += ";";
+		}
+		Result += std::to_string(Gateway.x) + "," + std::to_string(Gateway.y) + "," + std::to_string(Gateway.z);
+	}
+	return Result;
+}
+
+
+
+
+
+/** Parses the string produced by SerializeEndGateways(). */
+static std::vector<Vector3i> DeserializeEndGateways(const AString & a_Value)
+{
+	std::vector<Vector3i> Result;
+	for (const auto & Entry : StringSplitAndTrim(a_Value, ";"))
+	{
+		const auto Coords = StringSplitAndTrim(Entry, ",");
+		if (Coords.size() != 3)
+		{
+			continue;
+		}
+
+		try
+		{
+			Result.emplace_back(std::stoi(Coords[0]), std::stoi(Coords[1]), std::stoi(Coords[2]));
+		}
+		catch (const std::exception &)
+		{
+			// Ignore malformed entries
+		}
+	}
+	return Result;
+}
+
+
+
+
+
+/** Serializes the End gateway links as semicolon-separated "first>second" coordinate pairs. */
+static AString SerializeEndGatewayLinks(const std::vector<std::pair<Vector3i, Vector3i>> & a_Links)
+{
+	AString Result;
+	for (const auto & Link : a_Links)
+	{
+		if (!Result.empty())
+		{
+			Result += ";";
+		}
+		Result += std::to_string(Link.first.x) + "," + std::to_string(Link.first.y) + "," + std::to_string(Link.first.z) + ">"
+			+ std::to_string(Link.second.x) + "," + std::to_string(Link.second.y) + "," + std::to_string(Link.second.z);
+	}
+	return Result;
+}
+
+
+
+
+
+/** Parses the string produced by SerializeEndGatewayLinks(). */
+static std::vector<std::pair<Vector3i, Vector3i>> DeserializeEndGatewayLinks(const AString & a_Value)
+{
+	std::vector<std::pair<Vector3i, Vector3i>> Result;
+	for (const auto & Entry : StringSplitAndTrim(a_Value, ";"))
+	{
+		const auto Pair = StringSplitAndTrim(Entry, ">");
+		if (Pair.size() != 2)
+		{
+			continue;
+		}
+
+		const auto First = StringSplitAndTrim(Pair[0], ",");
+		const auto Second = StringSplitAndTrim(Pair[1], ",");
+		if ((First.size() != 3) || (Second.size() != 3))
+		{
+			continue;
+		}
+
+		try
+		{
+			Result.emplace_back(
+				Vector3i(std::stoi(First[0]), std::stoi(First[1]), std::stoi(First[2])),
+				Vector3i(std::stoi(Second[0]), std::stoi(Second[1]), std::stoi(Second[2]))
+			);
+		}
+		catch (const std::exception &)
+		{
+			// Ignore malformed entries
+		}
+	}
+	return Result;
+}
+
+
+
+
+
+/** Y at which the End gateways spawn around the central island. */
+static constexpr int ENDER_DRAGON_GATEWAY_Y = 75;
+
+/** Distance from the centre at which a linked outer-island gateway is generated. */
+static constexpr double ENDER_DRAGON_GATEWAY_OUTER_DISTANCE = 1024.0;
+
+/** How far above the local surface the outer-island gateway is placed. */
+static constexpr int ENDER_DRAGON_GATEWAY_OUTER_Y_OFFSET = 10;
+
+/** Step by which the outer gateway search distance is adjusted when a chunk is void. */
+static constexpr int ENDER_DRAGON_GATEWAY_OUTER_STEP = 16;
+
+/** Nearest distance from the centre at which the outer gateway search stops, in blocks. */
+static constexpr int ENDER_DRAGON_GATEWAY_OUTER_MIN = 768;
+
+/** Farthest distance from the centre at which the outer gateway search stops, in blocks. */
+static constexpr int ENDER_DRAGON_GATEWAY_OUTER_MAX = 1280;
+
+/** A chunk counts as land for the outer gateway search when it has blocks above this Y. */
+static constexpr int ENDER_DRAGON_GATEWAY_MIN_LAND_Y = 15;
+
+/** The 20 fixed End gateway positions around the central island (ref: the End Gateway wiki table). */
+static const std::array<Vector3d, 20> ENDER_DRAGON_GATEWAY_POSITIONS =
+{
+	Vector3d( 96, ENDER_DRAGON_GATEWAY_Y,   0),
+	Vector3d( 91, ENDER_DRAGON_GATEWAY_Y,  29),
+	Vector3d( 77, ENDER_DRAGON_GATEWAY_Y,  56),
+	Vector3d( 56, ENDER_DRAGON_GATEWAY_Y,  77),
+	Vector3d( 29, ENDER_DRAGON_GATEWAY_Y,  91),
+	Vector3d( -1, ENDER_DRAGON_GATEWAY_Y,  96),
+	Vector3d(-30, ENDER_DRAGON_GATEWAY_Y,  91),
+	Vector3d(-57, ENDER_DRAGON_GATEWAY_Y,  77),
+	Vector3d(-78, ENDER_DRAGON_GATEWAY_Y,  56),
+	Vector3d(-92, ENDER_DRAGON_GATEWAY_Y,  29),
+	Vector3d(-96, ENDER_DRAGON_GATEWAY_Y,  -1),
+	Vector3d(-92, ENDER_DRAGON_GATEWAY_Y, -30),
+	Vector3d(-78, ENDER_DRAGON_GATEWAY_Y, -57),
+	Vector3d(-57, ENDER_DRAGON_GATEWAY_Y, -78),
+	Vector3d(-30, ENDER_DRAGON_GATEWAY_Y, -92),
+	Vector3d(  0, ENDER_DRAGON_GATEWAY_Y, -96),
+	Vector3d( 29, ENDER_DRAGON_GATEWAY_Y, -92),
+	Vector3d( 56, ENDER_DRAGON_GATEWAY_Y, -78),
+	Vector3d( 77, ENDER_DRAGON_GATEWAY_Y, -57),
+	Vector3d( 91, ENDER_DRAGON_GATEWAY_Y, -30),
+};
+
+
+
+
+
+/** Offsets of the plus-shaped bedrock layers directly around an End gateway block. */
+static const std::array<Vector3i, 10> ENDER_DRAGON_GATEWAY_BEDROCK_OFFSETS =
+{
+	Vector3i(0, -1, 0), Vector3i(-1, -1, 0), Vector3i(1, -1, 0), Vector3i(0, -1, -1), Vector3i(0, -1, 1),
+	Vector3i(0, 1, 0), Vector3i(-1, 1, 0), Vector3i(1, 1, 0), Vector3i(0, 1, -1), Vector3i(0, 1, 1),
+};
+
+
+
+
+
+/** Builds the bedrock / gateway block structure of one End gateway (ref: the End Gateway structure blueprint). */
+static void PlaceEnderDragonGatewayStructure(cWorld & a_World, const Vector3i & a_Pos)
+{
+	// The single bedrock caps above and below:
+	a_World.SetBlock(a_Pos.addedY(-2), E_BLOCK_BEDROCK, 0);
+	a_World.SetBlock(a_Pos.addedY(2), E_BLOCK_BEDROCK, 0);
+
+	// The plus-shaped bedrock layers directly around the gateway block:
+	for (const auto & Offset : ENDER_DRAGON_GATEWAY_BEDROCK_OFFSETS)
+	{
+		a_World.SetBlock(a_Pos + Offset, E_BLOCK_BEDROCK, 0);
+	}
+
+	// The gateway block itself:
+	a_World.SetBlock(a_Pos, E_BLOCK_END_GATEWAY, 0);
+}
+
+
+
+
+
 namespace World
 {
 	// Implement conversion functions from OpaqueWorld.h
@@ -199,6 +386,7 @@ cWorld::cWorld(
 	m_HasSpawnedEnderDragon(false),
 	m_EnderDragonKilled(false),
 	m_EnderDragonPreviouslyKilled(false),
+	m_EnderDragonExitPortalPos(0, ENDER_DRAGON_PORTAL_Y, 0),
 	m_EnderDragonRespawnTicksLeft(-1),
 	m_EnderDragonRespawnFinalBeams(false),
 	m_EnderDragonPillarsRegenerated(0),
@@ -297,6 +485,14 @@ cWorld::cWorld(
 
 	m_HasSpawnedEnderDragon = IniFile.GetValueSetB("EnderDragon", "HasSpawned", false);
 	m_EnderDragonKilled = IniFile.GetValueSetB("EnderDragon", "DragonKilled", false);
+	m_EnderDragonPreviouslyKilled = IniFile.GetValueSetB("EnderDragon", "PreviouslyKilled", false);
+	m_EnderDragonExitPortalPos = Vector3i(
+		IniFile.GetValueSetI("EnderDragon", "ExitPortalX", 0),
+		IniFile.GetValueSetI("EnderDragon", "ExitPortalY", ENDER_DRAGON_PORTAL_Y),
+		IniFile.GetValueSetI("EnderDragon", "ExitPortalZ", 0)
+	);
+	m_EnderDragonGateways = DeserializeEndGateways(IniFile.GetValue("EnderDragon", "Gateways", ""));
+	m_EnderDragonGatewayLinks = DeserializeEndGatewayLinks(IniFile.GetValue("EnderDragon", "GatewayLinks", ""));
 
 	SetMaxViewDistance(IniFile.GetValueSetI("SpawnPosition", "MaxViewDistance", cClientHandle::DEFAULT_VIEW_DISTANCE));
 
@@ -1564,6 +1760,11 @@ void cWorld::FinishEnderDragonResummon(void)
 void cWorld::SetEnderDragonKilled(void)
 {
 	m_EnderDragonKilled = true;
+
+	// The next dragon to be killed drops only 500 XP:
+	m_EnderDragonPreviouslyKilled = true;
+
+	m_EnderDragonExitPortalPos = Vector3i(0, ENDER_DRAGON_PORTAL_Y, 0);
 	SaveEnderDragonFightState();
 }
 
@@ -1619,12 +1820,223 @@ void cWorld::DeactivateEnderDragonExitPortal(void)
 
 
 
+void cWorld::SpawnEnderDragonGateway(void)
+{
+	if (m_Dimension != dimEnd)
+	{
+		return;
+	}
+
+	if (m_EnderDragonGateways.size() >= ENDER_DRAGON_GATEWAY_POSITIONS.size())
+	{
+		// All 20 gateways have already been spawned:
+		return;
+	}
+
+	// Pick the next gateway in a deterministic, seed-dependent order:
+	std::array<size_t, ENDER_DRAGON_GATEWAY_POSITIONS.size()> Order;
+	for (size_t i = 0; i < Order.size(); i++)
+	{
+		Order[i] = i;
+	}
+	std::shuffle(Order.begin(), Order.end(), std::default_random_engine(static_cast<std::default_random_engine::result_type>(GetSeed())));
+
+	const Vector3i GatewayPos = ENDER_DRAGON_GATEWAY_POSITIONS[Order[m_EnderDragonGateways.size()]].Floor();
+	PlaceEnderDragonGatewayStructure(*this, GatewayPos);
+	m_EnderDragonGateways.push_back(GatewayPos);
+	SaveEnderDragonFightState();
+
+	// Start generating the outer-island counterpart right away, so it is ready when the gateway is used:
+	EnsureEnderDragonGatewayLink(GatewayPos);
+}
+
+
+
+
+
+bool cWorld::TryGetLinkedEnderDragonGateway(const Vector3i & a_GatewayPos, Vector3i & a_Target)
+{
+	// An existing link connects the two gateways in both directions:
+	for (const auto & Link : m_EnderDragonGatewayLinks)
+	{
+		if (Link.first == a_GatewayPos)
+		{
+			a_Target = Link.second;
+			return true;
+		}
+		if (Link.second == a_GatewayPos)
+		{
+			a_Target = Link.first;
+			return true;
+		}
+	}
+
+	// Not generated yet: start generating it and report that there is no destination yet.
+	EnsureEnderDragonGatewayLink(a_GatewayPos);
+	return false;
+}
+
+
+
+
+
+/** Places the outer-island counterpart of a central gateway once a candidate chunk has been generated.
+If the candidate chunk is void, it moves on to the next candidate distance. */
+class cEndGatewayLinkCallback:
+	public cChunkCoordCallback
+{
+public:
+
+	cEndGatewayLinkCallback(cWorld & a_World, const Vector3i & a_Central, const Vector3d & a_Direction, const std::vector<int> & a_Distances, size_t a_Index):
+		m_World(a_World),
+		m_Central(a_Central),
+		m_Direction(a_Direction),
+		m_Distances(a_Distances),
+		m_Index(a_Index)
+	{
+	}
+
+	virtual void Call(cChunkCoords a_Coords, bool a_IsSuccess) override
+	{
+		if (!a_IsSuccess)
+		{
+			return;
+		}
+
+		// Find the highest block of the generated chunk:
+		int SurfaceY = -1;
+		int SurfaceX = 0;
+		int SurfaceZ = 0;
+		for (int x = 0; x < cChunkDef::Width; x++)
+		{
+			for (int z = 0; z < cChunkDef::Width; z++)
+			{
+				const int WorldX = (a_Coords.m_ChunkX * cChunkDef::Width) + x;
+				const int WorldZ = (a_Coords.m_ChunkZ * cChunkDef::Width) + z;
+				for (int y = cChunkDef::Height - 1; y > SurfaceY; y--)
+				{
+					if (m_World.GetBlock({WorldX, y, WorldZ}) != E_BLOCK_AIR)
+					{
+						SurfaceY = y;
+						SurfaceX = WorldX;
+						SurfaceZ = WorldZ;
+						break;
+					}
+				}
+			}
+		}
+
+		if (SurfaceY < ENDER_DRAGON_GATEWAY_MIN_LAND_Y)
+		{
+			// This candidate chunk has no land; try the next candidate distance:
+			if ((m_Index + 1) < m_Distances.size())
+			{
+				const size_t NextIndex = m_Index + 1;
+				const int NextDistance = m_Distances[NextIndex];
+				const int NextX = FloorC(m_Direction.x * NextDistance);
+				const int NextZ = FloorC(m_Direction.z * NextDistance);
+				const auto NextChunk = cChunkDef::BlockToChunk({NextX, 0, NextZ});
+				m_World.PrepareChunk(NextChunk.m_ChunkX, NextChunk.m_ChunkZ,
+					std::make_unique<cEndGatewayLinkCallback>(m_World, m_Central, m_Direction, m_Distances, NextIndex));
+				return;
+			}
+
+			// No land anywhere: keep the default distance near the centre at the default height:
+			SurfaceY = ENDER_DRAGON_GATEWAY_Y - ENDER_DRAGON_GATEWAY_OUTER_Y_OFFSET;
+			SurfaceX = FloorC(m_Direction.x * m_Distances.front());
+			SurfaceZ = FloorC(m_Direction.z * m_Distances.front());
+		}
+
+		const Vector3i TargetPos(SurfaceX, SurfaceY + ENDER_DRAGON_GATEWAY_OUTER_Y_OFFSET, SurfaceZ);
+		PlaceEnderDragonGatewayStructure(m_World, TargetPos);
+		m_World.LinkEnderDragonGateways(m_Central, TargetPos);
+	}
+
+private:
+
+	cWorld & m_World;
+	Vector3i m_Central;
+	Vector3d m_Direction;
+	std::vector<int> m_Distances;
+	size_t m_Index;
+};
+
+
+
+
+
+void cWorld::EnsureEnderDragonGatewayLink(const Vector3i & a_GatewayPos)
+{
+	// Already linked or already being prepared:
+	for (const auto & Link : m_EnderDragonGatewayLinks)
+	{
+		if ((Link.first == a_GatewayPos) || (Link.second == a_GatewayPos))
+		{
+			return;
+		}
+	}
+
+	// The outer gateway lies in the gateway's direction, some distance away:
+	Vector3d Direction(a_GatewayPos.x, 0, a_GatewayPos.z);
+	const double Length = Direction.Length();
+	Direction = (Length < 0.001) ? Vector3d(1, 0, 0) : (Direction / Length);
+
+	// Candidate distances are tried closest-first around the default, to skip void chunks:
+	const int DefaultDistance = static_cast<int>(ENDER_DRAGON_GATEWAY_OUTER_DISTANCE);
+	std::vector<int> Distances;
+	Distances.push_back(DefaultDistance);
+	for (int Step = 1; ; Step++)
+	{
+		const int Larger = DefaultDistance + (Step * ENDER_DRAGON_GATEWAY_OUTER_STEP);
+		const int Smaller = DefaultDistance - (Step * ENDER_DRAGON_GATEWAY_OUTER_STEP);
+		if ((Larger > ENDER_DRAGON_GATEWAY_OUTER_MAX) && (Smaller < ENDER_DRAGON_GATEWAY_OUTER_MIN))
+		{
+			break;
+		}
+		if (Larger <= ENDER_DRAGON_GATEWAY_OUTER_MAX)
+		{
+			Distances.push_back(Larger);
+		}
+		if (Smaller >= ENDER_DRAGON_GATEWAY_OUTER_MIN)
+		{
+			Distances.push_back(Smaller);
+		}
+	}
+
+	// The destination chunk must be generated before its surface can be found and built upon:
+	const int TargetX = FloorC(Direction.x * DefaultDistance);
+	const int TargetZ = FloorC(Direction.z * DefaultDistance);
+	const auto Chunk = cChunkDef::BlockToChunk({TargetX, 0, TargetZ});
+	PrepareChunk(Chunk.m_ChunkX, Chunk.m_ChunkZ,
+		std::make_unique<cEndGatewayLinkCallback>(*this, a_GatewayPos, Direction, Distances, 0));
+}
+
+
+
+
+
+void cWorld::LinkEnderDragonGateways(const Vector3i & a_First, const Vector3i & a_Second)
+{
+	m_EnderDragonGatewayLinks.emplace_back(a_First, a_Second);
+	SaveEnderDragonFightState();
+}
+
+
+
+
+
 void cWorld::SaveEnderDragonFightState(void)
 {
 	cIniFile IniFile;
 	IniFile.ReadFile(m_IniFileName);
 	IniFile.SetValueB("EnderDragon", "HasSpawned", m_HasSpawnedEnderDragon);
 	IniFile.SetValueB("EnderDragon", "DragonKilled", m_EnderDragonKilled);
+	IniFile.SetValueB("EnderDragon", "PreviouslyKilled", m_EnderDragonPreviouslyKilled);
+	IniFile.SetValueI("EnderDragon", "ExitPortalX", m_EnderDragonExitPortalPos.x);
+	IniFile.SetValueI("EnderDragon", "ExitPortalY", m_EnderDragonExitPortalPos.y);
+	IniFile.SetValueI("EnderDragon", "ExitPortalZ", m_EnderDragonExitPortalPos.z);
+	IniFile.SetValue("EnderDragon", "Gateways", SerializeEndGateways(m_EnderDragonGateways));
+	IniFile.SetValue("EnderDragon", "GatewayLinks", SerializeEndGatewayLinks(m_EnderDragonGatewayLinks));
 	if (!IniFile.WriteFile(m_IniFileName))
 	{
 		LOGWARNING("Could not write ender dragon fight state to %s", m_IniFileName.c_str());
