@@ -23,6 +23,7 @@
 #include "DistortedHeightmap.h"
 #include "DungeonRoomsFinisher.h"
 #include "EndGen.h"
+#include "EndChorusGen.h"
 #include "EnderDragonFightStructuresGen.h"
 #include "EnderDragonReturnGatewayGen.h"
 #include "MineShafts.h"
@@ -467,6 +468,9 @@ void cComposableGenerator::InitFinishGens(cIniFile & a_IniFile)
 
 			// The natural outer-island return gateways are part of the End's generated terrain:
 			m_FinishGens.push_back(std::make_unique<cEnderDragonReturnGatewayGen>(m_Seed));
+
+			// Natural chorus trees are part of the End's generated terrain:
+			m_FinishGens.push_back(std::make_unique<cEndChorusGen>(m_Seed, *m_BiomeGen, *m_ShapeGen, *m_CompositionGen));
 		}
 		else if (NoCaseCompare(finisher, "ForestRocks") == 0)
 		{

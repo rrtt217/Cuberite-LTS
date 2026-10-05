@@ -243,10 +243,17 @@ Cuberite 落点：
   1. 用 §3.3 的生长算法，从末地石上的 age=0 花开始模拟整轮生长（用世界随机源），直到终止——能产出符合 §3.3 高度分布的树，并与「枝顶花枯萎」自然吻合；作为**近似**，标注偏差。
   2. 若能通过合法实测总结出 feature 的树形规律，再据以精确实现。
 
+**路径 1 已实现**（`src/Generating/ChorusPlantTree.{h,cpp}`）：从末地石上的 age=0 花开始，用 `std::minstd_rand`（种子由放置 RNG 派生，保证同一棵树在不同区块重建时结果一致）逐步套用 §3.3 的规则，直到所有花都变成植株或枯萎。已知偏差（**推测**）：
+
+- 平均花数偏低：500 棵样本约 2.1 朵/棵，wiki 统计约 3.7 朵/棵。因为每朵花只模拟一次生长步，真实 feature 的步数与处理顺序未知。
+- 树高仅验证了上界（样本最大 20，wiki 上界 22），未逐点对齐 vanilla。
+
+跨区块处理沿用 `cStructGenTrees` 的做法：finisher 对 3×3 邻域重新生成地形（`GenBiomes` + `GenShape` + `ComposeTerrain`），同一棵树由覆盖它的每个区块各自重建，只写入落在本区块内的部分。
+
 ### 4.4 Cuberite 接入点
 
 - 末地世界当前 `Finishers=EnderDragonFightStructures`，且该 token 已额外挂上自然回归折跃门 finisher（见 `feature/generating-end-return-gateway`）。
-- 本特性建议同样挂在既有 End finisher 链上（或新 finisher），实现：
+- **已实现**为 `cEndChorusGen`（`src/Generating/EndChorusGen.{h,cpp}`），挂在既有 `EnderDragonFightStructures` token 上。实现：
   1. 每区块 0–4 次尝试（用与 `cEnderDragonReturnGatewayGen` 相同的 `std::minstd_rand` + 世界种子/区块坐标，保证确定、跨平台）。
   2. 每次随机取列、取地表高度；**仅当该列地表为末地石**、且该处为空气时，才生成。
   3. 用「距离 > 1024」近似 End Highlands（与回归折跃门一致）。
