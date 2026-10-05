@@ -80,6 +80,15 @@ protected:
 	/** Ticks left in the current strafing run. */
 	int m_StrafingTicksLeft;
 
+	/** Ticks left until the dragon takes off from its perch. */
+	int m_LandedTicksLeft;
+
+	/** Ticks left in the current take-off. */
+	int m_TakeoffTicksLeft;
+
+	/** Angle at the previous circling tick, used to detect a completed orbit. */
+	double m_LastOrbitAngle;
+
 	/** Moves the dragon along its circling path around the world centre. */
 	void Circling(double a_Dt);
 
@@ -88,6 +97,12 @@ protected:
 
 	/** Enters the strafing phase (e.g. after an End crystal was destroyed), if there is a target. */
 	void StartStrafing(void);
+
+	/** Decides to fly to the exit portal and land there. */
+	void StartPerching(void);
+
+	/** Flies the dragon to the perch above the exit portal while in the FlyingToPortal phase. */
+	void FlyToPortal(double a_Dt);
 
 	/** Damages the living entities the dragon is currently touching (wings / head contact). */
 	void AttackEntities(void);

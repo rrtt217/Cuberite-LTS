@@ -51,6 +51,21 @@ static constexpr double STRAFING_SPEED = 12.0;
 /** How long a strafing run lasts; the dragon resumes circling afterwards. */
 static constexpr int STRAFING_DURATION_TICKS = 60;
 
+/** Height above the exit portal that the dragon descends to when perching, in blocks. */
+static constexpr double PERCH_HEIGHT = 70.0;
+
+/** Distance within which the dragon considers itself landed on the exit portal, in blocks. */
+static constexpr double PERCH_REACHED_DISTANCE = 4.0;
+
+/** Ticks the dragon stays perched before taking off again (1.25 s roar + 3 s breath). */
+static constexpr int LANDED_DURATION_TICKS = 85;
+
+/** Ticks the dragon spends taking off before it resumes circling. */
+static constexpr int TAKEOFF_DURATION_TICKS = 20;
+
+/** Speed at which the dragon flies to / from its perch, in blocks per second. */
+static constexpr double PERCH_FLIGHT_SPEED = 10.0;
+
 
 
 
@@ -60,7 +75,10 @@ cEnderDragon::cEnderDragon(void) :
 	m_DragonPhase(eDragonPhase::Hovering),
 	m_CrystalCount(0),
 	m_CrystalCountCooldown(0),
-	m_StrafingTicksLeft(0)
+	m_StrafingTicksLeft(0),
+	m_LandedTicksLeft(0),
+	m_TakeoffTicksLeft(0),
+	m_LastOrbitAngle(0)
 {
 	// Fly freely: the flight code in Tick() controls our speed, so disable gravity and air drag:
 	SetGravity(0);
@@ -119,15 +137,9 @@ void cEnderDragon::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 	// Recount the End crystals around the arena (throttled internally); this may start a strafe:
 	UpdateCrystalCount();
 
-	// Phase selection. A strafing run lasts for a fixed time and then resumes circling / hovering:
-	if (m_DragonPhase == eDragonPhase::Strafing)
-	{
-		if ((--m_StrafingTicksLeft <= 0) || (GetTarget() == nullptr))
-		{
-			SetDragonPhase((GetTarget() != nullptr) ? eDragonPhase::Circling : eDragonPhase::Hovering);
-		}
-	}
-	else
+	// Only Circling and Hovering are chosen by the placeholder logic; the other phases transition
+	// themselves (strafing, perching, taking off):
+	if ((m_DragonPhase == eDragonPhase::Circling) || (m_DragonPhase == eDragonPhase::Hovering))
 	{
 		// Placeholder phase selection until the actual fight logic exists: circle while a player is
 		// targeted, otherwise hover in place.
@@ -145,7 +157,40 @@ void cEnderDragon::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 		}
 		case eDragonPhase::Strafing:
 		{
-			Strafe(DtSec);
+			if ((--m_StrafingTicksLeft <= 0) || (GetTarget() == nullptr))
+			{
+				SetDragonPhase((GetTarget() != nullptr) ? eDragonPhase::Circling : eDragonPhase::Hovering);
+			}
+			else
+			{
+				Strafe(DtSec);
+			}
+			break;
+		}
+		case eDragonPhase::FlyingToPortal:
+		{
+			FlyToPortal(DtSec);
+			break;
+		}
+		case eDragonPhase::LandedBreath:
+		{
+			// Perched: stay in place until it is time to take off again:
+			SetSpeed(0, 0, 0);
+			if (--m_LandedTicksLeft <= 0)
+			{
+				m_TakeoffTicksLeft = TAKEOFF_DURATION_TICKS;
+				SetDragonPhase(eDragonPhase::TakingOff);
+			}
+			break;
+		}
+		case eDragonPhase::TakingOff:
+		{
+			// Fly straight up for a moment, then resume circling:
+			SetSpeed(0, PERCH_FLIGHT_SPEED, 0);
+			if (--m_TakeoffTicksLeft <= 0)
+			{
+				SetDragonPhase(eDragonPhase::Circling);
+			}
 			break;
 		}
 		case eDragonPhase::Hovering:
@@ -185,6 +230,15 @@ void cEnderDragon::Circling(double a_Dt)
 	const double PosX = GetPosX();
 	const double PosZ = GetPosZ();
 	const double Radius = std::max(sqrt((PosX * PosX) + (PosZ * PosZ)), 0.001);
+
+	// Each completed orbit, roll vanilla's 1 / (3 + crystals) chance to go and perch on the exit portal:
+	const double Angle = atan2(PosZ, PosX);
+	if ((m_LastOrbitAngle > (M_PI / 2)) && (Angle < -(M_PI / 2)) && GetRandomProvider().RandBool(1.0 / (3 + m_CrystalCount)))
+	{
+		StartPerching();
+		return;
+	}
+	m_LastOrbitAngle = Angle;
 
 	// Vanilla circles the ring of obsidian pillars on the outside while End crystals are still there,
 	// and on the inside once all of them have been destroyed:
@@ -246,6 +300,39 @@ void cEnderDragon::StartStrafing(void)
 
 	m_StrafingTicksLeft = STRAFING_DURATION_TICKS;
 	SetDragonPhase(eDragonPhase::Strafing);
+}
+
+
+
+
+
+void cEnderDragon::StartPerching(void)
+{
+	SetDragonPhase(eDragonPhase::FlyingToPortal);
+}
+
+
+
+
+
+void cEnderDragon::FlyToPortal(double a_Dt)
+{
+	UNUSED(a_Dt);
+
+	Vector3d ToPortal = Vector3d(0, PERCH_HEIGHT, 0) - GetPosition();
+	const double Distance = ToPortal.Length();
+	if (Distance < PERCH_REACHED_DISTANCE)
+	{
+		// Landed: stay perched for a while (the roar / breath attack itself is not implemented yet):
+		SetSpeed(0, 0, 0);
+		m_LandedTicksLeft = LANDED_DURATION_TICKS;
+		SetDragonPhase(eDragonPhase::LandedBreath);
+		return;
+	}
+
+	ToPortal *= (PERCH_FLIGHT_SPEED / Distance);
+	SetSpeed(ToPortal);
+	SetYawFromSpeed();
 }
 
 
@@ -356,6 +443,12 @@ void cEnderDragon::TakeDamageFromPart(cEntity & a_Attacker, bool a_IsHead)
 
 bool cEnderDragon::DoTakeDamage(TakeDamageInfo & a_TDI)
 {
+	// While perched, vanilla makes the dragon immune to arrows and thrown tridents:
+	if ((m_DragonPhase == eDragonPhase::LandedBreath) && (a_TDI.DamageType == dtRangedAttack))
+	{
+		return false;
+	}
+
 	if (!Super::DoTakeDamage(a_TDI))
 	{
 		return false;
