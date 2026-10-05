@@ -20,8 +20,8 @@ public:
 	static constexpr UInt32 PART_COUNT = 8;
 
 	/** Zero-based index of the head within the dragon's parts, i.e. the only part that takes full
-	damage in vanilla. Measured in-game with a 1.12.2 client: hitting the head sent partID = dragonID + 2. */
-	static constexpr UInt32 HEAD_PART_INDEX = 1;
+	damage in vanilla. Measured in-game with a 1.12.2 client: hitting the head sent partID = dragonID + 1. */
+	static constexpr UInt32 HEAD_PART_INDEX = 0;
 
 	cEnderDragon();
 
