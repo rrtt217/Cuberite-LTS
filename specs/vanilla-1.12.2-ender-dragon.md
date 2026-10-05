@@ -124,6 +124,17 @@
 - 8 个部件作为真实服务端实体（`/kill` 计 9、爆炸对部件的结算等）。
 - 除 Circling/Hovering 外的阶段行为（Strafing/Perching/Charge/Death）、水晶治疗、重生流程。
 
+### 3.3 接触（近战）伤害（feature/mobs-ender-dragon-phases）
+
+来源：[Ender Dragon § Attacking](https://minecraft.wiki/w/Ender_Dragon) / 信息框。
+
+1. 停用通用怪物近战（`cEnderDragon::Attack` 返回 false），改在 `Tick` 里做接触判定。
+2. 每 tick 取与龙包围盒（16×8）相交的 `cPawn`；用“前方半宽、半高处”的近似头点（半径 3 格）区分头部/翅膀。
+3. 伤害取 wiki 的 **Normal** 值：头部 10、翅膀 5（Cuberite 无难度系统，恒为 Normal）。
+4. 命中走 `TakeDamage(dtMobAttack, ...)`，基础伤害逻辑会把目标抛起（玩家的 `KnockbackHeight = 8`）。
+5. 受击后 0.5s（10 tick）内不施加接触伤害（复用 `cMonster::m_TicksSinceLastDamaged`）。
+6. `Circling` 调用 `SetYawFromSpeed()`，让朝向跟随飞行方向（头部判定与客户端朝向依赖它）。
+
 ## 4. 验证方式
 
 - 静态：`src && lua CheckBasicStyle.lua`（通过，0 违规）。
@@ -143,3 +154,5 @@
 4. **阶段选择是占位逻辑**（有目标 → 盘旋，否则悬停），不是 vanilla 战斗状态机；等真正的 fight 逻辑接管。
 5. 盘旋参数（外侧半径 48 / 内侧 20、高度 80、速度 8 格/秒、每 tick 5% 修正）是便于测试的初值，未经 vanilla 实测校准；
    柱子环本身按生成器默认半径 43 生成，两者都是可配置量。
+6. 接触伤害的头部/翅膀用**几何近似**（头点 = 前方半宽、半径 3 格），不是真实部件；抛起强度沿用基础击退，未按 vanilla 校准。
+7. Cuberite 没有难度设置，接触伤害恒取 **Normal**（头 10 / 翅膀 5）；vanilla 会按难度取 6/10/15 与 3.5/5/7.5。

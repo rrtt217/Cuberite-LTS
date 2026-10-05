@@ -30,6 +30,21 @@ static constexpr double CRYSTAL_SEARCH_RADIUS = 64.0;
 /** Ticks between two End crystal recounts. */
 static constexpr int CRYSTAL_COUNT_INTERVAL = 20;
 
+/** Contact damage dealt by the dragon's head (Normal difficulty; Cuberite has no difficulty setting). */
+static constexpr int CONTACT_DAMAGE_HEAD = 10;
+
+/** Contact damage dealt by the dragon's wings / body (Normal difficulty). */
+static constexpr int CONTACT_DAMAGE_WING = 5;
+
+/** Knockback amount of a contact hit; the base damage code also launches the victim upwards. */
+static constexpr double CONTACT_KNOCKBACK = 9.0;
+
+/** Distance from the approximated head position within which a hit counts as a head hit, in blocks. */
+static constexpr double HEAD_CONTACT_RADIUS = 3.0;
+
+/** Ticks after the dragon takes damage during which it deals no contact damage (0.5 seconds). */
+static constexpr int CONTACT_GRACE_TICKS = 10;
+
 
 
 
@@ -116,6 +131,9 @@ void cEnderDragon::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 			break;
 		}
 	}
+
+	// Damage the entities we are touching (wings / head):
+	AttackEntities();
 }
 
 
@@ -156,6 +174,54 @@ void cEnderDragon::Circling(double a_Dt)
 		(TangentX * CIRCLING_SPEED) + ((PosX / Radius) * RadialCorrection),
 		(CIRCLING_HEIGHT - GetPosY()) * CIRCLING_CORRECTION,
 		(TangentZ * CIRCLING_SPEED) + ((PosZ / Radius) * RadialCorrection)
+	);
+
+	// Face the direction of flight, so that the head (and its contact damage) points forward:
+	SetYawFromSpeed();
+}
+
+
+
+
+
+bool cEnderDragon::Attack(std::chrono::milliseconds a_Dt)
+{
+	UNUSED(a_Dt);
+
+	// The dragon damages entities through contact (see AttackEntities), not through the generic melee:
+	return false;
+}
+
+
+
+
+
+void cEnderDragon::AttackEntities(void)
+{
+	// Vanilla applies no contact damage for half a second after the dragon itself took damage:
+	if (m_TicksSinceLastDamaged < CONTACT_GRACE_TICKS)
+	{
+		return;
+	}
+
+	// Approximate the head as a point at the front of the bounding box, at half the dragon's height:
+	const Vector3d HeadPos = GetPosition().addedY(GetHeight() / 2) + (GetLookVector() * (GetWidth() / 2));
+
+	m_World->ForEachEntityInBox(GetBoundingBox(), [&](cEntity & a_Entity)
+		{
+			if ((&a_Entity == this) || !a_Entity.IsPawn())
+			{
+				// Keep searching:
+				return false;
+			}
+
+			// The head deals more damage than the wings / body:
+			const bool IsHead = ((a_Entity.GetPosition() - HeadPos).SqrLength() < (HEAD_CONTACT_RADIUS * HEAD_CONTACT_RADIUS));
+			a_Entity.TakeDamage(dtMobAttack, this, (IsHead ? CONTACT_DAMAGE_HEAD : CONTACT_DAMAGE_WING), CONTACT_KNOCKBACK);
+
+			// Keep searching:
+			return false;
+		}
 	);
 }
 

@@ -59,6 +59,7 @@ public:
 	the head, which takes full damage. a_IsHead tells whether the hit part is the head. */
 	void TakeDamageFromPart(cEntity & a_Attacker, bool a_IsHead);
 
+	virtual bool Attack(std::chrono::milliseconds a_Dt) override;
 	virtual bool DoTakeDamage(TakeDamageInfo & a_TDI) override;
 	virtual void GetDrops(cItems & a_Drops, cEntity * a_Killer = nullptr) override;
 	virtual void HandlePhysics(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;
@@ -78,6 +79,9 @@ protected:
 
 	/** Moves the dragon along its circling path around the world centre. */
 	void Circling(double a_Dt);
+
+	/** Damages the living entities the dragon is currently touching (wings / head contact). */
+	void AttackEntities(void);
 
 	/** Recounts the End crystals around the arena (throttled). */
 	void UpdateCrystalCount(void);
