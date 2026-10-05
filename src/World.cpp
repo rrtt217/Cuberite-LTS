@@ -81,10 +81,16 @@ static constexpr int ENDER_DRAGON_EGG_Y = ENDER_DRAGON_FOUNTAIN_Y + 5;
 Ref: https://minecraft.wiki/w/End_Podium/Structure (the 20 End Portal blocks of the active podium). */
 static constexpr int ENDER_DRAGON_PORTAL_RADIUS_SQ = 6;
 
-/** Ticks the ender dragon re-summon sequence lasts (604 ticks, 30.2 seconds). */
-static constexpr int ENDER_DRAGON_RESPAWN_TICKS = 604;
+/** Ticks the ender dragon re-summon sequence lasts (30 seconds). */
+static constexpr int ENDER_DRAGON_RESPAWN_TICKS = 600;
 
-/** Y at which the re-summoned ender dragon spawns. */
+/** Ticks the four summoning crystals beam straight up before the spikes are regenerated (5 seconds). */
+static constexpr int ENDER_DRAGON_RESPAWN_BEAM_UP_TICKS = 100;
+
+/** Ticks spent regenerating the ten spikes, one after another (20 seconds). */
+static constexpr int ENDER_DRAGON_RESPAWN_PILLAR_TICKS = 400;
+
+/** Y at which the re-summoned ender dragon spawns, and that every final beam is aimed at. */
 static constexpr double ENDER_DRAGON_RESPAWN_HEIGHT = 128.0;
 
 
@@ -194,6 +200,7 @@ cWorld::cWorld(
 	m_EnderDragonKilled(false),
 	m_EnderDragonPreviouslyKilled(false),
 	m_EnderDragonRespawnTicksLeft(-1),
+	m_EnderDragonRespawnFinalBeams(false),
 	m_EnderDragonPillarsRegenerated(0),
 	m_LastChunkCheck(0),
 	m_LastSave(0),
@@ -475,7 +482,7 @@ cWorld::cWorld(
 		PillarGen.Init(Pillars, PillarsRadius);
 		for (const auto & Tower : PillarGen.GetTowers())
 		{
-			m_EnderDragonPillars.push_back({Tower.m_Pos, Tower.m_Height});
+			m_EnderDragonPillars.push_back({Tower.m_Pos, Tower.m_Height, Tower.m_Radius, Tower.m_HasCage});
 		}
 
 		// The resurrection regenerates the spikes clockwise, i.e. by descending angle around the centre:
@@ -1295,9 +1302,29 @@ void cWorld::StartEnderDragonResummon(const std::vector<UInt32> & a_Crystals)
 	m_EnderDragonRespawnCrystals = a_Crystals;
 	m_EnderDragonRespawnTicksLeft = ENDER_DRAGON_RESPAWN_TICKS;
 	m_EnderDragonPillarsRegenerated = 0;
+	m_EnderDragonRespawnFinalBeams = false;
+
+	// Close the exit portal for the duration of the sequence:
+	DeactivateEnderDragonExitPortal();
 
 	// The dragon egg disappears when the sequence begins:
 	SetBlock({0, ENDER_DRAGON_EGG_Y, 0}, E_BLOCK_AIR, 0);
+
+	// The four summoning crystals beam straight up first:
+	for (const UInt32 CrystalID : m_EnderDragonRespawnCrystals)
+	{
+		DoWithEntityByID(CrystalID, [](cEntity & a_Entity)
+			{
+				auto & Crystal = static_cast<cEnderCrystal &>(a_Entity);
+				Crystal.SetRespawnBeam(true);
+
+				const Vector3d Pos = Crystal.GetPosition();
+				Crystal.SetBeamTarget({FloorC(Pos.x), static_cast<int>(ENDER_DRAGON_RESPAWN_HEIGHT), FloorC(Pos.z)});
+				Crystal.SetDisplayBeam(true);
+				return true;
+			}
+		);
+	}
 }
 
 
@@ -1318,23 +1345,42 @@ void cWorld::TickEnderDragonResummon(void)
 		);
 		if (!Found)
 		{
-			m_EnderDragonRespawnCrystals.clear();
-			m_EnderDragonRespawnTicksLeft = -1;
+			AbortEnderDragonResummon();
 			return;
 		}
 	}
 
 	m_EnderDragonRespawnTicksLeft--;
 
-	// Regenerate the spikes one by one, spread over the sequence:
+	const int Elapsed = ENDER_DRAGON_RESPAWN_TICKS - m_EnderDragonRespawnTicksLeft;
 	const int PillarCount = static_cast<int>(m_EnderDragonPillars.size());
-	if ((PillarCount > 0) && (m_EnderDragonPillarsRegenerated < PillarCount))
+
+	if (
+		(Elapsed > ENDER_DRAGON_RESPAWN_BEAM_UP_TICKS) &&
+		(Elapsed <= (ENDER_DRAGON_RESPAWN_BEAM_UP_TICKS + ENDER_DRAGON_RESPAWN_PILLAR_TICKS)) &&
+		(PillarCount > 0)
+	)
 	{
-		const int Interval = std::max(ENDER_DRAGON_RESPAWN_TICKS / (PillarCount + 1), 1);
-		if ((m_EnderDragonRespawnTicksLeft % Interval) == 0)
+		// Rebuild the spikes one at a time; the beams follow the spike currently being rebuilt:
+		const int ElapsedPillars = Elapsed - ENDER_DRAGON_RESPAWN_BEAM_UP_TICKS;
+		const int Index = std::min(ElapsedPillars * PillarCount / ENDER_DRAGON_RESPAWN_PILLAR_TICKS, PillarCount - 1);
+		if (Index >= m_EnderDragonPillarsRegenerated)
 		{
-			RegenerateNextEnderDragonPillar();
+			while (m_EnderDragonPillarsRegenerated <= Index)
+			{
+				RegenerateEnderDragonPillar(static_cast<size_t>(m_EnderDragonPillarsRegenerated));
+				m_EnderDragonPillarsRegenerated++;
+			}
+
+			const auto & Pillar = m_EnderDragonPillars[Index];
+			AimEnderDragonResummonBeams({Pillar.m_Pos.x, Pillar.m_Height + 1, Pillar.m_Pos.z}, false);
 		}
+	}
+	else if ((Elapsed > (ENDER_DRAGON_RESPAWN_BEAM_UP_TICKS + ENDER_DRAGON_RESPAWN_PILLAR_TICKS)) && !m_EnderDragonRespawnFinalBeams)
+	{
+		// Every crystal now beams at the point where the dragon will appear:
+		m_EnderDragonRespawnFinalBeams = true;
+		AimEnderDragonResummonBeams({0, static_cast<int>(ENDER_DRAGON_RESPAWN_HEIGHT), 0}, true);
 	}
 
 	// The dragon spawns once the sequence is over:
@@ -1348,35 +1394,128 @@ void cWorld::TickEnderDragonResummon(void)
 
 
 
-void cWorld::RegenerateNextEnderDragonPillar(void)
+void cWorld::RegenerateEnderDragonPillar(size_t a_Index)
 {
-	if (m_EnderDragonPillarsRegenerated >= static_cast<int>(m_EnderDragonPillars.size()))
+	if (a_Index >= m_EnderDragonPillars.size())
 	{
 		return;
 	}
 
-	const auto & Pillar = m_EnderDragonPillars[m_EnderDragonPillarsRegenerated];
-	m_EnderDragonPillarsRegenerated++;
+	const auto & Pillar = m_EnderDragonPillars[a_Index];
+	const Vector3i Base = Pillar.m_Pos;
+	const int Top = Pillar.m_Height;
+	const Vector3d CrystalPos(Base.x + 0.5, Top, Base.z + 0.5);
 
-	// Leave an intact crystal alone; the sequence only replaces the ones destroyed in the fight:
-	const Vector3d CrystalPos(Pillar.m_Pos.x + 0.5, Pillar.m_Height, Pillar.m_Pos.z + 0.5);
-	bool HasCrystal = false;
-	ForEachEntityInBox(cBoundingBox(CrystalPos, 2.0f, 2.0f), [&HasCrystal](cEntity & a_Entity)
+	// The explosion happens before the spike is rebuilt, so it never damages the fresh one:
+	DoExplosionAt(2.0, CrystalPos.x, CrystalPos.y, CrystalPos.z, false, esEnderCrystal, nullptr);
+
+	// Rebuild the obsidian cylinder:
+	for (int X = -Pillar.m_Radius; X < Pillar.m_Radius; X++)
+	{
+		for (int Z = -Pillar.m_Radius; Z < Pillar.m_Radius; Z++)
 		{
-			if (a_Entity.IsEnderCrystal())
+			if (((X * X) + (Z * Z)) >= ((Pillar.m_Radius * Pillar.m_Radius) - 3))
 			{
-				HasCrystal = true;
+				continue;
+			}
+			for (int Y = 0; Y <= (Top - 2); Y++)
+			{
+				SetBlock({Base.x + X, Y, Base.z + Z}, E_BLOCK_OBSIDIAN, 0);
+			}
+		}
+	}
+
+	// Rebuild the iron bar cage, if the spike has one:
+	if (Pillar.m_HasCage)
+	{
+		for (const auto & Offset : cEnderDragonFightStructuresGen::m_CagePos)
+		{
+			SetBlock({Base.x + Offset.x, Top + Offset.y, Base.z + Offset.z}, E_BLOCK_IRON_BARS, 0);
+		}
+		for (const auto & Offset : cEnderDragonFightStructuresGen::m_CageAir)
+		{
+			SetBlock({Base.x + Offset.x, Top + Offset.y, Base.z + Offset.z}, E_BLOCK_AIR, 0);
+		}
+		for (int X = -2; X <= 2; ++X)
+		{
+			for (int Z = -2; Z <= 2; ++Z)
+			{
+				SetBlock({Base.x + X, Top + 2, Base.z + Z}, E_BLOCK_IRON_BARS, 0);
+			}
+		}
+	}
+
+	// Rebuild the bedrock top, the fire and the crystal:
+	SetBlock({Base.x, Top - 1, Base.z}, E_BLOCK_BEDROCK, 0);
+	SetBlock({Base.x, Top, Base.z}, E_BLOCK_FIRE, 0);
+	SpawnEnderCrystal(CrystalPos, true);
+}
+
+
+
+
+
+void cWorld::AimEnderDragonResummonBeams(const Vector3i & a_Target, bool a_IncludePillars)
+{
+	auto Aim = [&a_Target](cEntity & a_Entity)
+	{
+		if (a_Entity.IsEnderCrystal())
+		{
+			auto & Crystal = static_cast<cEnderCrystal &>(a_Entity);
+			Crystal.SetBeamTarget(a_Target);
+			Crystal.SetDisplayBeam(true);
+		}
+		return false;  // Keep searching the box
+	};
+
+	for (const UInt32 CrystalID : m_EnderDragonRespawnCrystals)
+	{
+		DoWithEntityByID(CrystalID, [&a_Target](cEntity & a_Entity)
+			{
+				auto & Crystal = static_cast<cEnderCrystal &>(a_Entity);
+				Crystal.SetBeamTarget(a_Target);
+				Crystal.SetDisplayBeam(true);
 				return true;
 			}
-
-			// Keep searching:
-			return false;
-		}
-	);
-	if (!HasCrystal)
-	{
-		SpawnEnderCrystal(CrystalPos, true);
+		);
 	}
+
+	if (!a_IncludePillars)
+	{
+		return;
+	}
+
+	for (const auto & Pillar : m_EnderDragonPillars)
+	{
+		const Vector3d CrystalPos(Pillar.m_Pos.x + 0.5, Pillar.m_Height, Pillar.m_Pos.z + 0.5);
+		ForEachEntityInBox(cBoundingBox(CrystalPos, 2.0f, 2.0f), Aim);
+	}
+}
+
+
+
+
+
+void cWorld::AbortEnderDragonResummon(void)
+{
+	// Let go of the summoning crystals that were beaming:
+	for (const UInt32 CrystalID : m_EnderDragonRespawnCrystals)
+	{
+		DoWithEntityByID(CrystalID, [](cEntity & a_Entity)
+			{
+				auto & Crystal = static_cast<cEnderCrystal &>(a_Entity);
+				Crystal.SetRespawnBeam(false);
+				Crystal.SetDisplayBeam(false);
+				return true;
+			}
+		);
+	}
+	m_EnderDragonRespawnCrystals.clear();
+	m_EnderDragonRespawnTicksLeft = -1;
+	m_EnderDragonRespawnFinalBeams = false;
+
+	// Reactivate the exit portal (without placing a new dragon egg):
+	SetEnderDragonExitPortalBlocks(true);
 }
 
 
@@ -1390,7 +1529,9 @@ void cWorld::FinishEnderDragonResummon(void)
 	{
 		DoWithEntityByID(CrystalID, [](cEntity & a_Entity)
 			{
-				a_Entity.TakeDamage(dtExplosion, cEntity::INVALID_ID, 1000, 0);
+				// Note: an attacker entity ID of INVALID_ID would never resolve and thus apply no damage;
+				// pass a null attacker instead so the explosion actually kills and detonates the crystal:
+				a_Entity.TakeDamage(dtExplosion, nullptr, 1000, 0);
 				return true;
 			}
 		);
@@ -1412,6 +1553,7 @@ void cWorld::FinishEnderDragonResummon(void)
 	m_HasSpawnedEnderDragon = true;
 	m_EnderDragonPreviouslyKilled = true;
 	m_EnderDragonRespawnTicksLeft = -1;
+	m_EnderDragonRespawnFinalBeams = false;
 	SaveEnderDragonFightState();
 }
 
@@ -1429,7 +1571,7 @@ void cWorld::SetEnderDragonKilled(void)
 
 
 
-void cWorld::ActivateEnderDragonExitPortal(void)
+void cWorld::SetEnderDragonExitPortalBlocks(bool a_Active)
 {
 	if (m_Dimension != dimEnd)
 	{
@@ -1447,12 +1589,30 @@ void cWorld::ActivateEnderDragonExitPortal(void)
 				continue;
 			}
 
-			SetBlock({dx, ENDER_DRAGON_PORTAL_Y, dz}, E_BLOCK_END_PORTAL, 0);
+			SetBlock({dx, ENDER_DRAGON_PORTAL_Y, dz}, a_Active ? E_BLOCK_END_PORTAL : E_BLOCK_AIR, 0);
 		}
 	}
+}
+
+
+
+
+
+void cWorld::ActivateEnderDragonExitPortal(void)
+{
+	SetEnderDragonExitPortalBlocks(true);
 
 	// The dragon egg appears on top of the central pillar:
 	SetBlock({0, ENDER_DRAGON_EGG_Y, 0}, E_BLOCK_DRAGON_EGG, 0);
+}
+
+
+
+
+
+void cWorld::DeactivateEnderDragonExitPortal(void)
+{
+	SetEnderDragonExitPortalBlocks(false);
 }
 
 

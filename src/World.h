@@ -879,6 +879,12 @@ public:
 	/** Activates the End exit portal (fills its bowl with End Portal blocks and places the dragon egg). */
 	void ActivateEnderDragonExitPortal(void);
 
+	/** Removes the End Portal blocks from the exit portal, closing it again for a re-summon. */
+	void DeactivateEnderDragonExitPortal(void);
+
+	/** Adds (a_Active) or removes the End Portal blocks of the exit portal. */
+	void SetEnderDragonExitPortalBlocks(bool a_Active);
+
 	/** Creates a projectile of the specified type. Returns the projectile's UniqueID if successful, cEntity::INVALID_ID otherwise
 	Item parameter is currently used for Fireworks to correctly set entity metadata based on item metadata. */
 	UInt32 CreateProjectile(Vector3d a_Pos, cProjectileEntity::eKind a_Kind, cEntity * a_Creator, const cItem * a_Item, const Vector3d * a_Speed = nullptr);  // tolua_export
@@ -1024,11 +1030,16 @@ private:
 	/** Unique IDs of the four End crystals that started the current re-summon sequence. */
 	std::vector<UInt32> m_EnderDragonRespawnCrystals;
 
+	/** Whether every crystal is already beaming at the spawn point (the final re-summon phase). */
+	bool m_EnderDragonRespawnFinalBeams;
+
 	/** One regenerable End pillar: its base position and the Y of its top block. */
 	struct sEndPillar
 	{
 		Vector3i m_Pos;
 		int m_Height;
+		int m_Radius;
+		bool m_HasCage;
 	};
 
 	/** The End pillars, sorted clockwise around the portal, for spike regeneration during a re-summon. */
@@ -1179,8 +1190,14 @@ private:
 	/** Spawns the dragon at the end of the re-summon sequence and removes the summoning crystals. */
 	void FinishEnderDragonResummon(void);
 
-	/** Regenerates the next End spike (its crystal) during a re-summon. */
-	void RegenerateNextEnderDragonPillar(void);
+	/** Regenerates one whole End spike (obsidian, cage, bedrock, fire and crystal) during a re-summon. */
+	void RegenerateEnderDragonPillar(size_t a_Index);
+
+	/** Points all re-summon beams at a_Target; optionally includes the crystals standing on the spikes. */
+	void AimEnderDragonResummonBeams(const Vector3i & a_Target, bool a_IncludePillars);
+
+	/** Cancels a running re-summon and reactivates the exit portal. */
+	void AbortEnderDragonResummon(void);
 
 	/** Returns the unique IDs of the End crystals on the four exit-portal summoning spots. */
 	std::vector<UInt32> FindEnderDragonSummoningCrystals(void);
