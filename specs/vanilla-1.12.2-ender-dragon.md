@@ -130,6 +130,9 @@
    到达传送门只结算一次。死亡后由龙的 `m_DragonDeathTime` 计时（对应 vanilla NBT `DragonDeathTime`，仅服务端、不作为 metadata 下发）：
    150 tick 掉落 12000 XP，200 tick（10 秒）时 `Destroy()`；`Tick` 在血量 `<= 0` 时只跑该计时，
    不调用 `cMonster::Tick`（它 1 秒就会删龙，会截断死亡动画）。
+10. 阶段语义：`Hovering`(10) 是 `/summon` 龙的默认且**终点**态——原地悬停、无害、不进入 fight 逻辑（不统计水晶、不接触伤害、不切换）；
+    fight 生成的龙在 `TickEnderDragonFight` 里被显式设为 `Circling`(0)，且所有转换（Strafing/Perching/Dying）只回落到 `Circling`，**从不进入 10**。
+    删除了早期的“有目标→盘旋/否则悬停”占位切换。`DragonPhase` 随实体一起存/读档（NBT int `DragonPhase`）。
 
 **故意不做的部分**（后续增量）：
 
@@ -172,7 +175,7 @@
 2. 非头部减免施加在**基础伤害**上；附魔（Sharpness 等）/暴击加成由 `cEntity::DoTakeDamage` 之后再加，未被减免
    （vanilla 减免的是最终值）。无附魔的普通攻击不受影响；修正需要给 `cEntity::DoTakeDamage` 增加一个伤害后处理钩子，属独立改动。
 3. 1.8 客户端是否使用同一部件 ID 公式与头部索引未验证（本分支按 1.12.2）。
-4. **阶段选择是占位逻辑**（有目标 → 盘旋，否则悬停），不是 vanilla 战斗状态机；等真正的 fight 逻辑接管。
+4. 尚无在运行时设置 `DragonPhase` 的入口（Core 的 `/summon` 不支持 NBT，也没有 `/data`）；只能通过 NBT 存读档保留，或由 fight 逻辑设置。
 5. 盘旋参数（外侧半径 48 / 内侧 20、高度 80、速度 8 格/秒、每 tick 5% 修正）是便于测试的初值，未经 vanilla 实测校准；
    柱子环本身按生成器默认半径 43 生成，两者都是可配置量。
 6. 接触伤害的头部/翅膀用**几何近似**（头点 = 前方半宽、半径 3 格），不是真实部件；抛起强度沿用基础击退，未按 vanilla 校准。

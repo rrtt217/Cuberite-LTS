@@ -942,11 +942,15 @@ public:
 					mWriter.AddInt("Age",            ZombieVillager->GetAge());
 					break;
 				}
+				case mtEnderDragon:
+				{
+					mWriter.AddInt("DragonPhase", static_cast<Int32>(static_cast<const cEnderDragon *>(a_Monster)->GetDragonPhase()));
+					break;
+				}
 				case mtBlaze:
 				case mtCaveSpider:
 				case mtChicken:
 				case mtCow:
-				case mtEnderDragon:
 				case mtGhast:
 				case mtGiant:
 				case mtGuardian:

@@ -171,17 +171,16 @@ void cEnderDragon::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 		return;
 	}
 
+	// A dragon in the hovering state is the harmless one created by /summon (and the default state):
+	// it stays put and does not run any of the fight logic below.
+	if (m_DragonPhase == eDragonPhase::Hovering)
+	{
+		SetSpeed(0, 0, 0);
+		return;
+	}
+
 	// Recount the End crystals around the arena (throttled internally); this may start a strafe:
 	UpdateCrystalCount();
-
-	// Only Circling and Hovering are chosen by the placeholder logic; the other phases transition
-	// themselves (strafing, perching, taking off):
-	if ((m_DragonPhase == eDragonPhase::Circling) || (m_DragonPhase == eDragonPhase::Hovering))
-	{
-		// Placeholder phase selection until the actual fight logic exists: circle while a player is
-		// targeted, otherwise hover in place.
-		SetDragonPhase((GetTarget() != nullptr) ? eDragonPhase::Circling : eDragonPhase::Hovering);
-	}
 
 	const double DtSec = std::chrono::duration_cast<std::chrono::duration<double>>(a_Dt).count();
 
@@ -196,7 +195,8 @@ void cEnderDragon::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 		{
 			if ((--m_StrafingTicksLeft <= 0) || (GetTarget() == nullptr))
 			{
-				SetDragonPhase((GetTarget() != nullptr) ? eDragonPhase::Circling : eDragonPhase::Hovering);
+				// A strafing dragon always resumes circling; it never falls back to hovering:
+				SetDragonPhase(eDragonPhase::Circling);
 			}
 			else
 			{

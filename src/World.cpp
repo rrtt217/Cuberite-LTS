@@ -1162,7 +1162,18 @@ void cWorld::TickEnderDragonFight(std::chrono::milliseconds a_Dt)
 	}
 
 	const int Height = GetHeight(0, 0).value_or(64);
-	SpawnMob(0.5, Height + ENDER_DRAGON_SPAWN_HEIGHT_OFFSET, 0.5, mtEnderDragon);
+	const UInt32 DragonID = SpawnMob(0.5, Height + ENDER_DRAGON_SPAWN_HEIGHT_OFFSET, 0.5, mtEnderDragon);
+
+	// A fight dragon starts out circling; the hovering state is reserved for /summon dragons:
+	if (DragonID != cEntity::INVALID_ID)
+	{
+		DoWithEntityByID(DragonID, [](cEntity & a_Entity)
+			{
+				static_cast<cEnderDragon &>(a_Entity).SetDragonPhase(cEnderDragon::eDragonPhase::Circling);
+				return true;
+			}
+		);
+	}
 }
 
 
