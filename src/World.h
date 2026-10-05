@@ -882,8 +882,14 @@ public:
 	/** Spawns one End gateway around the central island (called once per dragon defeat). */
 	void SpawnEnderDragonGateway(void);
 
-	/** Returns the End gateway linked to a_GatewayPos, generating the outer-island counterpart on first use. */
-	Vector3i GetLinkedEnderDragonGateway(const Vector3i & a_GatewayPos);
+	/** Looks up the End gateway linked to a_GatewayPos; returns false (and starts generating it) if unknown. */
+	bool TryGetLinkedEnderDragonGateway(const Vector3i & a_GatewayPos, Vector3i & a_Target);
+
+	/** Starts generating the outer-island counterpart of a central gateway, if it does not exist yet. */
+	void EnsureEnderDragonGatewayLink(const Vector3i & a_GatewayPos);
+
+	/** Records a two-way link between two End gateways and persists the fight state. */
+	void LinkEnderDragonGateways(const Vector3i & a_First, const Vector3i & a_Second);
 
 	/** Activates the End exit portal (fills its bowl with End Portal blocks and places the dragon egg). */
 	void ActivateEnderDragonExitPortal(void);

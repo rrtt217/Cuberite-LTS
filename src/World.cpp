@@ -1833,58 +1833,123 @@ void cWorld::SpawnEnderDragonGateway(void)
 	PlaceEnderDragonGatewayStructure(*this, GatewayPos);
 	m_EnderDragonGateways.push_back(GatewayPos);
 	SaveEnderDragonFightState();
+
+	// Start generating the outer-island counterpart right away, so it is ready when the gateway is used:
+	EnsureEnderDragonGatewayLink(GatewayPos);
 }
 
 
 
 
 
-Vector3i cWorld::GetLinkedEnderDragonGateway(const Vector3i & a_GatewayPos)
+bool cWorld::TryGetLinkedEnderDragonGateway(const Vector3i & a_GatewayPos, Vector3i & a_Target)
 {
 	// An existing link connects the two gateways in both directions:
 	for (const auto & Link : m_EnderDragonGatewayLinks)
 	{
 		if (Link.first == a_GatewayPos)
 		{
-			return Link.second;
+			a_Target = Link.second;
+			return true;
 		}
 		if (Link.second == a_GatewayPos)
 		{
-			return Link.first;
+			a_Target = Link.first;
+			return true;
 		}
 	}
 
-	// First activation: generate the outer-island counterpart in the gateway's direction:
+	// Not generated yet: start generating it and report that there is no destination yet.
+	EnsureEnderDragonGatewayLink(a_GatewayPos);
+	return false;
+}
+
+
+
+
+
+/** Places the outer-island counterpart of a central gateway once its chunk has been generated. */
+class cEndGatewayLinkCallback:
+	public cChunkCoordCallback
+{
+public:
+
+	cEndGatewayLinkCallback(cWorld & a_World, const Vector3i & a_Central, int a_TargetX, int a_TargetZ):
+		m_World(a_World),
+		m_Central(a_Central),
+		m_TargetX(a_TargetX),
+		m_TargetZ(a_TargetZ)
+	{
+	}
+
+	virtual void Call(cChunkCoords a_Coords, bool a_IsSuccess) override
+	{
+		UNUSED(a_Coords);
+		if (!a_IsSuccess)
+		{
+			return;
+		}
+
+		// Find the local surface and place the return gateway above it:
+		int TargetY = ENDER_DRAGON_GATEWAY_Y;
+		for (int y = cChunkDef::Height - 1; y >= 0; y--)
+		{
+			if (m_World.GetBlock({m_TargetX, y, m_TargetZ}) != E_BLOCK_AIR)
+			{
+				TargetY = y + ENDER_DRAGON_GATEWAY_OUTER_Y_OFFSET;
+				break;
+			}
+		}
+
+		const Vector3i TargetPos(m_TargetX, TargetY, m_TargetZ);
+		PlaceEnderDragonGatewayStructure(m_World, TargetPos);
+		m_World.LinkEnderDragonGateways(m_Central, TargetPos);
+	}
+
+private:
+
+	cWorld & m_World;
+	Vector3i m_Central;
+	int m_TargetX;
+	int m_TargetZ;
+};
+
+
+
+
+
+void cWorld::EnsureEnderDragonGatewayLink(const Vector3i & a_GatewayPos)
+{
+	// Already linked or already being prepared:
+	for (const auto & Link : m_EnderDragonGatewayLinks)
+	{
+		if ((Link.first == a_GatewayPos) || (Link.second == a_GatewayPos))
+		{
+			return;
+		}
+	}
+
+	// The outer gateway lies in the gateway's direction, some distance away:
 	Vector3d Direction(a_GatewayPos.x, 0, a_GatewayPos.z);
 	const double Length = Direction.Length();
-	if (Length < 0.001)
-	{
-		Direction = Vector3d(1, 0, 0);
-	}
-	else
-	{
-		Direction = Direction / Length;
-	}
+	Direction = (Length < 0.001) ? Vector3d(1, 0, 0) : (Direction / Length);
 
-	const int OuterX = FloorC(Direction.x * ENDER_DRAGON_GATEWAY_OUTER_DISTANCE);
-	const int OuterZ = FloorC(Direction.z * ENDER_DRAGON_GATEWAY_OUTER_DISTANCE);
+	const int TargetX = FloorC(Direction.x * ENDER_DRAGON_GATEWAY_OUTER_DISTANCE);
+	const int TargetZ = FloorC(Direction.z * ENDER_DRAGON_GATEWAY_OUTER_DISTANCE);
 
-	// Place the return gateway above the local surface (falling back to the central gateway height):
-	int OuterY = ENDER_DRAGON_GATEWAY_Y;
-	for (int y = cChunkDef::Height - 1; y >= 0; y--)
-	{
-		if (GetBlock({OuterX, y, OuterZ}) != E_BLOCK_AIR)
-		{
-			OuterY = y + ENDER_DRAGON_GATEWAY_OUTER_Y_OFFSET;
-			break;
-		}
-	}
+	// The destination chunk must be generated before its surface can be found and built upon:
+	const auto Chunk = cChunkDef::BlockToChunk({TargetX, 0, TargetZ});
+	PrepareChunk(Chunk.m_ChunkX, Chunk.m_ChunkZ, std::make_unique<cEndGatewayLinkCallback>(*this, a_GatewayPos, TargetX, TargetZ));
+}
 
-	const Vector3i OuterPos(OuterX, OuterY, OuterZ);
-	PlaceEnderDragonGatewayStructure(*this, OuterPos);
-	m_EnderDragonGatewayLinks.emplace_back(a_GatewayPos, OuterPos);
+
+
+
+
+void cWorld::LinkEnderDragonGateways(const Vector3i & a_First, const Vector3i & a_Second)
+{
+	m_EnderDragonGatewayLinks.emplace_back(a_First, a_Second);
 	SaveEnderDragonFightState();
-	return OuterPos;
 }
 
 

@@ -1534,10 +1534,15 @@ bool cEntity::DetectPortal()
 					return false;
 				}
 
+				Vector3i Target;
+				if (!GetWorld()->TryGetLinkedEnderDragonGateway(Position, Target))
+				{
+					// The outer gateway is still being generated; don't teleport into the void:
+					return false;
+				}
+
 				// Don't let an entity that just came out of a gateway go straight back in:
 				m_PortalCooldownData.m_ShouldPreventTeleportation = true;
-
-				const Vector3i Target = GetWorld()->GetLinkedEnderDragonGateway(Position);
 				TeleportToCoords(Target.x + 0.5, Target.y + 2.0, Target.z + 0.5);
 				return true;
 			}

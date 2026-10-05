@@ -21,7 +21,10 @@
 ## 传送
 
 - 实体每 tick 在 `cEntity::DetectPortal()` 检查脚下方块；若为 `E_BLOCK_END_GATEWAY`，则传送到其**链接**的折跃门 +2 Y。
-- **首次激活**某个主岛网关时，生成其外岛回程网关（`cWorld::GetLinkedEnderDragonGateway`）：沿该网关方向距中心 **1024** 格处，扫描该列最高非空气方块、在其上 **10** 格放置同样的网关结构；链接双向存储。
+- **首次**生成回程网关（主岛网关诞生时即预生成）走 `cWorld::EnsureEnderDragonGatewayLink`：沿该网关方向距中心 **1024** 格处，
+  先 `PrepareChunk` **加载目标区块**，再在回调里扫描该列最高非空气方块、在其上 **10** 格放置同样的网关结构；链接双向存储。
+  关键：`cWorld::GetBlock`/`SetBlock` 对**未加载区块**直接返回空气 / 空操作，必须先加载区块，否则会扫不到地形、结构也放不下。
+- 传送前若链接尚未生成（目标区块还在加载），**不传送**（避免进入虚空）；链接就绪后再次进入即可传送。
 - 链接表 `m_EnderDragonGatewayLinks` 持久化到 `[EnderDragon] GatewayLinks`（`first>second` 坐标对）。
 - 传送后设置 `m_PortalCooldownData.m_ShouldPreventTeleportation`，同一实体不会立刻来回弹。
 - 主岛网关 ↔ 外岛回程网关双向互传。
