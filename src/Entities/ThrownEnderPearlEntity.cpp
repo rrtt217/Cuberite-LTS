@@ -62,10 +62,10 @@ bool cThrownEnderPearlEntity::DetectPortal(void)
 
 	// A pearl thrown into an End gateway activates the gateway for its thrower and is consumed,
 	// without any of the usual ender pearl effects (fall damage, endermites):
-	Vector3i Target;
-	if (GetWorld()->TryGetLinkedEnderDragonGateway(Position, Target))
+	Vector3d ExitPos;
+	if (GetWorld()->GetEnderDragonGatewayExit(Position, true, ExitPos))
 	{
-		TeleportCreatorToGateway(Target);
+		TeleportCreatorToGateway(ExitPos);
 		Destroy();
 		return true;
 	}
@@ -78,16 +78,16 @@ bool cThrownEnderPearlEntity::DetectPortal(void)
 
 
 
-void cThrownEnderPearlEntity::TeleportCreatorToGateway(Vector3i a_Target)
+void cThrownEnderPearlEntity::TeleportCreatorToGateway(Vector3d a_ExitPos)
 {
 	if (m_CreatorData.m_Name.empty())
 	{
 		return;
 	}
 
-	GetWorld()->FindAndDoWithPlayer(m_CreatorData.m_Name, [a_Target](cPlayer & a_Entity)
+	GetWorld()->FindAndDoWithPlayer(m_CreatorData.m_Name, [a_ExitPos](cPlayer & a_Entity)
 	{
-		a_Entity.TeleportToCoords(a_Target.x + 0.5, a_Target.y + 2.0, a_Target.z + 0.5);
+		a_Entity.TeleportToCoords(a_ExitPos.x, a_ExitPos.y, a_ExitPos.z);
 		return false;
 	});
 }

@@ -1534,8 +1534,8 @@ bool cEntity::DetectPortal()
 					return false;
 				}
 
-				Vector3i Target;
-				if (!GetWorld()->TryGetLinkedEnderDragonGateway(Position, Target))
+				Vector3d ExitPos;
+				if (!GetWorld()->GetEnderDragonGatewayExit(Position, IsPlayer(), ExitPos))
 				{
 					// The outer gateway is still being generated; don't teleport into the void:
 					return false;
@@ -1543,7 +1543,7 @@ bool cEntity::DetectPortal()
 
 				// Don't let an entity that just came out of a gateway go straight back in:
 				m_PortalCooldownData.m_ShouldPreventTeleportation = true;
-				TeleportToCoords(Target.x + 0.5, Target.y + 2.0, Target.z + 0.5);
+				TeleportToCoords(ExitPos.x, ExitPos.y, ExitPos.z);
 				return true;
 			}
 			case E_BLOCK_END_PORTAL:
