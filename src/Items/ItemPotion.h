@@ -4,7 +4,7 @@
 #include "../Entities/EntityEffect.h"
 
 
-class cItemPotionHandler final:
+class cItemPotionHandler:
 	public cItemHandler
 {
 	using Super = cItemHandler;
@@ -40,8 +40,8 @@ public:
 	{
 		short PotionDamage = a_HeldItem.m_ItemDamage;
 
-		// Do not throw non-splash potions:
-		if (cEntityEffect::IsPotionDrinkable(PotionDamage))
+		// Only splash and lingering potions can be thrown:
+		if ((a_HeldItem.m_ItemType != E_ITEM_LINGERING_POTION) && cEntityEffect::IsPotionDrinkable(PotionDamage))
 		{
 			return false;
 		}
@@ -90,6 +90,43 @@ public:
 			a_Player->ReplaceOneEquippedItemTossRest(cItem(E_ITEM_GLASS_BOTTLE));
 		}
 		return true;
+	}
+};
+
+
+
+
+
+/** A lingering potion is thrown rather than drunk, so it is never drinkable / edible. */
+class cItemLingeringPotionHandler final:
+	public cItemPotionHandler
+{
+	using Super = cItemPotionHandler;
+
+public:
+
+	using Super::Super;
+
+
+
+
+
+	// cItemHandler overrides:
+	virtual bool IsDrinkable(short a_ItemDamage) const override
+	{
+		UNUSED(a_ItemDamage);
+		return false;
+	}
+
+
+
+
+
+	virtual bool EatItem(cPlayer * a_Player, cItem * a_Item) const override
+	{
+		UNUSED(a_Player);
+		UNUSED(a_Item);
+		return false;
 	}
 };
 
