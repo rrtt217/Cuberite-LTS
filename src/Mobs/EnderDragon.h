@@ -70,6 +70,15 @@ protected:
 	/** The dragon's current behaviour phase. */
 	eDragonPhase m_DragonPhase;
 
+	/** Number of End crystals around the arena; recounted periodically. */
+	UInt32 m_CrystalCount;
+
+	/** Ticks until the End crystal count is refreshed again. */
+	int m_CrystalCountCooldown;
+
 	/** Moves the dragon along its circling path around the world centre. */
 	void Circling(double a_Dt);
+
+	/** Recounts the End crystals around the arena (throttled). */
+	void UpdateCrystalCount(void);
 } ;

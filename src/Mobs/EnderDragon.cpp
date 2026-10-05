@@ -12,8 +12,11 @@
 /** Horizontal speed of the dragon while circling, in blocks per second. */
 static constexpr double CIRCLING_SPEED = 8.0;
 
-/** Radius of the circle the dragon flies around the world centre, in blocks. */
-static constexpr double CIRCLING_RADIUS = 40.0;
+/** Radius the dragon flies at while circling while End crystals are still present (outside the pillar ring). */
+static constexpr double CIRCLING_RADIUS_OUTSIDE = 48.0;
+
+/** Radius the dragon flies at while circling after the End crystals are gone (inside the pillar ring). */
+static constexpr double CIRCLING_RADIUS_INSIDE = 20.0;
 
 /** Height the dragon flies at while circling, in blocks. */
 static constexpr double CIRCLING_HEIGHT = 80.0;
@@ -21,13 +24,21 @@ static constexpr double CIRCLING_HEIGHT = 80.0;
 /** Fraction of the distance to the circling path that the dragon corrects each tick. */
 static constexpr double CIRCLING_CORRECTION = 0.05;
 
+/** Half-size of the box around the world centre in which End crystals are counted, in blocks. */
+static constexpr double CRYSTAL_SEARCH_RADIUS = 64.0;
+
+/** Ticks between two End crystal recounts. */
+static constexpr int CRYSTAL_COUNT_INTERVAL = 20;
+
 
 
 
 
 cEnderDragon::cEnderDragon(void) :
 	Super("EnderDragon", mtEnderDragon, "entity.enderdragon.hurt", "entity.enderdragon.death", "entity.enderdragon.ambient", 16, 8),
-	m_DragonPhase(eDragonPhase::Hovering)
+	m_DragonPhase(eDragonPhase::Hovering),
+	m_CrystalCount(0),
+	m_CrystalCountCooldown(0)
 {
 	// Fly freely: the flight code in Tick() controls our speed, so disable gravity and air drag:
 	SetGravity(0);
@@ -83,6 +94,9 @@ void cEnderDragon::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 		return;
 	}
 
+	// Recount the End crystals around the arena (throttled internally):
+	UpdateCrystalCount();
+
 	// Placeholder phase selection until the actual fight logic exists: circle while a player is
 	// targeted, otherwise hover in place.
 	SetDragonPhase((GetTarget() != nullptr) ? eDragonPhase::Circling : eDragonPhase::Hovering);
@@ -129,16 +143,52 @@ void cEnderDragon::Circling(double a_Dt)
 	const double PosZ = GetPosZ();
 	const double Radius = std::max(sqrt((PosX * PosX) + (PosZ * PosZ)), 0.001);
 
+	// Vanilla circles the ring of obsidian pillars on the outside while End crystals are still there,
+	// and on the inside once all of them have been destroyed:
+	const double TargetRadius = (m_CrystalCount > 0) ? CIRCLING_RADIUS_OUTSIDE : CIRCLING_RADIUS_INSIDE;
+
 	// Fly tangentially around the world centre, correcting towards the circling radius and height:
 	const double TangentX = -PosZ / Radius;
 	const double TangentZ =  PosX / Radius;
-	const double RadialCorrection = (CIRCLING_RADIUS - Radius) * CIRCLING_CORRECTION;
+	const double RadialCorrection = (TargetRadius - Radius) * CIRCLING_CORRECTION;
 
 	SetSpeed(
 		(TangentX * CIRCLING_SPEED) + ((PosX / Radius) * RadialCorrection),
 		(CIRCLING_HEIGHT - GetPosY()) * CIRCLING_CORRECTION,
 		(TangentZ * CIRCLING_SPEED) + ((PosZ / Radius) * RadialCorrection)
 	);
+}
+
+
+
+
+
+void cEnderDragon::UpdateCrystalCount(void)
+{
+	if (--m_CrystalCountCooldown > 0)
+	{
+		return;
+	}
+	m_CrystalCountCooldown = CRYSTAL_COUNT_INTERVAL;
+
+	UInt32 Count = 0;
+	const cBoundingBox SearchBox(
+		Vector3d(-CRYSTAL_SEARCH_RADIUS, 0, -CRYSTAL_SEARCH_RADIUS),
+		Vector3d(CRYSTAL_SEARCH_RADIUS, cChunkDef::Height, CRYSTAL_SEARCH_RADIUS)
+	);
+	m_World->ForEachEntityInBox(SearchBox, [&Count](cEntity & a_Entity)
+		{
+			if (a_Entity.IsEnderCrystal())
+			{
+				++Count;
+			}
+
+			// Keep searching:
+			return false;
+		}
+	);
+
+	m_CrystalCount = Count;
 }
 
 
