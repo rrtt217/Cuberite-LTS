@@ -876,6 +876,9 @@ public:
 	/** Returns the experience a killed ender dragon drops (12000 for the first kill, 500 on re-summon). */
 	int GetEnderDragonKillXP(void) const { return m_EnderDragonPreviouslyKilled ? 500 : 12000; }
 
+	/** Returns the positions of the End gateways spawned by defeating the dragon so far. */
+	const std::vector<Vector3i> & GetEnderDragonGateways(void) const { return m_EnderDragonGateways; }
+
 	/** Activates the End exit portal (fills its bowl with End Portal blocks and places the dragon egg). */
 	void ActivateEnderDragonExitPortal(void);
 
@@ -1023,6 +1026,12 @@ private:
 
 	/** Whether a previous ender dragon has already been killed (drives the reduced re-summon XP). */
 	bool m_EnderDragonPreviouslyKilled;
+
+	/** Position of the active exit portal (persisted so a loaded fight still knows where it is). */
+	Vector3i m_EnderDragonExitPortalPos;
+
+	/** Positions of the End gateways spawned so far by defeating the dragon (persisted). */
+	std::vector<Vector3i> m_EnderDragonGateways;
 
 	/** Ticks left in the dragon re-summon sequence; -1 while no re-summon is running. */
 	int m_EnderDragonRespawnTicksLeft;

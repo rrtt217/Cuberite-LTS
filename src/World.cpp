@@ -97,6 +97,53 @@ static constexpr double ENDER_DRAGON_RESPAWN_HEIGHT = 128.0;
 
 
 
+/** Serializes End gateway positions as semicolon-separated coordinate triples. */
+static AString SerializeEndGateways(const std::vector<Vector3i> & a_Gateways)
+{
+	AString Result;
+	for (const auto & Gateway : a_Gateways)
+	{
+		if (!Result.empty())
+		{
+			Result += ";";
+		}
+		Result += std::to_string(Gateway.x) + "," + std::to_string(Gateway.y) + "," + std::to_string(Gateway.z);
+	}
+	return Result;
+}
+
+
+
+
+
+/** Parses the string produced by SerializeEndGateways(). */
+static std::vector<Vector3i> DeserializeEndGateways(const AString & a_Value)
+{
+	std::vector<Vector3i> Result;
+	for (const auto & Entry : StringSplitAndTrim(a_Value, ";"))
+	{
+		const auto Coords = StringSplitAndTrim(Entry, ",");
+		if (Coords.size() != 3)
+		{
+			continue;
+		}
+
+		try
+		{
+			Result.emplace_back(std::stoi(Coords[0]), std::stoi(Coords[1]), std::stoi(Coords[2]));
+		}
+		catch (const std::exception &)
+		{
+			// Ignore malformed entries
+		}
+	}
+	return Result;
+}
+
+
+
+
+
 namespace World
 {
 	// Implement conversion functions from OpaqueWorld.h
@@ -199,6 +246,7 @@ cWorld::cWorld(
 	m_HasSpawnedEnderDragon(false),
 	m_EnderDragonKilled(false),
 	m_EnderDragonPreviouslyKilled(false),
+	m_EnderDragonExitPortalPos(0, ENDER_DRAGON_PORTAL_Y, 0),
 	m_EnderDragonRespawnTicksLeft(-1),
 	m_EnderDragonRespawnFinalBeams(false),
 	m_EnderDragonPillarsRegenerated(0),
@@ -297,6 +345,13 @@ cWorld::cWorld(
 
 	m_HasSpawnedEnderDragon = IniFile.GetValueSetB("EnderDragon", "HasSpawned", false);
 	m_EnderDragonKilled = IniFile.GetValueSetB("EnderDragon", "DragonKilled", false);
+	m_EnderDragonPreviouslyKilled = IniFile.GetValueSetB("EnderDragon", "PreviouslyKilled", false);
+	m_EnderDragonExitPortalPos = Vector3i(
+		IniFile.GetValueSetI("EnderDragon", "ExitPortalX", 0),
+		IniFile.GetValueSetI("EnderDragon", "ExitPortalY", ENDER_DRAGON_PORTAL_Y),
+		IniFile.GetValueSetI("EnderDragon", "ExitPortalZ", 0)
+	);
+	m_EnderDragonGateways = DeserializeEndGateways(IniFile.GetValue("EnderDragon", "Gateways", ""));
 
 	SetMaxViewDistance(IniFile.GetValueSetI("SpawnPosition", "MaxViewDistance", cClientHandle::DEFAULT_VIEW_DISTANCE));
 
@@ -1564,6 +1619,11 @@ void cWorld::FinishEnderDragonResummon(void)
 void cWorld::SetEnderDragonKilled(void)
 {
 	m_EnderDragonKilled = true;
+
+	// The next dragon to be killed drops only 500 XP:
+	m_EnderDragonPreviouslyKilled = true;
+
+	m_EnderDragonExitPortalPos = Vector3i(0, ENDER_DRAGON_PORTAL_Y, 0);
 	SaveEnderDragonFightState();
 }
 
@@ -1625,6 +1685,11 @@ void cWorld::SaveEnderDragonFightState(void)
 	IniFile.ReadFile(m_IniFileName);
 	IniFile.SetValueB("EnderDragon", "HasSpawned", m_HasSpawnedEnderDragon);
 	IniFile.SetValueB("EnderDragon", "DragonKilled", m_EnderDragonKilled);
+	IniFile.SetValueB("EnderDragon", "PreviouslyKilled", m_EnderDragonPreviouslyKilled);
+	IniFile.SetValueI("EnderDragon", "ExitPortalX", m_EnderDragonExitPortalPos.x);
+	IniFile.SetValueI("EnderDragon", "ExitPortalY", m_EnderDragonExitPortalPos.y);
+	IniFile.SetValueI("EnderDragon", "ExitPortalZ", m_EnderDragonExitPortalPos.z);
+	IniFile.SetValue("EnderDragon", "Gateways", SerializeEndGateways(m_EnderDragonGateways));
 	if (!IniFile.WriteFile(m_IniFileName))
 	{
 		LOGWARNING("Could not write ender dragon fight state to %s", m_IniFileName.c_str());
