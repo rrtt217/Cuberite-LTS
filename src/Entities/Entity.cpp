@@ -297,10 +297,9 @@ void cEntity::TakeDamage(cEntity & a_Attacker)
 void cEntity::TakeDamage(eDamageType a_DamageType, cEntity * a_Attacker, int a_RawDamage, double a_KnockbackAmount)
 {
 	float FinalDamage = static_cast<float>(a_RawDamage);
-	float ArmorCover = GetArmorCoverAgainst(a_Attacker, a_DamageType, a_RawDamage);
 
-	ApplyArmorDamage(static_cast<int>(ArmorCover));
-
+	// Note: armor durability is handled in DoTakeDamage(), once the hit is known to actually land;
+	// otherwise every contact-damage tick would wear the armor down even while invulnerable.
 	cEntity::TakeDamage(a_DamageType, a_Attacker, a_RawDamage, FinalDamage, a_KnockbackAmount);
 }
 
@@ -434,6 +433,11 @@ bool cEntity::DoTakeDamage(TakeDamageInfo & a_TDI)
 	{
 		return false;
 	}
+
+	// The hit landed, wear down the armor that covers it (vanilla damages armor for every hit that
+	// is actually applied, before the armor's damage reduction):
+	const float ArmorCover = GetArmorCoverAgainst(a_TDI.Attacker, a_TDI.DamageType, a_TDI.RawDamage);
+	ApplyArmorDamage(static_cast<int>(ArmorCover));
 
 	if (IsPainting())
 	{
