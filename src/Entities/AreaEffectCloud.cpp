@@ -6,6 +6,7 @@
 #include "../Chunk.h"
 #include "../World.h"
 #include "Pawn.h"
+#include "Player.h"
 
 
 
@@ -29,6 +30,9 @@ static constexpr int AREA_EFFECT_CLOUD_DEFAULT_DURATION = 600;
 /** Default delay between two applications of the effect to the same entity, in ticks. */
 static constexpr int AREA_EFFECT_CLOUD_DEFAULT_REAPPLICATION_DELAY = 10;
 
+/** Radius lost whenever a player collects one bottle of dragon's breath from the cloud, in blocks. */
+static constexpr float AREA_EFFECT_CLOUD_COLLECT_RADIUS = 0.5f;
+
 
 
 
@@ -44,7 +48,8 @@ cAreaEffectCloud::cAreaEffectCloud(Vector3d a_Pos) :
 	m_RadiusPerTick(0.0f),
 	m_RadiusOnUse(0.0f),
 	m_Color(0),
-	m_Particle(AREA_EFFECT_CLOUD_DEFAULT_PARTICLE)
+	m_Particle(AREA_EFFECT_CLOUD_DEFAULT_PARTICLE),
+	m_CanBeCollected(false)
 {
 }
 
@@ -102,6 +107,41 @@ void cAreaEffectCloud::SpawnOn(cClientHandle & a_Client)
 {
 	a_Client.SendSpawnEntity(*this);
 	a_Client.SendEntityMetadata(*this);
+}
+
+
+
+
+
+void cAreaEffectCloud::OnRightClicked(cPlayer & a_Player)
+{
+	Super::OnRightClicked(a_Player);
+
+	// Only clouds created by the dragon or its fireballs can be bottled:
+	if (!m_CanBeCollected)
+	{
+		return;
+	}
+
+	if (a_Player.GetEquippedItem().m_ItemType != E_ITEM_GLASS_BOTTLE)
+	{
+		return;
+	}
+
+	if (!a_Player.IsGameModeCreative())
+	{
+		a_Player.ReplaceOneEquippedItemTossRest(cItem(E_ITEM_DRAGON_BREATH));
+	}
+
+	// Collecting one bottle shrinks the cloud; it dissipates once the radius runs out:
+	SetRadius(m_Radius - AREA_EFFECT_CLOUD_COLLECT_RADIUS);
+	m_World->BroadcastEntityMetadata(*this);
+	m_World->BroadcastSoundEffect("item.bottle.fill_dragonbreath", a_Player.GetPosition(), 1.0f, 1.0f);
+
+	if (m_Radius <= 0.0f)
+	{
+		Destroy();
+	}
 }
 
 

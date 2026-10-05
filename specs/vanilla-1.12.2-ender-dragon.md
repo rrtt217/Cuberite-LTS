@@ -146,10 +146,17 @@
     Y=63）填成 `E_BLOCK_END_PORTAL`，并在中心柱顶 (0,67,0) 放 `E_BLOCK_DRAGON_EGG`。
     祭坛由 `cEnderDragonFightStructuresGen` 在 Y=62 生成（初始为未激活的空碗）。
 
+16. 龙火球与龙息收集（[Ender Dragon § Dragon Fireball](https://minecraft.wiki/w/Ender_Dragon#Dragon_Fireball)、
+    [Dragon's Breath](https://minecraft.wiki/w/Dragon%27s_Breath)）：
+    - `cDragonFireballEntity`（`pkDragonFireball`，Spawn Object ID 93）直线飞行、无重力；命中方块 **0.5 s（10 tick）后**炸出
+      紫色区域效果云（半径 3→5 / 30 s、Instant Damage II、`RadiusOnUse = 0` 不因生效而缩小）；**命中实体不造成伤害/击退**，直接穿过。
+    - Strafing 阶段目标进入 **64 格**时发射一颗火球（每次 strafe 一发），自龙头前方射出。
+    - 该云标记 `CanBeCollected`，玩家手持玻璃瓶右键获得龙息，同时云半径 -0.5，半径归零则消散。
+
 **故意不做的部分**（后续增量）：
 
 - 8 个部件作为真实服务端实体（`/kill` 计 9、爆炸对部件的结算等）。
-- Strafing 的龙火球、Perching 的咆哮/龙息伤害、Charge、死亡后的传送门/龙蛋/gateway、持久化 fight 状态、水晶治疗、重生流程。
+- Perching 的咆哮/龙息伤害、Charge、End gateway、完整 fight 控制器、重生流程。
 
 ### 3.3 接触（近战）伤害（feature/mobs-ender-dragon-phases）
 

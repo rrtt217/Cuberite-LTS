@@ -42,6 +42,7 @@ public:
 		pkSplashPotion,
 		pkFirework,
 		pkWitherSkull,
+		pkDragonFireball,
 	} ;
 
 	// tolua_end
