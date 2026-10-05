@@ -193,7 +193,7 @@
 6. 接触伤害的头部/翅膀用**几何近似**（头点 = 前方半宽、半径 3 格），不是真实部件；抛起强度沿用基础击退，未按 vanilla 校准。
 7. Cuberite 没有难度设置，接触伤害恒取 **Normal**（头 10 / 翅膀 5）；vanilla 会按难度取 6/10/15 与 3.5/5/7.5。
 8. `Strafing` 只是朝目标飞行 3 秒后回绕，未实现 vanilla 的“进入 64 格即喷龙火球”；水晶被毁通过每 20 tick 的数量对比检测（最多 1 秒延迟）。
-9. `Perching` 的落点高度（70）是近似；`LandedBreath` 的 3 秒只有计时，没有龙息伤害云（AreaEffectCloud 未实现）；咆哮没有独立的声音/粒子。
+9. `Perching` 的落点为出口祭坛中心柱顶（foot Y=67，对应生成器 fountain Y=62 + 柱顶 66 + 1）；`LandedBreath` 的 3 秒只有计时，没有龙息伤害云（AreaEffectCloud 未实现）；咆哮没有独立的声音/粒子。
 10. `Charging`（仅 BE）尚未实现（JE 本就没有该状态）。
 11. fight 状态用 `world.ini` 的 `[EnderDragon]` 段（`HasSpawned`/`DragonKilled`）持久化，只是两个布尔；未实现 vanilla 的 `PreviouslyKilled`、`ExitPortalLocation`、`Gateways`、`respawn_crystals`/重召唤等完整状态。
 12. 没有完整的 fight 控制器（水晶被毁的概率切换、传送门/龙蛋/gateway 记录等），生成位置取 (0,0) 最高方块 + 20。

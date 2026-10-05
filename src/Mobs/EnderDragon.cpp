@@ -57,8 +57,10 @@ static constexpr double STRAFING_SPEED = 12.0;
 /** How long a strafing run lasts; the dragon resumes circling afterwards. */
 static constexpr int STRAFING_DURATION_TICKS = 60;
 
-/** Height above the exit portal that the dragon descends to when perching, in blocks. */
-static constexpr double PERCH_HEIGHT = 70.0;
+/** Y that the dragon's feet descend to when perching, on top of the exit portal's central pillar.
+The entity position is the bottom of its bounding box, and the generated fountain's pillar top is at
+Y=66 (see cEnderDragonFightStructuresGen, fountain placed at Y=62), so the feet rest at Y=67. */
+static constexpr double PERCH_HEIGHT = 67.0;
 
 /** Distance within which the dragon considers itself landed on the exit portal, in blocks. */
 static constexpr double PERCH_REACHED_DISTANCE = 4.0;
