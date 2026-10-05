@@ -139,6 +139,9 @@ protected:
 	/** True if the projectile has hit the ground and is stuck there */
 	bool m_IsInGround;
 
+	/** Returns whether this projectile kind breaks a chorus flower that it hits. */
+	bool BreaksChorusFlower() const;
+
 	// cEntity overrides:
 	virtual void Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;
 	virtual void HandlePhysics(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;

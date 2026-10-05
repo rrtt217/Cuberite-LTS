@@ -201,10 +201,11 @@ Cuberite 落点：`cChorusFlowerHandler::OnUpdate`，用 `GetRandomProvider()`�
 - 支撑方块被破坏时，花**无掉落**消失。
 
 Cuberite 落点：
-- 直接破坏 → `ConvertToPickups` 掉自身。
-- 支撑消失 → 覆写 `OnNeighborChanged`，`CanBeAt` 失败时用**无掉落**方式移除（而不是默认 `DropBlockAsPickups`）。
-- 弹射物击中 → 需要弹射物命中回调把紫颂花打碎并掉自身（当前 Cuberite 可能没有通用机制，需要评估；若代价太大可作为后续增量）。
-- 活塞/水流推动 → 需评估 Cuberite 的推动路径。
+- 直接破坏 → `ConvertToPickups` 掉自身（分支 `feature/blocks-chorus-plants` 已实现）。
+- 支撑消失 → 覆写 `OnNeighborChanged`，`CanBeAt` 失败时用**无掉落**方式移除（同分支已实现）。
+- **弹射物击中（已实现）**：`cProjectileEntity::OnHitSolidBlock` 先按弹射物种类判定，再用命中面法线把命中点回退半格定位到被击中方块；若为紫颂花则 `DropBlockAsPickups` 掉自身。1.12.2 打碎花的种类：箭（含药箭/光灵箭）、雪球、鸡蛋、烟花火箭；`pkEnderPearl`/`pkExpBottle`/`pkSplashPotion` 不打碎。
+- **活塞推动（已实现）**：`cBlockHandler` 新增虚函数 `DoesDropOnPistonPush()`（默认 true），`cChorusFlowerHandler` 覆写为 false；`cBlockPistonHandler::PushBlocks` 对可被活塞破坏的方块据此决定是否 `DropBlockAsPickups`，否则 `SetBlock(AIR)` 无掉落销毁。
+- 已知缺口（**待确认**）：恶魂火球/烈焰火球走爆炸路径（掉落按爆炸规则）；凋灵之首、龙息火球的命中回调不经过 `cProjectileEntity::OnHitSolidBlock`，暂不打碎花。水流推动未单独处理。紫颂**植株**的活塞/弹射物行为无允许来源佐证，保持现状（活塞按 `IsPistonBreakable` 掉落紫颂果）。
 
 ---
 
