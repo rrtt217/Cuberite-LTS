@@ -127,6 +127,8 @@
    - 落着期间累计受伤 > 50 立即起飞并清零（`m_PerchDamageTaken`）；免疫箭矢/投掷三叉戟（`dtRangedAttack`）。
 9. `Dying`（phase 9）：致命伤由 `KilledBy` 拦截——保持 1 血、进入 `Dying` 并飞向出口传送门；到达后调用基类 `KilledBy` 真正死亡，
    若有玩家参与则掉落 12000 XP（对应 wiki 的 “takes a fatal blow → flies toward the exit portal before dying”）。
+   到达传送门只结算一次；死亡后 `Tick` 在血量 `<= 0` 时直接返回，由基类 `cMonster` 的 1 秒销毁计时负责移除，
+   避免重复结算与销毁计时被反复清零。
 
 **故意不做的部分**（后续增量）：
 

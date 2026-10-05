@@ -150,9 +150,10 @@ void cEnderDragon::SetDragonPhase(eDragonPhase a_Phase)
 void cEnderDragon::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 {
 	Super::Tick(a_Dt, a_Chunk);
-	if (!IsTicking())
+	if (!IsTicking() || (GetHealth() <= 0))
 	{
-		// The base class tick destroyed us:
+		// The base class tick destroyed us, or we are dead already: cMonster::Tick is animating the
+		// death and will destroy us, we must not run the flight / phase logic anymore.
 		return;
 	}
 
@@ -494,6 +495,12 @@ void cEnderDragon::Dying(double a_Dt)
 
 void cEnderDragon::FinishDying(void)
 {
+	if (GetHealth() <= 0)
+	{
+		// Already dead, don't run the death sequence twice:
+		return;
+	}
+
 	TakeDamageInfo TDI;
 	TDI.DamageType = m_DyingDamageType;
 	TDI.Attacker = nullptr;
