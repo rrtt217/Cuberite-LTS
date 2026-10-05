@@ -96,6 +96,9 @@ protected:
 	/** Angle at the previous circling tick, used to detect a completed orbit. */
 	double m_LastOrbitAngle;
 
+	/** Ticks the dragon has been dead for; drives the experience drop and entity removal (vanilla DragonDeathTime). */
+	int m_DragonDeathTime;
+
 	/** Damage type of the blow that started the Dying phase, replayed when the dragon actually dies. */
 	eDamageType m_DyingDamageType;
 
@@ -122,6 +125,9 @@ protected:
 
 	/** Actually kills the dragon once it has reached the exit portal. */
 	void FinishDying(void);
+
+	/** Runs the server-side death timer; removes the dragon after the vanilla 200-tick death animation. */
+	void TickDeath(void);
 
 	/** Leaves the perch and takes off again. */
 	void StartTakeoff(void);

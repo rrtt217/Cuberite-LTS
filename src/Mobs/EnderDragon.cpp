@@ -45,6 +45,12 @@ static constexpr double HEAD_CONTACT_RADIUS = 3.0;
 /** Ticks after the dragon takes damage during which it deals no contact damage (0.5 seconds). */
 static constexpr int CONTACT_GRACE_TICKS = 10;
 
+/** Ticks into the death animation after which the dragon starts dropping experience (vanilla: 150). */
+static constexpr int ENDER_DRAGON_XP_DROP_TIME = 150;
+
+/** Ticks the death animation lasts before the dragon is removed (vanilla: 200 ticks = 10 seconds). */
+static constexpr int ENDER_DRAGON_DEATH_TIME = 200;
+
 /** Horizontal speed of the dragon while strafing towards its target, in blocks per second. */
 static constexpr double STRAFING_SPEED = 12.0;
 
@@ -99,6 +105,7 @@ cEnderDragon::cEnderDragon(void) :
 	m_PerchDamageTaken(0.0f),
 	m_TakeoffTicksLeft(0),
 	m_LastOrbitAngle(0),
+	m_DragonDeathTime(0),
 	m_DyingDamageType(dtAttack),
 	m_DyingAttackerID(cEntity::INVALID_ID)
 {
@@ -149,11 +156,18 @@ void cEnderDragon::SetDragonPhase(eDragonPhase a_Phase)
 
 void cEnderDragon::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 {
-	Super::Tick(a_Dt, a_Chunk);
-	if (!IsTicking() || (GetHealth() <= 0))
+	if (GetHealth() <= 0)
 	{
-		// The base class tick destroyed us, or we are dead already: cMonster::Tick is animating the
-		// death and will destroy us, we must not run the flight / phase logic anymore.
+		// Dead: run our own 200-tick death timer. cMonster::Tick would remove us after just 1 second,
+		// which would cut off the vanilla 10-second death animation.
+		TickDeath();
+		return;
+	}
+
+	Super::Tick(a_Dt, a_Chunk);
+	if (!IsTicking())
+	{
+		// The base class tick destroyed us:
 		return;
 	}
 
@@ -512,10 +526,29 @@ void cEnderDragon::FinishDying(void)
 	// Record the kill so that the dragon does not respawn after a server restart:
 	m_World->SetEnderDragonKilled();
 
-	// Vanilla drops a large amount of experience, but only when a player was involved in the kill:
-	if (m_DyingAttackerID != cEntity::INVALID_ID)
+	// Start the vanilla death timer (experience at 150 ticks, removal at 200 ticks):
+	m_DragonDeathTime = 0;
+}
+
+
+
+
+
+void cEnderDragon::TickDeath(void)
+{
+	m_DragonDeathTime++;
+
+	// Vanilla starts dropping the experience once the dragon has been dead for 150 ticks, but only
+	// when a player was involved in the kill:
+	if ((m_DragonDeathTime == ENDER_DRAGON_XP_DROP_TIME) && (m_DyingAttackerID != cEntity::INVALID_ID))
 	{
 		m_World->SpawnSplitExperienceOrbs(GetPosX(), GetPosY(), GetPosZ(), 12000);
+	}
+
+	// Remove the dragon once the 10-second (200-tick) death animation is over:
+	if (m_DragonDeathTime >= ENDER_DRAGON_DEATH_TIME)
+	{
+		Destroy();
 	}
 }
 

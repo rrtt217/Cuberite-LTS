@@ -127,8 +127,9 @@
    - 落着期间累计受伤 > 50 立即起飞并清零（`m_PerchDamageTaken`）；免疫箭矢/投掷三叉戟（`dtRangedAttack`）。
 9. `Dying`（phase 9）：致命伤由 `KilledBy` 拦截——保持 1 血、进入 `Dying` 并飞向出口传送门；到达后调用基类 `KilledBy` 真正死亡，
    若有玩家参与则掉落 12000 XP（对应 wiki 的 “takes a fatal blow → flies toward the exit portal before dying”）。
-   到达传送门只结算一次；死亡后 `Tick` 在血量 `<= 0` 时直接返回，由基类 `cMonster` 的 1 秒销毁计时负责移除，
-   避免重复结算与销毁计时被反复清零。
+   到达传送门只结算一次。死亡后由龙的 `m_DragonDeathTime` 计时（对应 vanilla NBT `DragonDeathTime`，仅服务端、不作为 metadata 下发）：
+   150 tick 掉落 12000 XP，200 tick（10 秒）时 `Destroy()`；`Tick` 在血量 `<= 0` 时只跑该计时，
+   不调用 `cMonster::Tick`（它 1 秒就会删龙，会截断死亡动画）。
 
 **故意不做的部分**（后续增量）：
 
@@ -181,5 +182,6 @@
 10. `Charging`（仅 BE）尚未实现（JE 本就没有该状态）。
 11. fight 状态用 `world.ini` 的 `[EnderDragon]` 段（`HasSpawned`/`DragonKilled`）持久化，只是两个布尔；未实现 vanilla 的 `PreviouslyKilled`、`ExitPortalLocation`、`Gateways`、`respawn_crystals`/重召唤等完整状态。
 12. 没有完整的 fight 控制器（水晶被毁的概率切换、传送门/龙蛋/gateway 记录等），生成位置取 (0,0) 最高方块 + 20。
-13. `Dying` 只做“飞到传送门再死 + 12000 XP”；10 秒升天动画、出口传送门激活、龙蛋、End gateway，以及 `DragonDeathTime` 的每 5 tick 分批掉落经验都未实现（XP 在死亡点一次性掉落）。
+13. 死亡序列只到“200 tick 后删龙 + 150 tick 一次性掉 12000 XP”；升天动画由客户端据死亡自行渲染（服务端只保证 200 tick 生命周期），
+    出口传送门激活、龙蛋、End gateway 未实现；XP 未按 vanilla 每 5 tick 分批掉落。
 14. 致命伤时攻击者会被提前记入 `Killed` 统计（基类 `DoTakeDamage` 在 `KilledBy` 之后无条件调用），此时龙尚未真正死亡。
