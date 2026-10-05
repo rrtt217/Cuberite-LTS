@@ -41,8 +41,8 @@ static void testPlantRules(void)
 	TEST_TRUE(ChorusPlantCanSurvive(MakePlantNeighborhood(Air, Stone, Air, Air, Air, Air)));
 	TEST_TRUE(ChorusPlantCanSurvive(MakePlantNeighborhood(Air, Plant, Air, Air, Air, Air)));
 
-	// Hanging below a plant:
-	TEST_TRUE(ChorusPlantCanSurvive(MakePlantNeighborhood(Plant, Air, Air, Air, Air, Air)));
+	// A plant above is not support: a floating plant must break (only below / supported-horizontal count):
+	TEST_FALSE(ChorusPlantCanSurvive(MakePlantNeighborhood(Plant, Air, Air, Air, Air, Air)));
 
 	// Side-attached to a plant that itself has End stone / a plant below:
 	{
@@ -62,8 +62,12 @@ static void testPlantRules(void)
 	// Too thick: touching a plant horizontally with no air above or below:
 	TEST_FALSE(ChorusPlantCanSurvive(MakePlantNeighborhood(Plant, Stone, Plant, Air, Air, Air)));
 
-	// The same, but with air below, is allowed:
-	TEST_TRUE(ChorusPlantCanSurvive(MakePlantNeighborhood(Plant, Air, Plant, Air, Air, Air)));
+	// The same, but with the horizontal plant supported below, is allowed:
+	{
+		auto N = MakePlantNeighborhood(Plant, Air, Plant, Air, Air, Air);
+		N.m_NorthBelow = Stone;
+		TEST_TRUE(ChorusPlantCanSurvive(N));
+	}
 }
 
 

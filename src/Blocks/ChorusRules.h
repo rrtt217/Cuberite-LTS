@@ -62,8 +62,8 @@ inline bool ChorusPlantCanSurvive(const sChorusPlantNeighborhood & a_N)
 		return false;
 	}
 
-	// Supported by End stone / a plant directly below or above:
-	if (IsChorusBase(a_N.m_Down) || IsChorusBase(a_N.m_Up))
+	// Supported by End stone / a plant directly below:
+	if (IsChorusBase(a_N.m_Down))
 	{
 		return true;
 	}
