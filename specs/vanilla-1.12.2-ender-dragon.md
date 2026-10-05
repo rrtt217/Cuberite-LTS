@@ -153,10 +153,18 @@
     - Strafing 阶段目标进入 **64 格**时发射一颗火球（每次 strafe 一发），自龙头前方射出。
     - 该云标记 `CanBeCollected`，玩家手持玻璃瓶右键获得龙息，同时云半径 -0.5，半径归零则消散。
 
+17. 复活（[Ender Dragon § Re-summoning](https://minecraft.wiki/w/Ender_Dragon#Re-summoning)）：
+    - 龙被击杀、出口传送门激活后，玩家在传送门基岩环的四个正方向顶点（`(0,63,±3)`、`(±3,63,0)`）各放一颗末影水晶，集齐四颗即开始复活序列。
+    - 序列持续 **604 tick（30.2 s）**：按顺时针逐个再生 10 根尖塔的水晶（塔位由种子 + `ObsidianPillars` 配置决定，世界启动时重算并缓存）；
+      结束时四颗召唤水晶爆炸、龙在 **(0,128,0)** 以 Circling 相位重生。
+    - 序列开始即移除龙蛋；**破坏任意一颗召唤水晶立即取消**（每 tick 校验四颗仍在）。
+    - 重生龙的击杀掉落降为 **500 XP**（首次仍 12000，`cWorld::GetEnderDragonKillXP()`）。
+
 **故意不做的部分**（后续增量）：
 
 - 8 个部件作为真实服务端实体（`/kill` 计 9、爆炸对部件的结算等）。
-- Perching 的咆哮/龙息伤害、Charge、End gateway、完整 fight 控制器、重生流程。
+- Perching 的咆哮/龙息伤害、Charge、End gateway、完整 fight 控制器。
+- 复活序列的尖塔**方块**（黑曜石 / 铁栏）再生、光束渲染、尖塔顶爆炸与龙吼音效；`PreviouslyKilled` 未持久化。
 
 ### 3.3 接触（近战）伤害（feature/mobs-ender-dragon-phases）
 

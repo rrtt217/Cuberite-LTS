@@ -580,7 +580,7 @@ void cEnderDragon::TickDeath(void)
 	// when a player was involved in the kill:
 	if ((m_DragonDeathTime == ENDER_DRAGON_XP_DROP_TIME) && (m_DyingAttackerID != cEntity::INVALID_ID))
 	{
-		m_World->SpawnSplitExperienceOrbs(GetPosX(), GetPosY(), GetPosZ(), 12000);
+		m_World->SpawnSplitExperienceOrbs(GetPosX(), GetPosY(), GetPosZ(), m_World->GetEnderDragonKillXP());
 	}
 
 	// Once the 10-second (200-tick) death animation is over, activate the exit portal, place the

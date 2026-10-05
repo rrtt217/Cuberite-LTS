@@ -13,10 +13,6 @@ class cEnderDragonFightStructuresGen :
 	public cFinishGen
 {
 public:
-	cEnderDragonFightStructuresGen(int a_Seed);
-	void Init(const AString & a_TowerProperties, int a_Radius);
-
-protected:
 	struct sTowerProperties
 	{
 		Vector3i m_Pos;
@@ -25,6 +21,13 @@ protected:
 		bool m_HasCage;
 	};
 
+	cEnderDragonFightStructuresGen(int a_Seed);
+	void Init(const AString & a_TowerProperties, int a_Radius);
+
+	/** Returns every generated tower exactly once, in the order they were created. */
+	std::vector<sTowerProperties> GetTowers(void) const;
+
+protected:
 	cNoise m_Noise;
 	std::map<cChunkCoords, std::vector<sTowerProperties>> m_TowerPos;
 	static const std::array<Vector3i, 48> m_CagePos;

@@ -873,6 +873,9 @@ public:
 	/** Records that the ender dragon has been killed, so that it does not respawn after a restart. */
 	void SetEnderDragonKilled(void);
 
+	/** Returns the experience a killed ender dragon drops (12000 for the first kill, 500 on re-summon). */
+	int GetEnderDragonKillXP(void) const { return m_EnderDragonPreviouslyKilled ? 500 : 12000; }
+
 	/** Activates the End exit portal (fills its bowl with End Portal blocks and places the dragon egg). */
 	void ActivateEnderDragonExitPortal(void);
 
@@ -1012,6 +1015,28 @@ private:
 	/** Whether the ender dragon has already been killed in this world (persisted). */
 	bool m_EnderDragonKilled;
 
+	/** Whether a previous ender dragon has already been killed (drives the reduced re-summon XP). */
+	bool m_EnderDragonPreviouslyKilled;
+
+	/** Ticks left in the dragon re-summon sequence; -1 while no re-summon is running. */
+	int m_EnderDragonRespawnTicksLeft;
+
+	/** Unique IDs of the four End crystals that started the current re-summon sequence. */
+	std::vector<UInt32> m_EnderDragonRespawnCrystals;
+
+	/** One regenerable End pillar: its base position and the Y of its top block. */
+	struct sEndPillar
+	{
+		Vector3i m_Pos;
+		int m_Height;
+	};
+
+	/** The End pillars, sorted clockwise around the portal, for spike regeneration during a re-summon. */
+	std::vector<sEndPillar> m_EnderDragonPillars;
+
+	/** How many pillars the current re-summon sequence has regenerated so far. */
+	int m_EnderDragonPillarsRegenerated;
+
 	std::chrono::milliseconds m_LastChunkCheck;  // The last WorldAge in which unloading and possibly saving was triggered.
 	std::chrono::milliseconds m_LastSave;  // The last WorldAge in which save-all was triggerred.
 	std::map<cMonster::eFamily, cTickTimeLong> m_LastSpawnMonster;  // The last WorldAge (in ticks) in which a monster was spawned (for each megatype of monster)  // MG TODO : find a way to optimize without creating unmaintenability (if mob IDs are becoming unrowed)
@@ -1144,6 +1169,21 @@ private:
 
 	/** Returns whether an ender dragon is currently present in this world. */
 	bool HasEnderDragon(void);
+
+	/** Runs the ender dragon re-summon sequence started by four End crystals on the exit portal. */
+	void TickEnderDragonResummon(void);
+
+	/** Starts the re-summon sequence with the given summoning crystals. */
+	void StartEnderDragonResummon(const std::vector<UInt32> & a_Crystals);
+
+	/** Spawns the dragon at the end of the re-summon sequence and removes the summoning crystals. */
+	void FinishEnderDragonResummon(void);
+
+	/** Regenerates the next End spike (its crystal) during a re-summon. */
+	void RegenerateNextEnderDragonPillar(void);
+
+	/** Returns the unique IDs of the End crystals on the four exit-portal summoning spots. */
+	std::vector<UInt32> FindEnderDragonSummoningCrystals(void);
 
 	/** Sets the chunk data queued in the m_SetChunkDataQueue queue into their chunk. */
 	void TickQueuedChunkDataSets();
