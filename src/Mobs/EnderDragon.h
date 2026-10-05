@@ -14,6 +14,22 @@ class cEnderDragon:
 
 public:
 
+	/** The dragon's behaviour states, matching the vanilla DragonPhase values (0-10). */
+	enum class eDragonPhase : UInt8
+	{
+		Circling = 0,
+		Strafing = 1,
+		FlyingToPortal = 2,
+		Landing = 3,
+		TakingOff = 4,
+		LandedBreath = 5,
+		LandedSearching = 6,
+		LandedRoar = 7,
+		Charging = 8,
+		Dying = 9,
+		Hovering = 10,
+	};
+
 	/** Number of separate parts the vanilla client creates for an ender dragon.
 	The client derives their entity IDs from the dragon's own ID, so this number and their
 	placement in the ID space must match the client's expectation. */
@@ -27,6 +43,12 @@ public:
 
 	CLASS_PROTODEF(cEnderDragon)
 
+	/** Returns the dragon's current behaviour phase. */
+	eDragonPhase GetDragonPhase(void) const { return m_DragonPhase; }
+
+	/** Sets the dragon's behaviour phase and syncs it to the clients if it changed. */
+	void SetDragonPhase(eDragonPhase a_Phase);
+
 	/** Returns whether a_ID is one of the entity IDs that the vanilla client uses for this dragon's parts.
 	The parts are not represented by server-side entities; the client derives their IDs as
 	dragonID + 1 .. dragonID + PART_COUNT and sends them back when a player attacks a part. */
@@ -39,5 +61,15 @@ public:
 
 	virtual bool DoTakeDamage(TakeDamageInfo & a_TDI) override;
 	virtual void GetDrops(cItems & a_Drops, cEntity * a_Killer = nullptr) override;
+	virtual void HandlePhysics(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;
 	virtual void SpawnOn(cClientHandle & a_Client) override;
+	virtual void Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;
+
+protected:
+
+	/** The dragon's current behaviour phase. */
+	eDragonPhase m_DragonPhase;
+
+	/** Moves the dragon along its circling path around the world centre. */
+	void Circling(double a_Dt);
 } ;
