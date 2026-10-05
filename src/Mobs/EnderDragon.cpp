@@ -3,6 +3,7 @@
 
 #include "EnderDragon.h"
 #include "../ClientHandle.h"
+#include "../Entities/DragonFireballEntity.h"
 #include "../CompositeChat.h"
 
 
@@ -57,6 +58,12 @@ static constexpr double STRAFING_SPEED = 12.0;
 /** How long a strafing run lasts; the dragon resumes circling afterwards. */
 static constexpr int STRAFING_DURATION_TICKS = 60;
 
+/** Distance from the target within which a strafing dragon shoots its fireball, in blocks. */
+static constexpr double DRAGON_FIREBALL_RANGE = 64.0;
+
+/** Speed at which a dragon fireball travels, in blocks per tick. */
+static constexpr double DRAGON_FIREBALL_SPEED = 1.0;
+
 /** Y that the dragon's feet descend to when perching, on top of the exit portal's central pillar.
 The entity position is the bottom of its bounding box, and the generated fountain's pillar top is at
 Y=66 (see cEnderDragonFightStructuresGen, fountain placed at Y=62), so the feet rest at Y=67. */
@@ -107,6 +114,7 @@ cEnderDragon::cEnderDragon(void) :
 	m_PerchDamageTaken(0.0f),
 	m_TakeoffTicksLeft(0),
 	m_LastOrbitAngle(0),
+	m_FireballFired(false),
 	m_DragonDeathTime(0),
 	m_DyingDamageType(dtAttack),
 	m_DyingAttackerID(cEntity::INVALID_ID)
@@ -203,6 +211,14 @@ void cEnderDragon::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 			else
 			{
 				Strafe(DtSec);
+
+				// Vanilla fires a fireball as soon as the target is within 64 blocks:
+				cEntity * Target = GetTarget();
+				if (!m_FireballFired && (Target != nullptr) && ((Target->GetPosition() - GetPosition()).Length() <= DRAGON_FIREBALL_RANGE))
+				{
+					FireFireball(*Target);
+					m_FireballFired = true;
+				}
 			}
 			break;
 		}
@@ -391,7 +407,27 @@ void cEnderDragon::StartStrafing(void)
 	}
 
 	m_StrafingTicksLeft = STRAFING_DURATION_TICKS;
+	m_FireballFired = false;
 	SetDragonPhase(eDragonPhase::Strafing);
+}
+
+
+
+
+
+void cEnderDragon::FireFireball(cEntity & a_Target)
+{
+	// Fire from the front of the dragon's head (the look vector points at the back, see FaceSpeedDirection):
+	const Vector3d Start = GetPosition().addedY(GetHeight() / 2) - (GetLookVector() * (GetWidth() / 2));
+	const Vector3d Direction = a_Target.GetPosition() - Start;
+	const double Length = Direction.Length();
+	if (Length < 0.001)
+	{
+		return;
+	}
+
+	auto Fireball = std::make_unique<cDragonFireballEntity>(this, Start, Direction * (DRAGON_FIREBALL_SPEED / Length));
+	Fireball->Initialize(std::move(Fireball), *m_World);
 }
 
 
@@ -544,7 +580,7 @@ void cEnderDragon::TickDeath(void)
 	// when a player was involved in the kill:
 	if ((m_DragonDeathTime == ENDER_DRAGON_XP_DROP_TIME) && (m_DyingAttackerID != cEntity::INVALID_ID))
 	{
-		m_World->SpawnSplitExperienceOrbs(GetPosX(), GetPosY(), GetPosZ(), 12000);
+		m_World->SpawnSplitExperienceOrbs(GetPosX(), GetPosY(), GetPosZ(), m_World->GetEnderDragonKillXP());
 	}
 
 	// Once the 10-second (200-tick) death animation is over, activate the exit portal, place the

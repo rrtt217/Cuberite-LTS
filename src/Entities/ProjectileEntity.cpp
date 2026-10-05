@@ -21,6 +21,7 @@
 #include "ThrownSnowballEntity.h"
 #include "FireChargeEntity.h"
 #include "FireworkEntity.h"
+#include "DragonFireballEntity.h"
 #include "GhastFireballEntity.h"
 #include "WitherSkullEntity.h"
 #include "SplashPotionEntity.h"
@@ -274,6 +275,7 @@ std::unique_ptr<cProjectileEntity> cProjectileEntity::Create(
 		case pkExpBottle:     return std::make_unique<cExpBottleEntity>       (a_Creator, a_Pos, Speed);
 		case pkSplashPotion:  return std::make_unique<cSplashPotionEntity>    (a_Creator, a_Pos, Speed, *a_Item);
 		case pkWitherSkull:   return std::make_unique<cWitherSkullEntity>     (a_Creator, a_Pos, Speed);
+		case pkDragonFireball: return std::make_unique<cDragonFireballEntity>(a_Creator, a_Pos, Speed);
 		case pkFirework:
 		{
 			ASSERT(a_Item != nullptr);
@@ -346,6 +348,7 @@ AString cProjectileEntity::GetMCAClassName(void) const
 		case pkExpBottle:     return "ThrownExpBottle";
 		case pkSplashPotion:  return "SplashPotion";
 		case pkWitherSkull:   return "WitherSkull";
+		case pkDragonFireball: return "DragonFireball";
 		case pkFirework:      return "Firework";
 	}
 	UNREACHABLE("Unsupported projectile kind");

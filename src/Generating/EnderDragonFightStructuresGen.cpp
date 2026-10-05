@@ -151,6 +151,36 @@ void cEnderDragonFightStructuresGen::Init(const AString & a_TowerProperties, int
 
 
 
+std::vector<cEnderDragonFightStructuresGen::sTowerProperties> cEnderDragonFightStructuresGen::GetTowers(void) const
+{
+	// m_TowerPos stores every tower once per crossed chunk, so deduplicate by position:
+	std::vector<sTowerProperties> Towers;
+	for (const auto & ChunkTowers : m_TowerPos)
+	{
+		for (const auto & Tower : ChunkTowers.second)
+		{
+			bool Seen = false;
+			for (const auto & Existing : Towers)
+			{
+				if (Existing.m_Pos == Tower.m_Pos)
+				{
+					Seen = true;
+					break;
+				}
+			}
+			if (!Seen)
+			{
+				Towers.push_back(Tower);
+			}
+		}
+	}
+	return Towers;
+}
+
+
+
+
+
 void cEnderDragonFightStructuresGen::GenFinish(cChunkDesc &a_ChunkDesc)
 {
 	auto Coords = a_ChunkDesc.GetChunkCoords();

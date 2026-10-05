@@ -4,6 +4,7 @@ target_sources(
 	AreaEffectCloud.cpp
 	ArrowEntity.cpp
 	Boat.cpp
+	DragonFireballEntity.cpp
 	EnderCrystal.cpp
 	Entity.cpp
 	EntityEffect.cpp
@@ -33,6 +34,7 @@ target_sources(
 	AreaEffectCloud.h
 	ArrowEntity.h
 	Boat.h
+	DragonFireballEntity.h
 	EnderCrystal.h
 	Entity.h
 	EntityEffect.h

@@ -38,6 +38,7 @@
 
 #include "../Entities/AreaEffectCloud.h"
 #include "../Entities/Boat.h"
+#include "../Entities/DragonFireballEntity.h"
 #include "../Entities/EnderCrystal.h"
 #include "../Entities/FallingBlock.h"
 #include "../Entities/Minecart.h"
@@ -1614,6 +1615,8 @@ void cWSSAnvil::LoadEntityFromNBT(cEntityList & a_Entities, const cParsedNBT & a
 		{ "minecraft:egg",                 &cWSSAnvil::LoadEggFromNBT },
 		{ "Fireball",                      &cWSSAnvil::LoadFireballFromNBT },
 		{ "minecraft:fireball",            &cWSSAnvil::LoadFireballFromNBT },
+		{ "DragonFireball",                &cWSSAnvil::LoadDragonFireballFromNBT },
+		{ "minecraft:dragon_fireball",     &cWSSAnvil::LoadDragonFireballFromNBT },
 		{ "SmallFireball",                 &cWSSAnvil::LoadFireChargeFromNBT },
 		{ "minecraft:small_fireball",      &cWSSAnvil::LoadFireChargeFromNBT },
 		{ "ThrownEnderpearl",              &cWSSAnvil::LoadThrownEnderpearlFromNBT },
@@ -2355,6 +2358,21 @@ void cWSSAnvil::LoadFireballFromNBT(cEntityList & a_Entities, const cParsedNBT &
 	}
 
 	// Store the new fireball in the entities list:
+	a_Entities.emplace_back(std::move(Fireball));
+}
+
+
+
+
+
+void cWSSAnvil::LoadDragonFireballFromNBT(cEntityList & a_Entities, const cParsedNBT & a_NBT, int a_TagIdx)
+{
+	auto Fireball = std::make_unique<cDragonFireballEntity>(nullptr, Vector3d(), Vector3d());
+	if (!LoadProjectileBaseFromNBT(*Fireball.get(), a_NBT, a_TagIdx))
+	{
+		return;
+	}
+
 	a_Entities.emplace_back(std::move(Fireball));
 }
 

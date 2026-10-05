@@ -721,6 +721,7 @@ UInt8 cProtocol_1_14::GetProtocolEntityType(const cEntity & a_Entity) const
 				case PType::pkSplashPotion: return 81;
 				case PType::pkFirework: return 26;
 				case PType::pkWitherSkull: return 92;
+				case PType::pkDragonFireball: return 22;  // Best effort; 1.14 is outside the supported range
 			}
 			break;
 		}

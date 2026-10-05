@@ -38,6 +38,7 @@ cEnderCrystal::cEnderCrystal(Vector3d a_Pos, Vector3i a_BeamTarget, bool a_Displ
 	Super(etEnderCrystal, a_Pos, 2.0f, 2.0f),
 	m_BeamTarget(a_BeamTarget),
 	m_DisplayBeam(a_DisplayBeam),
+	m_RespawnBeam(false),
 	m_ShowBottom(a_ShowBottom),
 	m_HealingTimer(0)
 {
@@ -91,6 +92,15 @@ void cEnderCrystal::SpawnOn(cClientHandle & a_ClientHandle)
 void cEnderCrystal::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 {
 	UNUSED(a_Dt);
+	UNUSED(a_Chunk);
+
+	// The crystal is static and must not fall, so it does not run the full base tick; it still has to
+	// expire its hit-invulnerability, otherwise one non-lethal hit would make it permanently immune:
+	if (GetInvulnerableTicks() > 0)
+	{
+		SetInvulnerableTicks(GetInvulnerableTicks() - 1);
+	}
+
 	if (m_World->GetDimension() != dimEnd)
 	{
 		return;
@@ -178,6 +188,12 @@ cEnderDragon * cEnderCrystal::GetHealingDragon(void)
 
 void cEnderCrystal::UpdateHealing(void)
 {
+	// The re-summon sequence drives this crystal's beam itself:
+	if (m_RespawnBeam)
+	{
+		return;
+	}
+
 	cEnderDragon * Dragon = GetHealingDragon();
 	if (Dragon == nullptr)
 	{

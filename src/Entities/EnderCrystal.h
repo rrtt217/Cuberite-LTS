@@ -37,6 +37,10 @@ public:
 	bool DisplaysBeam() const { return m_DisplayBeam; }
 	void SetDisplayBeam(bool a_DisplayBeam);
 
+	/** While set, the crystal is part of the dragon re-summon sequence and must not run its healing beam logic. */
+	bool HasRespawnBeam() const { return m_RespawnBeam; }
+	void SetRespawnBeam(bool a_RespawnBeam) { m_RespawnBeam = a_RespawnBeam; }
+
 	bool ShowsBottom() const { return m_ShowBottom; }
 	void SetShowBottom(bool a_ShowBottom);
 
@@ -46,6 +50,9 @@ private:
 
 	Vector3i m_BeamTarget;
 	bool m_DisplayBeam;
+
+	/** True while this crystal takes part in the dragon re-summon sequence. */
+	bool m_RespawnBeam;
 
 	// If the bedrock base should be displayed.
 	bool m_ShowBottom;

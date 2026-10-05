@@ -146,10 +146,34 @@
     Y=63）填成 `E_BLOCK_END_PORTAL`，并在中心柱顶 (0,67,0) 放 `E_BLOCK_DRAGON_EGG`。
     祭坛由 `cEnderDragonFightStructuresGen` 在 Y=62 生成（初始为未激活的空碗）。
 
+16. 龙火球与龙息收集（[Ender Dragon § Dragon Fireball](https://minecraft.wiki/w/Ender_Dragon#Dragon_Fireball)、
+    [Dragon's Breath](https://minecraft.wiki/w/Dragon%27s_Breath)）：
+    - `cDragonFireballEntity`（`pkDragonFireball`，Spawn Object ID 93）直线飞行、无重力；命中方块 **0.5 s（10 tick）后**炸出
+      紫色区域效果云（半径 3→5 / 30 s、Instant Damage II、`RadiusOnUse = 0` 不因生效而缩小）；**命中实体不造成伤害/击退**，直接穿过。
+    - Strafing 阶段目标进入 **64 格**时发射一颗火球（每次 strafe 一发），自龙头前方射出。
+    - 该云标记 `CanBeCollected`，玩家手持玻璃瓶右键获得龙息，同时云半径 -0.5，半径归零则消散。
+
+17. 复活（[Ender Dragon § Re-summoning](https://minecraft.wiki/w/Ender_Dragon#Re-summoning)）：
+    - 龙被击杀、出口传送门激活后，玩家在传送门基岩环的四个正方向顶点（`(0,63,±3)`、`(±3,63,0)`）各放一颗末影水晶，集齐四颗即开始复活序列。
+    - 序列持续 **600 tick（30 s）**（wiki 记作 604；此处按维护者给出的 100/400/100 分段），分三段：
+      1. **前 100 tick**：关闭祭坛（20 格 `E_BLOCK_END_PORTAL` 清成空气）、移除龙蛋，四颗召唤水晶向**正上方**发射光束；
+      2. **中间 400 tick**：依次再生 10 根尖塔——按生成器的半径/笼子参数重建**黑曜石柱、铁栏、基岩顶、火与水晶**，塔顶播放爆炸；四颗水晶的光束依次指向当前尖塔顶
+         （塔位由种子 + `ObsidianPillars` 配置决定，世界启动时重算缓存并按角度顺时针排序）;
+      3. **最后 100 tick**：所有尖塔水晶与四颗召唤水晶的光束聚焦 **(0,128,0)**；结束时龙在该点以 Circling 相位重生，四颗召唤水晶爆炸。
+    - **破坏任意一颗召唤水晶立即取消**：序列中止、相关水晶收回光束、出口传送门重新激活（不重新生成龙蛋）。
+    - 重生龙的击杀掉落降为 **500 XP**（首次仍 12000，`cWorld::GetEnderDragonKillXP()`）。
+    - 光束使用 `cEnderCrystal` 的 `BeamTarget` metadata；`SetRespawnBeam(true)` 期间屏蔽其治疗光束逻辑。
+
+    顺带修复三个水晶缺陷：
+    - `cEnderCrystal::Tick` 原先未调用 `Super::Tick`，`m_InvulnerableTicks` 永不递减（一次非致命伤害后永久无敌、不再爆炸），现每 tick 手动递减；
+    - 伤害水晶时若用 `TakeDamage(dtExplosion, cEntity::INVALID_ID, …)` 会因 `DoWithEntityByID(INVALID_ID)` 永不回调而**不生效**，改用 `nullptr` 攻击者重载；
+    - **1.11 / 1.12 的 `BeamTarget` metadata 只在 `DisplaysBeam()` 为真时写出**，导致光柱关闭时客户端收不到清除指令、把光柱留在最后一个目标（龙离开治疗范围或复活刚结束时尤其明显）。改为**总是**写出 `ENDER_CRYSTAL_BEAM_TARGET` 索引 + `OPTIONAL_POSITION`，关闭时显式写 `false`（1.10 本来就是这样，1.9 亦然）。
+
 **故意不做的部分**（后续增量）：
 
 - 8 个部件作为真实服务端实体（`/kill` 计 9、爆炸对部件的结算等）。
-- Strafing 的龙火球、Perching 的咆哮/龙息伤害、Charge、死亡后的传送门/龙蛋/gateway、持久化 fight 状态、水晶治疗、重生流程。
+- Perching 的咆哮/龙息伤害、Charge、End gateway、完整 fight 控制器。
+- 复活的龙吼/爆炸音效、JE“角落末地石复原”彩蛋、取消后新放水晶不发光的 quirk；`PreviouslyKilled` 未持久化。
 
 ### 3.3 接触（近战）伤害（feature/mobs-ender-dragon-phases）
 
