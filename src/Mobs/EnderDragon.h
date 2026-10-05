@@ -81,8 +81,14 @@ protected:
 	/** Ticks left in the current strafing run. */
 	int m_StrafingTicksLeft;
 
-	/** Ticks left until the dragon takes off from its perch. */
+	/** Ticks left in the current landed sub-phase (search / roar / breath). */
 	int m_LandedTicksLeft;
+
+	/** Number of consecutive breath attacks performed in the current perch. */
+	int m_BreathCount;
+
+	/** Cumulative damage taken while perched; taking off when it exceeds 50. */
+	float m_PerchDamageTaken;
 
 	/** Ticks left in the current take-off. */
 	int m_TakeoffTicksLeft;
@@ -116,6 +122,15 @@ protected:
 
 	/** Actually kills the dragon once it has reached the exit portal. */
 	void FinishDying(void);
+
+	/** Leaves the perch and takes off again. */
+	void StartTakeoff(void);
+
+	/** Returns whether the dragon is currently perched on the exit portal. */
+	bool IsPerched(void) const;
+
+	/** Returns whether any player is within a_Range blocks of the exit portal. */
+	bool IsPlayerNearPortal(double a_Range) const;
 
 	/** Damages the living entities the dragon is currently touching (wings / head contact). */
 	void AttackEntities(void);

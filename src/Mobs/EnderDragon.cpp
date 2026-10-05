@@ -57,8 +57,26 @@ static constexpr double PERCH_HEIGHT = 70.0;
 /** Distance within which the dragon considers itself landed on the exit portal, in blocks. */
 static constexpr double PERCH_REACHED_DISTANCE = 4.0;
 
-/** Ticks the dragon stays perched before taking off again (1.25 s roar + 3 s breath). */
-static constexpr int LANDED_DURATION_TICKS = 85;
+/** Ticks the dragon searches for a player after landing, before roaring (1.25 s). */
+static constexpr int LANDED_SEARCH_TICKS = 25;
+
+/** Ticks the roar lasts before the breath attack begins. */
+static constexpr int LANDED_ROAR_TICKS = 10;
+
+/** Duration of the breath attack itself (3 s); the damage cloud is not implemented yet. */
+static constexpr int LANDED_BREATH_TICKS = 60;
+
+/** Number of consecutive breath attacks before the dragon takes off again. */
+static constexpr int MAX_BREATH_ATTACKS = 4;
+
+/** Cumulative damage while perched that makes the dragon take off (25% of its max health). */
+static constexpr float PERCH_ESCAPE_DAMAGE = 50.0f;
+
+/** Distance from the exit portal within which a player triggers the roar / breath attack, in blocks. */
+static constexpr double PERCH_ATTACK_RANGE = 20.0;
+
+/** Distance within which a player keeps the dragon from taking off while perched, in blocks. */
+static constexpr double PERCH_LOCATE_RANGE = 150.0;
 
 /** Ticks the dragon spends taking off before it resumes circling. */
 static constexpr int TAKEOFF_DURATION_TICKS = 20;
@@ -77,6 +95,8 @@ cEnderDragon::cEnderDragon(void) :
 	m_CrystalCountCooldown(0),
 	m_StrafingTicksLeft(0),
 	m_LandedTicksLeft(0),
+	m_BreathCount(0),
+	m_PerchDamageTaken(0.0f),
 	m_TakeoffTicksLeft(0),
 	m_LastOrbitAngle(0),
 	m_DyingDamageType(dtAttack),
@@ -174,14 +194,62 @@ void cEnderDragon::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 			FlyToPortal(DtSec);
 			break;
 		}
-		case eDragonPhase::LandedBreath:
+		case eDragonPhase::LandedSearching:
 		{
-			// Perched: stay in place until it is time to take off again:
+			// Perched, waiting before the roar: look for a player near the exit portal.
+			SetSpeed(0, 0, 0);
+			if (--m_LandedTicksLeft > 0)
+			{
+				break;
+			}
+
+			if (IsPlayerNearPortal(PERCH_ATTACK_RANGE))
+			{
+				m_LandedTicksLeft = LANDED_ROAR_TICKS;
+				SetDragonPhase(eDragonPhase::LandedRoar);
+			}
+			else if (!IsPlayerNearPortal(PERCH_LOCATE_RANGE))
+			{
+				// No player anywhere near, give up the perch:
+				StartTakeoff();
+			}
+			else
+			{
+				// A player is around but not close enough yet; keep searching:
+				m_LandedTicksLeft = LANDED_SEARCH_TICKS;
+			}
+			break;
+		}
+		case eDragonPhase::LandedRoar:
+		{
+			// Perched and roaring before the breath attack:
 			SetSpeed(0, 0, 0);
 			if (--m_LandedTicksLeft <= 0)
 			{
-				m_TakeoffTicksLeft = TAKEOFF_DURATION_TICKS;
-				SetDragonPhase(eDragonPhase::TakingOff);
+				m_LandedTicksLeft = LANDED_BREATH_TICKS;
+				SetDragonPhase(eDragonPhase::LandedBreath);
+			}
+			break;
+		}
+		case eDragonPhase::LandedBreath:
+		{
+			// Perched, performing the breath attack. The damage cloud itself is not implemented yet,
+			// so the attack only counts towards the take-off limit:
+			SetSpeed(0, 0, 0);
+			if (--m_LandedTicksLeft > 0)
+			{
+				break;
+			}
+
+			++m_BreathCount;
+			if ((m_BreathCount >= MAX_BREATH_ATTACKS) || !IsPlayerNearPortal(PERCH_LOCATE_RANGE))
+			{
+				StartTakeoff();
+			}
+			else
+			{
+				m_LandedTicksLeft = LANDED_SEARCH_TICKS;
+				SetDragonPhase(eDragonPhase::LandedSearching);
 			}
 			break;
 		}
@@ -330,16 +398,73 @@ void cEnderDragon::FlyToPortal(double a_Dt)
 	const double Distance = ToPortal.Length();
 	if (Distance < PERCH_REACHED_DISTANCE)
 	{
-		// Landed: stay perched for a while (the roar / breath attack itself is not implemented yet):
+		// Landed: look for a nearby player first (vanilla waits 1.25 s before roaring):
 		SetSpeed(0, 0, 0);
-		m_LandedTicksLeft = LANDED_DURATION_TICKS;
-		SetDragonPhase(eDragonPhase::LandedBreath);
+		m_BreathCount = 0;
+		m_PerchDamageTaken = 0.0f;
+		m_LandedTicksLeft = LANDED_SEARCH_TICKS;
+		SetDragonPhase(eDragonPhase::LandedSearching);
 		return;
 	}
 
 	ToPortal *= (PERCH_FLIGHT_SPEED / Distance);
 	SetSpeed(ToPortal);
 	SetYawFromSpeed();
+}
+
+
+
+
+
+void cEnderDragon::StartTakeoff(void)
+{
+	m_TakeoffTicksLeft = TAKEOFF_DURATION_TICKS;
+	SetDragonPhase(eDragonPhase::TakingOff);
+}
+
+
+
+
+
+bool cEnderDragon::IsPerched(void) const
+{
+	switch (m_DragonPhase)
+	{
+		case eDragonPhase::LandedSearching:
+		case eDragonPhase::LandedRoar:
+		case eDragonPhase::LandedBreath:
+		{
+			return true;
+		}
+		default:
+		{
+			return false;
+		}
+	}
+}
+
+
+
+
+
+bool cEnderDragon::IsPlayerNearPortal(double a_Range) const
+{
+	bool Found = false;
+	const Vector3d PortalPos(0, PERCH_HEIGHT, 0);
+	const double SqrRange = a_Range * a_Range;
+	m_World->ForEachPlayer([&Found, SqrRange, &PortalPos](cPlayer & a_Player)
+		{
+			if ((a_Player.GetPosition() - PortalPos).SqrLength() < SqrRange)
+			{
+				Found = true;
+				return true;  // Stop searching
+			}
+
+			// Keep searching:
+			return false;
+		}
+	);
+	return Found;
 }
 
 
@@ -493,7 +618,7 @@ void cEnderDragon::TakeDamageFromPart(cEntity & a_Attacker, bool a_IsHead)
 bool cEnderDragon::DoTakeDamage(TakeDamageInfo & a_TDI)
 {
 	// While perched, vanilla makes the dragon immune to arrows and thrown tridents:
-	if ((m_DragonPhase == eDragonPhase::LandedBreath) && (a_TDI.DamageType == dtRangedAttack))
+	if (IsPerched() && (a_TDI.DamageType == dtRangedAttack))
 	{
 		return false;
 	}
@@ -501,6 +626,17 @@ bool cEnderDragon::DoTakeDamage(TakeDamageInfo & a_TDI)
 	if (!Super::DoTakeDamage(a_TDI))
 	{
 		return false;
+	}
+
+	// Vanilla takes off when the cumulative damage taken while perched exceeds 50 (25% of max health):
+	if (IsPerched())
+	{
+		m_PerchDamageTaken += a_TDI.FinalDamage;
+		if (m_PerchDamageTaken > PERCH_ESCAPE_DAMAGE)
+		{
+			m_PerchDamageTaken = 0.0f;
+			StartTakeoff();
+		}
 	}
 
 	m_World->BroadcastBossBarUpdateHealth(*this, GetUniqueID(), GetHealth() / GetMaxHealth());

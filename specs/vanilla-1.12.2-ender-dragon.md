@@ -120,9 +120,11 @@
    每 20 tick 统计一次世界中心 ±64 格内的 `cEnderCrystal` 数量。
 7. `Strafing`（phase 1）：水晶数量减少（检测到被摧毁）且**有目标**时进入，持续 60 tick，朝目标头部直线飞行，
    随后回到 Circling/Hovering。Vanilla 在进入 64 格内时喷龙火球——该投射物本分支未实现（见偏差 8）。
-8. `Perching` 序列（phase 2 → 5 → 4）：每完成一圈按 wiki 的 `1/(3+水晶数)` 掷骰决定去出口传送门上方 (0, 70, 0)；
-   到达后停驻 85 tick（对应 1.25s 咆哮 + 3s 龙息，龙息本身未实现），再起飞 20 tick 回到 Circling。
-   停驻期间按 wiki 免疫箭矢/投掷三叉戟（`dtRangedAttack`）。
+8. `Perching` 序列（phase 2 → 6 → 7 → 5 → 4）：每完成一圈按 wiki 的 `1/(3+水晶数)` 掷骰决定去出口传送门上方 (0, 70, 0)：
+   - 到达后 `LandedSearching`(6) 搜索 25 tick（1.25s）：20 格内有玩家 → `LandedRoar`(7)；150 格内无玩家 → 起飞；
+   - `LandedRoar`(7) 10 tick → `LandedBreath`(5) 60 tick（3s；伤害云未实现，只计时）；
+   - 连续 4 次龙息或 150 格内无玩家 → `TakingOff`(4) 20 tick → `Circling`；
+   - 落着期间累计受伤 > 50 立即起飞并清零（`m_PerchDamageTaken`）；免疫箭矢/投掷三叉戟（`dtRangedAttack`）。
 9. `Dying`（phase 9）：致命伤由 `KilledBy` 拦截——保持 1 血、进入 `Dying` 并飞向出口传送门；到达后调用基类 `KilledBy` 真正死亡，
    若有玩家参与则掉落 12000 XP（对应 wiki 的 “takes a fatal blow → flies toward the exit portal before dying”）。
 
@@ -172,7 +174,7 @@
 6. 接触伤害的头部/翅膀用**几何近似**（头点 = 前方半宽、半径 3 格），不是真实部件；抛起强度沿用基础击退，未按 vanilla 校准。
 7. Cuberite 没有难度设置，接触伤害恒取 **Normal**（头 10 / 翅膀 5）；vanilla 会按难度取 6/10/15 与 3.5/5/7.5。
 8. `Strafing` 只是朝目标飞行 3 秒后回绕，未实现 vanilla 的“进入 64 格即喷龙火球”；水晶被毁通过每 20 tick 的数量对比检测（最多 1 秒延迟）。
-9. `Perching` 的落点高度（70）与停留时长（85 tick）是近似；咆哮与龙息伤害（AreaEffectCloud）未实现，停驻阶段只是原地停留。
+9. `Perching` 的落点高度（70）是近似；`LandedBreath` 的 3 秒只有计时，没有龙息伤害云（AreaEffectCloud 未实现）；咆哮没有独立的声音/粒子。
 10. `Charging`（仅 BE）与 `Dying` 的死亡飞行 / 传送门生成 / 经验掉落尚未实现。
 11. 自动生成用的 `m_HasSpawnedEnderDragon` **只在内存**，服务器重启后重置：重启前击杀的龙会重新生成（vanilla 用持久化 fight 状态记录 `DragonKilled`/`PreviouslyKilled`）。
 12. 没有完整的 fight 控制器（水晶被毁的概率切换、`ExitPortalLocation`/`Gateways`/`DragonKilled` 记录等），生成位置取 (0,0) 最高方块 + 20。
