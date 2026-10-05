@@ -123,11 +123,13 @@
 8. `Perching` 序列（phase 2 → 5 → 4）：每完成一圈按 wiki 的 `1/(3+水晶数)` 掷骰决定去出口传送门上方 (0, 70, 0)；
    到达后停驻 85 tick（对应 1.25s 咆哮 + 3s 龙息，龙息本身未实现），再起飞 20 tick 回到 Circling。
    停驻期间按 wiki 免疫箭矢/投掷三叉戟（`dtRangedAttack`）。
+9. `Dying`（phase 9）：致命伤由 `KilledBy` 拦截——保持 1 血、进入 `Dying` 并飞向出口传送门；到达后调用基类 `KilledBy` 真正死亡，
+   若有玩家参与则掉落 12000 XP（对应 wiki 的 “takes a fatal blow → flies toward the exit portal before dying”）。
 
 **故意不做的部分**（后续增量）：
 
 - 8 个部件作为真实服务端实体（`/kill` 计 9、爆炸对部件的结算等）。
-- Strafing 的龙火球、Perching 的咆哮/龙息伤害、Charge/Death、水晶治疗、重生流程。
+- Strafing 的龙火球、Perching 的咆哮/龙息伤害、Charge、死亡后的传送门/龙蛋/gateway、持久化 fight 状态、水晶治疗、重生流程。
 
 ### 3.3 接触（近战）伤害（feature/mobs-ender-dragon-phases）
 
@@ -174,3 +176,5 @@
 10. `Charging`（仅 BE）与 `Dying` 的死亡飞行 / 传送门生成 / 经验掉落尚未实现。
 11. 自动生成用的 `m_HasSpawnedEnderDragon` **只在内存**，服务器重启后重置：重启前击杀的龙会重新生成（vanilla 用持久化 fight 状态记录 `DragonKilled`/`PreviouslyKilled`）。
 12. 没有完整的 fight 控制器（水晶被毁的概率切换、`ExitPortalLocation`/`Gateways`/`DragonKilled` 记录等），生成位置取 (0,0) 最高方块 + 20。
+13. `Dying` 只做“飞到传送门再死 + 12000 XP”；10 秒升天动画、出口传送门激活、龙蛋、End gateway，以及 `DragonDeathTime` 的每 5 tick 分批掉落经验都未实现（XP 在死亡点一次性掉落）。
+14. 致命伤时攻击者会被提前记入 `Killed` 统计（基类 `DoTakeDamage` 在 `KilledBy` 之后无条件调用），此时龙尚未真正死亡。

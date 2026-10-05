@@ -78,7 +78,9 @@ cEnderDragon::cEnderDragon(void) :
 	m_StrafingTicksLeft(0),
 	m_LandedTicksLeft(0),
 	m_TakeoffTicksLeft(0),
-	m_LastOrbitAngle(0)
+	m_LastOrbitAngle(0),
+	m_DyingDamageType(dtAttack),
+	m_DyingAttackerID(cEntity::INVALID_ID)
 {
 	// Fly freely: the flight code in Tick() controls our speed, so disable gravity and air drag:
 	SetGravity(0);
@@ -191,6 +193,11 @@ void cEnderDragon::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 			{
 				SetDragonPhase(eDragonPhase::Circling);
 			}
+			break;
+		}
+		case eDragonPhase::Dying:
+		{
+			Dying(DtSec);
 			break;
 		}
 		case eDragonPhase::Hovering:
@@ -339,6 +346,48 @@ void cEnderDragon::FlyToPortal(double a_Dt)
 
 
 
+void cEnderDragon::Dying(double a_Dt)
+{
+	UNUSED(a_Dt);
+
+	Vector3d ToPortal = Vector3d(0, PERCH_HEIGHT, 0) - GetPosition();
+	const double Distance = ToPortal.Length();
+	if (Distance < PERCH_REACHED_DISTANCE)
+	{
+		FinishDying();
+		return;
+	}
+
+	ToPortal *= (PERCH_FLIGHT_SPEED / Distance);
+	SetSpeed(ToPortal);
+	SetYawFromSpeed();
+}
+
+
+
+
+
+void cEnderDragon::FinishDying(void)
+{
+	TakeDamageInfo TDI;
+	TDI.DamageType = m_DyingDamageType;
+	TDI.Attacker = nullptr;
+	TDI.RawDamage = 0;
+	TDI.FinalDamage = 0;
+
+	Super::KilledBy(TDI);
+
+	// Vanilla drops a large amount of experience, but only when a player was involved in the kill:
+	if (m_DyingAttackerID != cEntity::INVALID_ID)
+	{
+		m_World->SpawnSplitExperienceOrbs(GetPosX(), GetPosY(), GetPosZ(), 12000);
+	}
+}
+
+
+
+
+
 bool cEnderDragon::Attack(std::chrono::milliseconds a_Dt)
 {
 	UNUSED(a_Dt);
@@ -456,6 +505,26 @@ bool cEnderDragon::DoTakeDamage(TakeDamageInfo & a_TDI)
 
 	m_World->BroadcastBossBarUpdateHealth(*this, GetUniqueID(), GetHealth() / GetMaxHealth());
 	return true;
+}
+
+
+
+
+
+void cEnderDragon::KilledBy(TakeDamageInfo & a_TDI)
+{
+	if (m_DragonPhase == eDragonPhase::Dying)
+	{
+		// Already flying to the exit portal, this is the real death:
+		Super::KilledBy(a_TDI);
+		return;
+	}
+
+	// Vanilla does not die immediately: keep 1 HP and fly to the exit portal first.
+	m_Health = 1;
+	m_DyingDamageType = a_TDI.DamageType;
+	m_DyingAttackerID = ((a_TDI.Attacker != nullptr) ? a_TDI.Attacker->GetUniqueID() : cEntity::INVALID_ID);
+	SetDragonPhase(eDragonPhase::Dying);
 }
 
 

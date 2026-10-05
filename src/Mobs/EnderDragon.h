@@ -62,6 +62,7 @@ public:
 	virtual bool Attack(std::chrono::milliseconds a_Dt) override;
 	virtual bool DoTakeDamage(TakeDamageInfo & a_TDI) override;
 	virtual void GetDrops(cItems & a_Drops, cEntity * a_Killer = nullptr) override;
+	virtual void KilledBy(TakeDamageInfo & a_TDI) override;
 	virtual void HandlePhysics(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;
 	virtual void SpawnOn(cClientHandle & a_Client) override;
 	virtual void Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;
@@ -89,6 +90,12 @@ protected:
 	/** Angle at the previous circling tick, used to detect a completed orbit. */
 	double m_LastOrbitAngle;
 
+	/** Damage type of the blow that started the Dying phase, replayed when the dragon actually dies. */
+	eDamageType m_DyingDamageType;
+
+	/** Entity ID of the attacker that started the Dying phase, or cEntity::INVALID_ID. */
+	UInt32 m_DyingAttackerID;
+
 	/** Moves the dragon along its circling path around the world centre. */
 	void Circling(double a_Dt);
 
@@ -103,6 +110,12 @@ protected:
 
 	/** Flies the dragon to the perch above the exit portal while in the FlyingToPortal phase. */
 	void FlyToPortal(double a_Dt);
+
+	/** Flies the dragon to the exit portal after a fatal blow, before it really dies. */
+	void Dying(double a_Dt);
+
+	/** Actually kills the dragon once it has reached the exit portal. */
+	void FinishDying(void);
 
 	/** Damages the living entities the dragon is currently touching (wings / head contact). */
 	void AttackEntities(void);
