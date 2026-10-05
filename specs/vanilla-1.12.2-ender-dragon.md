@@ -164,8 +164,10 @@
     - 重生龙的击杀掉落降为 **500 XP**（首次仍 12000，`cWorld::GetEnderDragonKillXP()`）。
     - 光束使用 `cEnderCrystal` 的 `BeamTarget` metadata；`SetRespawnBeam(true)` 期间屏蔽其治疗光束逻辑。
 
-    顺带修复两个水晶缺陷：`cEnderCrystal::Tick` 原先未调用 `Super::Tick`，`m_InvulnerableTicks` 永不递减（一次非致命伤害后永久无敌、不再爆炸），现每 tick 手动递减；
-    伤害水晶时若用 `TakeDamage(dtExplosion, cEntity::INVALID_ID, …)` 会因 `DoWithEntityByID(INVALID_ID)` 永不回调而**不生效**，改用 `nullptr` 攻击者重载。
+    顺带修复三个水晶缺陷：
+    - `cEnderCrystal::Tick` 原先未调用 `Super::Tick`，`m_InvulnerableTicks` 永不递减（一次非致命伤害后永久无敌、不再爆炸），现每 tick 手动递减；
+    - 伤害水晶时若用 `TakeDamage(dtExplosion, cEntity::INVALID_ID, …)` 会因 `DoWithEntityByID(INVALID_ID)` 永不回调而**不生效**，改用 `nullptr` 攻击者重载；
+    - **1.11 / 1.12 的 `BeamTarget` metadata 只在 `DisplaysBeam()` 为真时写出**，导致光柱关闭时客户端收不到清除指令、把光柱留在最后一个目标（龙离开治疗范围或复活刚结束时尤其明显）。改为**总是**写出 `ENDER_CRYSTAL_BEAM_TARGET` 索引 + `OPTIONAL_POSITION`，关闭时显式写 `false`（1.10 本来就是这样，1.9 亦然）。
 
 **故意不做的部分**（后续增量）：
 
