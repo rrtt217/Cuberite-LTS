@@ -828,7 +828,7 @@ protected:
 		const int TowerSize = Fat ? PrefabSize(*P.m_FatTower).x : PrefabSize(*P.m_TowerBase).x;
 		const int Half = TowerSize / 2;
 		const int BridgeY = TowerBaseY;
-		const int SecondaryHalf = (P.m_FatTower != nullptr) ? (PrefabSize(*P.m_FatTower).x / 2) : 0;
+		const int SecondaryHalf = (P.m_TowerBase != nullptr) ? (PrefabSize(*P.m_TowerBase).x / 2) : 0;
 		bool ShipPlaced = false;
 		for (int Dir = 0; Dir < END_CITY_DIR_COUNT; Dir++)
 		{
@@ -901,16 +901,29 @@ protected:
 				continue;
 			}
 
-			// Otherwise grow another tower at the far end, connected through a doorway:
-			if (P.m_FatTower == nullptr)
+			// Otherwise grow a small tower at the far end, connected through a doorway. Its ladder
+			// shaft is allowed to hang below the bridge, as the wiki gallery shows:
+			if (P.m_TowerBase == nullptr)
 			{
 				continue;
 			}
 			const Vector3i SecondaryCenter(Edge.x + (DirX * SecondaryHalf), BridgeY, Edge.z + (DirZ * SecondaryHalf));
-			AddCentered(P.m_FatTower.get(), SecondaryCenter.x, BridgeY, SecondaryCenter.z);
-			if (P.m_FatTowerTop != nullptr)
+			int SecondaryY = BridgeY - END_CITY_SMALL_TOWER_LADDER_DEPTH;
+			AddCentered(P.m_TowerBase.get(), SecondaryCenter.x, SecondaryY, SecondaryCenter.z);
+			SecondaryY += StackHeightForName("TowerBase");
+			const int SecondaryRepeats = END_CITY_TOWER_MIN_MIDDLE + static_cast<int>(Rng() % END_CITY_TOWER_EXTRA_MIDDLE);
+			for (int i = 0; i < SecondaryRepeats; i++)
 			{
-				AddCentered(P.m_FatTowerTop.get(), SecondaryCenter.x, BridgeY + StackHeightForName("FatTower"), SecondaryCenter.z);
+				if (P.m_TowerPiece == nullptr)
+				{
+					break;
+				}
+				AddCentered(P.m_TowerPiece.get(), SecondaryCenter.x, SecondaryY, SecondaryCenter.z);
+				SecondaryY += StackHeightForName("TowerPiece");
+			}
+			if (P.m_TowerTop != nullptr)
+			{
+				AddCentered(P.m_TowerTop.get(), SecondaryCenter.x, SecondaryY, SecondaryCenter.z);
 			}
 			AddCarve(Edge.x, BridgeY + 1, Edge.z);
 		}
