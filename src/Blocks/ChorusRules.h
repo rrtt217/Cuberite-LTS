@@ -80,6 +80,15 @@ inline bool ChorusPlantCanSurvive(const sChorusPlantNeighborhood & a_N)
 
 
 
+/** Upward growth chance of a chorus flower, indexed by min(number of plants directly below, 4).
+The first array is for a column grounded on End stone, the second for a side branch (column ends in air). */
+inline constexpr float CHORUS_UPWARD_GROUNDED[5] = { 1.0f, 1.0f, 0.6f, 0.4f, 0.2f };
+inline constexpr float CHORUS_UPWARD_BRANCH[5]   = { 1.0f, 1.0f, 0.5f, 0.25f, 0.0f };
+
+
+
+
+
 /** Returns whether a chorus flower may stay at a position with the given blocks.
 a_HorizontalPlants is the number of chorus plants directly beside the flower, and is only used when there is no support below. */
 inline bool ChorusFlowerCanSurvive(BLOCKTYPE a_Down, BLOCKTYPE a_Up, int a_HorizontalPlants)

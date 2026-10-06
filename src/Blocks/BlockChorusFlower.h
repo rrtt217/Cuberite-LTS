@@ -148,10 +148,8 @@ private:
 		}
 
 		// The upward growth chance depends on the structure below; see the chorus plant specification:
-		static constexpr float GroundedChances[] = { 1.0f, 1.0f, 0.6f, 0.4f, 0.2f };
-		static constexpr float BranchChances[]   = { 1.0f, 1.0f, 0.5f, 0.25f, 0.0f };
 		const int ChanceIndex = std::min(PlantCount, 4);
-		const float UpwardChance = Grounded ? GroundedChances[ChanceIndex] : BranchChances[ChanceIndex];
+		const float UpwardChance = Grounded ? CHORUS_UPWARD_GROUNDED[ChanceIndex] : CHORUS_UPWARD_BRANCH[ChanceIndex];
 
 		auto & Random = GetRandomProvider();
 		bool Grew = false;

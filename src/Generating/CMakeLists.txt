@@ -7,9 +7,11 @@ target_sources(
 	ChunkGenerator.cpp
 	CompoGen.cpp
 	CompoGenBiomal.cpp
+	ChorusPlantTree.cpp
 	ComposableGenerator.cpp
 	DistortedHeightmap.cpp
 	DungeonRoomsFinisher.cpp
+	EndChorusGen.cpp
 	EndGen.cpp
 	EndPlatform.cpp
 	EnderDragonFightStructuresGen.cpp
@@ -38,6 +40,7 @@ target_sources(
 
 	BioGen.h
 	Caves.h
+	ChorusPlantTree.h
 	ChunkDesc.h
 	ChunkGenerator.h
 	CompoGen.h
@@ -46,6 +49,7 @@ target_sources(
 	CompositedHeiGen.h
 	DistortedHeightmap.h
 	DungeonRoomsFinisher.h
+	EndChorusGen.h
 	EndGen.h
 	EndGateway.h
 	EnderDragonFightStructuresGen.h
