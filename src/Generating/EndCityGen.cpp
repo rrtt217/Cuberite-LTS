@@ -937,7 +937,12 @@ protected:
 			// two and three storey ones may carry a small tower on their roof:
 			int RoomStoreys = 1;
 			const cPrefab * Room = nullptr;
-			if ((Rng() % 2) == 0)
+			if ((Rng() % 4) == 0)
+			{
+				// The wiki notes that base_floor also forms the "empty rooms" found higher up:
+				Room = P.m_EmptyRoom.get();
+			}
+			else
 			{
 				RoomStoreys = 1 + static_cast<int>(Rng() % 3);
 				if (RoomStoreys == 1)
