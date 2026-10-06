@@ -64,7 +64,8 @@ protected:
 		);
 		*/
 
-		if (cBlockInfo::IsSolid(a_BlockType))
+		// The chorus flower is not solid, but some projectiles break it when they hit it:
+		if (cBlockInfo::IsSolid(a_BlockType) || (m_Projectile->BreaksChorusFlower() && (a_BlockType == E_BLOCK_CHORUS_FLOWER)))
 		{
 			// The projectile hit a solid block, calculate the exact hit coords:
 			cBoundingBox bb(a_BlockPos, a_BlockPos + Vector3i(1, 1, 1));  // Bounding box of the block hit
