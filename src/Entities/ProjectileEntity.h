@@ -79,6 +79,10 @@ public:
 	/** Called by the physics blocktracer when the entity hits a solid block, the hit position and the face hit (BLOCK_FACE_) is given */
 	virtual void OnHitSolidBlock(Vector3d a_HitPos, eBlockFace a_HitFace);
 
+	/** Returns whether this projectile kind breaks a chorus flower that it hits.
+	The flower is not solid, so the block tracer has to be told to report it as a hit. */
+	bool BreaksChorusFlower() const;
+
 	/** Called by the physics blocktracer when the entity hits another entity */
 	virtual void OnHitEntity(cEntity & a_EntityHit, Vector3d a_HitPos);
 

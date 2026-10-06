@@ -107,6 +107,16 @@ private:
 
 
 
+	virtual bool DoesDropOnPistonPush() const override
+	{
+		// A piston (or water) destroys the flower without any drops:
+		return false;
+	}
+
+
+
+
+
 	virtual void OnUpdate(
 		cChunkInterface & a_ChunkInterface,
 		cWorldInterface & a_WorldInterface,
