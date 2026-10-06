@@ -52,6 +52,9 @@ static constexpr int END_CITY_BRIDGE_DENOMINATOR = 2;
 /** The chance (1 in N) that a bridge ends in an End ship. */
 static constexpr int END_CITY_SHIP_DENOMINATOR = 8;
 
+/** The number of rolls over which a bridge may end in a room instead of a tower. */
+static constexpr int END_CITY_ROOM_DENOMINATOR = 6;
+
 /** The number of straight bridge segments, and the extra random range. */
 static constexpr int END_CITY_BRIDGE_MIN_SEGMENTS = 2;
 static constexpr int END_CITY_BRIDGE_EXTRA_SEGMENTS = 3;
@@ -541,6 +544,7 @@ public:
 		m_TowerTop = MakePrefab("TowerTop");
 		m_FatTower = MakePrefab("FatTower");
 		m_FatTowerTop = MakePrefab("FatTowerTop");
+		m_LargeRoom = MakePrefab("LargeRoom");
 
 		// Extend the bottom piece down to the terrain so that slopes do not leave a gap:
 		if (m_BaseFloor != nullptr)
@@ -565,6 +569,7 @@ public:
 	std::unique_ptr<cPrefab> m_TowerTop;
 	std::unique_ptr<cPrefab> m_FatTower;
 	std::unique_ptr<cPrefab> m_FatTowerTop;
+	std::unique_ptr<cPrefab> m_LargeRoom;
 
 	sOrientedPrefab m_Bridge[END_CITY_DIR_COUNT];
 	sOrientedPrefab m_BridgeGentle[END_CITY_DIR_COUNT];
@@ -898,6 +903,25 @@ protected:
 			{
 				Add(Ship.m_Prefab.get(), Vector3i(Edge.x + Ship.m_MinOffset.x, Edge.y, Edge.z + Ship.m_MinOffset.z));
 				ShipPlaced = true;
+				return;
+			}
+
+			// A room may end the bridge instead of a tower:
+			const cPrefab * Room = nullptr;
+			const int RoomRoll = static_cast<int>(Rng() % END_CITY_ROOM_DENOMINATOR);
+			if ((RoomRoll == 0) && (P.m_LargeRoom != nullptr))
+			{
+				Room = P.m_LargeRoom.get();
+			}
+			else if ((RoomRoll == 1) && (P.m_FatTowerTop != nullptr))
+			{
+				Room = P.m_FatTowerTop.get();
+			}
+			if (Room != nullptr)
+			{
+				const int RoomHalf = PrefabSize(*Room).x / 2;
+				AddCentered(Room, Edge.x + (DirX * RoomHalf), Edge.y, Edge.z + (DirZ * RoomHalf));
+				AddCarve(Edge.x, Edge.y + 1, Edge.z);
 				return;
 			}
 
