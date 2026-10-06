@@ -5,9 +5,11 @@
 /*
 The block layout of each piece comes from the Minecraft Wiki's layered blueprints
 (https://minecraft.wiki/w/End_City/Structure). The combined "Base Room" blueprint is split into its
-stories (BaseFloor / SecondFloor / ThirdFloor / ThirdRoof) following the piece names and roles listed
-at https://minecraft.wiki/w/End_City#Structure_details. The wiki does not publish block layouts for the
-individual named pieces, so the stories and the large room are the closest allowed-source geometry.
+stories (BaseFloor / SecondFloor / ThirdFloor / ThirdRoof) and TowerFloor is derived by solidifying
+the lowest layer of TowerPiece, following the piece names and roles listed at
+https://minecraft.wiki/w/End_City#Structure_details (tower_floor: "similar to tower_base, but the
+ladder entrance is replaced with a solid floor"). The wiki does not publish block layouts for the
+individual named pieces, so these are the closest allowed-source geometry.
 */
 
 #include "Globals.h"
@@ -77,6 +79,18 @@ static const sEndCityBlueprintLayer Layers_TowerBase[] =
 static const sEndCityBlueprintLayer Layers_TowerPiece[] =
 {
 	{0, "       |  PPP  | P   P | PL  P | P   P |  PPP  |       "},
+	{1, "       |  UUU  | U L U | U   U | U   U |  UUU  |       "},
+	{2, "   S   |  UpU  | U   U |Su  LuS| U   U |  UpU  |   S   "},
+	{3, "       |  UUU  | U   U | U   U | U L U |  UUU  |       "},
+};
+
+
+
+
+
+static const sEndCityBlueprintLayer Layers_TowerFloor[] =
+{
+	{0, "       |  PPP  | PPPPP | PLPPP | PPPPP |  PPP  |       "},
 	{1, "       |  UUU  | U L U | U   U | U   U |  UUU  |       "},
 	{2, "   S   |  UpU  | U   U |Su  LuS| U   U |  UpU  |   S   "},
 	{3, "       |  UUU  | U   U | U   U | U L U |  UUU  |       "},
@@ -246,6 +260,7 @@ const sEndCityBlueprint g_EndCityBlueprints[] =
 	{"ThirdRoof", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|Y=Green Wool|N=Red Wool|D=End Rod|A=Ladder|O=EntitySprite:Shulker|B=Black Wool", 18, 18, 2, Layers_ThirdRoof},
 	{"TowerBase", "P=Purpur Block|U=Purpur Pillar@top|u=Purpur Pillar@horizontal|p=Purpur Pillar|L=Purpur Slab|S=Purpur Stairs|l=Ladder", 7, 7, 7, Layers_TowerBase},
 	{"TowerPiece", "P=Purpur Block|U=Purpur Pillar@top|u=Purpur Pillar@horizontal|p=Purpur Pillar|L=Purpur Slab|S=Purpur Stairs", 7, 7, 4, Layers_TowerPiece},
+	{"TowerFloor", "P=Purpur Block|U=Purpur Pillar@top|u=Purpur Pillar@horizontal|p=Purpur Pillar|L=Purpur Slab|S=Purpur Stairs", 7, 7, 4, Layers_TowerFloor},
 	{"TowerTop", "P=Purpur Block|S=Purpur Stairs-rot180|s=Purpur Stairs|L=Purpur Slab|B=Magenta Wall Banner|D=End Rod|E=End Stone Bricks|U=Purpur Pillar@top|G=Magenta Stained Glass|H=EntitySprite:Shulker-rot180", 9, 9, 5, Layers_TowerTop},
 	{"FatTower", "P=Purpur Block|S=Purpur Stairs|L=Purpur Slab|D=End Rod|E=End Rod-rot90|d=End Rod-rot180|e=End Rod-rot270|U=Purpur Pillar@top|u=Purpur Pillar|p=Purpur Pillar@horizontal|H=EntitySprite:Shulker|K=EntitySprite:Shulker-rot90|h=EntitySprite:Shulker-rot180|k=EntitySprite:Shulker-rot270", 14, 13, 12, Layers_FatTower},
 	{"FatTowerTop", "P=Purpur Block|S=Purpur Stairs|L=Purpur Slab|Y=Green Wool|N=Red Wool|C=Chest|U=Purpur Pillar@top|G=Purple Stained Glass|E=End Stone Bricks|D=End Rod", 20, 19, 6, Layers_FatTowerTop},

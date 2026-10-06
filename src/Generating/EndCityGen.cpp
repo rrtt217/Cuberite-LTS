@@ -62,16 +62,8 @@ static constexpr int END_CITY_BRIDGE_EXTRA_SEGMENTS = 3;
 /** How far the small tower's ladder shaft descends into the room below. */
 static constexpr int END_CITY_SMALL_TOWER_LADDER_DEPTH = 3;
 
-/** The minimum, and the extra random range, of a tower's middle section count. */
-static constexpr int END_CITY_TOWER_MIN_MIDDLE = 3;
-static constexpr int END_CITY_TOWER_EXTRA_MIDDLE = 5;
-
 /** The minimum fill percentage of a layer for it to count as the structural top when stacking pieces. */
 static constexpr int END_CITY_STACK_MIN_PERCENT = 3;
-
-/** The number of heights at which a tower may grow bridges, and the vertical distance between them. */
-static constexpr int END_CITY_BRANCH_LEVELS = 2;
-static constexpr int END_CITY_BRANCH_LEVEL_HEIGHT = 8;
 
 /** The number of horizontal directions a tower can branch into. */
 static constexpr int END_CITY_DIR_COUNT = 4;
@@ -546,6 +538,7 @@ public:
 		m_ThirdRoof = MakePrefab("ThirdRoof");
 		m_TowerBase = MakePrefab("TowerBase");
 		m_TowerPiece = MakePrefab("TowerPiece");
+		m_TowerFloor = MakePrefab("TowerFloor");
 		m_TowerTop = MakePrefab("TowerTop");
 		m_FatTower = MakePrefab("FatTower");
 		m_FatTowerTop = MakePrefab("FatTowerTop");
@@ -571,6 +564,7 @@ public:
 	std::unique_ptr<cPrefab> m_ThirdRoof;
 	std::unique_ptr<cPrefab> m_TowerBase;
 	std::unique_ptr<cPrefab> m_TowerPiece;
+	std::unique_ptr<cPrefab> m_TowerFloor;
 	std::unique_ptr<cPrefab> m_TowerTop;
 	std::unique_ptr<cPrefab> m_FatTower;
 	std::unique_ptr<cPrefab> m_FatTowerTop;
@@ -795,14 +789,18 @@ protected:
 			Y += StackHeightForName("ThirdRoof");
 		}
 
-		// Choose and stack a tower:
+		// Choose and stack a tower. The wiki gives the small tower 3, 4 or 5 storeys and the fat
+		// tower 3, 5 or 7 storeys; bridges leave only from specific storeys:
 		const bool Fat = ((Rng() % 2) == 0);
 		const int TowerBaseY = Y;
+		std::vector<int> StoreyYs;
+		int StoreyCount = 0;
 		if (Fat && (P.m_FatTower != nullptr))
 		{
-			const int Repeats = END_CITY_TOWER_MIN_MIDDLE + static_cast<int>(Rng() % END_CITY_TOWER_EXTRA_MIDDLE);
-			for (int i = 0; i < Repeats; i++)
+			StoreyCount = 3 + (2 * static_cast<int>(Rng() % 3));  // 3, 5 or 7
+			for (int i = 0; i < StoreyCount; i++)
 			{
+				StoreyYs.push_back(Y);
 				AddCentered(P.m_FatTower.get(), m_OriginX, Y, m_OriginZ);
 				Y += StackHeightForName("FatTower");
 			}
@@ -814,18 +812,17 @@ protected:
 				Y += StackHeightForName("FatTowerTop");
 			}
 		}
-		else if (!Fat && (P.m_TowerBase != nullptr))
+		else if (!Fat && (P.m_TowerBase != nullptr) && (P.m_TowerPiece != nullptr))
 		{
+			StoreyCount = 3 + static_cast<int>(Rng() % 3);  // 3, 4 or 5
+
 			// The tower base starts with a ladder shaft, let it descend into the room below:
-			AddCentered(P.m_TowerBase.get(), m_OriginX, Y - END_CITY_SMALL_TOWER_LADDER_DEPTH, m_OriginZ);
-			Y = Y - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
-			const int Repeats = END_CITY_TOWER_MIN_MIDDLE + static_cast<int>(Rng() % END_CITY_TOWER_EXTRA_MIDDLE);
-			for (int i = 0; i < Repeats; i++)
+			StoreyYs.push_back(TowerBaseY);
+			AddCentered(P.m_TowerBase.get(), m_OriginX, TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH, m_OriginZ);
+			Y = TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
+			for (int i = 1; i < StoreyCount; i++)
 			{
-				if (P.m_TowerPiece == nullptr)
-				{
-					break;
-				}
+				StoreyYs.push_back(Y);
 				AddCentered(P.m_TowerPiece.get(), m_OriginX, Y, m_OriginZ);
 				Y += StackHeightForName("TowerPiece");
 			}
@@ -838,12 +835,31 @@ protected:
 			}
 		}
 
+		// The storeys that may grow bridges (0-based), as the wiki documents them:
+		std::vector<int> BranchStoreys;
+		if (Fat)
+		{
+			if (StoreyCount == 5)
+			{
+				BranchStoreys.push_back(3);  // 4th storey
+			}
+			else if (StoreyCount == 7)
+			{
+				BranchStoreys.push_back(3);  // 4th storey
+				BranchStoreys.push_back(5);  // 6th storey
+			}
+		}
+		else if (StoreyCount >= 3)
+		{
+			// The 2nd up to the (StoreyCount - 1)-th storey, one of them:
+			BranchStoreys.push_back(1 + static_cast<int>(Rng() % (StoreyCount - 2)));
+		}
+
 		// Grow a bridge from the tower's wall in one direction; it ends in a ship or another tower:
 		const int TowerSize = Fat ? PrefabSize(*P.m_FatTower).x : PrefabSize(*P.m_TowerBase).x;
 		const int Half = TowerSize / 2;
 		const int SecondaryHalf = (P.m_TowerBase != nullptr) ? (PrefabSize(*P.m_TowerBase).x / 2) : 0;
 		bool ShipPlaced = false;
-		bool BranchUsed[END_CITY_DIR_COUNT] = {false, false, false, false};
 
 		auto AddTowerBranch = [&](int a_Dir, int a_BranchY)
 		{
@@ -930,23 +946,19 @@ protected:
 				return;
 			}
 
-			// Otherwise grow a small tower at the far end, connected through a doorway. Its ladder
-			// shaft is allowed to hang below the bridge, as the wiki gallery shows:
-			if (P.m_TowerBase == nullptr)
+			// Otherwise grow a small tower at the far end, connected through a doorway. Its bottom is
+			// the solid-floored tower_floor, not the ladder entrance, so no hole opens to the void:
+			if ((P.m_TowerFloor == nullptr) || (P.m_TowerPiece == nullptr))
 			{
 				return;
 			}
 			const Vector3i SecondaryCenter(Edge.x + (DirX * SecondaryHalf), Edge.y, Edge.z + (DirZ * SecondaryHalf));
-			int SecondaryY = Edge.y - END_CITY_SMALL_TOWER_LADDER_DEPTH;
-			AddCentered(P.m_TowerBase.get(), SecondaryCenter.x, SecondaryY, SecondaryCenter.z);
-			SecondaryY += StackHeightForName("TowerBase");
-			const int SecondaryRepeats = END_CITY_TOWER_MIN_MIDDLE + static_cast<int>(Rng() % END_CITY_TOWER_EXTRA_MIDDLE);
-			for (int i = 0; i < SecondaryRepeats; i++)
+			int SecondaryY = Edge.y;
+			AddCentered(P.m_TowerFloor.get(), SecondaryCenter.x, SecondaryY, SecondaryCenter.z);
+			SecondaryY += StackHeightForName("TowerFloor");
+			const int SecondaryStoreys = 3 + static_cast<int>(Rng() % 3);
+			for (int i = 1; i < SecondaryStoreys; i++)
 			{
-				if (P.m_TowerPiece == nullptr)
-				{
-					break;
-				}
 				AddCentered(P.m_TowerPiece.get(), SecondaryCenter.x, SecondaryY, SecondaryCenter.z);
 				SecondaryY += StackHeightForName("TowerPiece");
 			}
@@ -957,22 +969,20 @@ protected:
 			AddCarve(Edge.x, Edge.y + 1, Edge.z);
 		};
 
-		// Several branch levels, so bridges can leave the tower at different heights:
-		for (int Level = 0; Level < END_CITY_BRANCH_LEVELS; Level++)
+		// Bridges leave only from the storeys the wiki documents:
+		for (const int StoreyIndex: BranchStoreys)
 		{
-			const int BranchY = TowerBaseY + (Level * END_CITY_BRANCH_LEVEL_HEIGHT);
+			if ((StoreyIndex < 0) || (StoreyIndex >= static_cast<int>(StoreyYs.size())))
+			{
+				continue;
+			}
 			for (int Dir = 0; Dir < END_CITY_DIR_COUNT; Dir++)
 			{
-				if (BranchUsed[Dir])
+				if ((Rng() % END_CITY_BRIDGE_DENOMINATOR) != 0)
 				{
 					continue;
 				}
-				if ((Rng() % (END_CITY_BRIDGE_DENOMINATOR * (Level + 1))) != 0)
-				{
-					continue;
-				}
-				BranchUsed[Dir] = true;
-				AddTowerBranch(Dir, BranchY);
+				AddTowerBranch(Dir, StoreyYs[StoreyIndex]);
 			}
 		}
 	}
