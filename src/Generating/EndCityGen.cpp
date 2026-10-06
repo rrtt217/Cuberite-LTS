@@ -89,6 +89,9 @@ static constexpr NIBBLETYPE END_CITY_END_ROD_SOUTH = 3;
 
 /** Ladder and wall banner facing metadata. These use the vanilla facing values. */
 static constexpr NIBBLETYPE END_CITY_FACING_NORTH = 2;
+static constexpr NIBBLETYPE END_CITY_FACING_SOUTH = 3;
+static constexpr NIBBLETYPE END_CITY_FACING_WEST = 4;
+static constexpr NIBBLETYPE END_CITY_FACING_EAST = 5;
 
 /** Purpur pillar axis metadata. */
 static constexpr NIBBLETYPE END_CITY_PILLAR_VERTICAL = 0;
@@ -513,6 +516,82 @@ static bool CropToContent(cBlockArea & a_Area)
 
 /** Builds a block area from a blueprint, cropped to its non-air bounding box.
 Returns nullptr if the blueprint holds no blocks. */
+/** Chests and ladders need a valid facing meta and the blueprints do not store one. A chest faces
+away from an adjacent solid block; a ladder's meta names the side its support block is on. This is
+idempotent, so it can be re-run after a rotation that may not have rotated the metas. */
+static void FixFacingMetas(cBlockArea & a_Area)
+{
+	const int SizeX = a_Area.GetSizeX();
+	const int SizeZ = a_Area.GetSizeZ();
+	for (int y = 0; y < a_Area.GetSizeY(); y++)
+	{
+		for (int z = 0; z < SizeZ; z++)
+		{
+			for (int x = 0; x < SizeX; x++)
+			{
+				const BLOCKTYPE Type = a_Area.GetRelBlockType(x, y, z);
+				const bool IsChest = (Type == E_BLOCK_CHEST) || (Type == E_BLOCK_ENDER_CHEST);
+				const bool IsLadder = (Type == E_BLOCK_LADDER);
+				if (!IsChest && !IsLadder)
+				{
+					continue;
+				}
+
+				const bool West = (x > 0) && (a_Area.GetRelBlockType(x - 1, y, z) != E_BLOCK_AIR);
+				const bool East = (x < SizeX - 1) && (a_Area.GetRelBlockType(x + 1, y, z) != E_BLOCK_AIR);
+				const bool North = (z > 0) && (a_Area.GetRelBlockType(x, y, z - 1) != E_BLOCK_AIR);
+				const bool South = (z < SizeZ - 1) && (a_Area.GetRelBlockType(x, y, z + 1) != E_BLOCK_AIR);
+
+				NIBBLETYPE Facing = E_META_CHEST_FACING_ZM;
+				if (IsChest)
+				{
+					if (West)
+					{
+						Facing = E_META_CHEST_FACING_XP;
+					}
+					else if (East)
+					{
+						Facing = E_META_CHEST_FACING_XM;
+					}
+					else if (South)
+					{
+						Facing = E_META_CHEST_FACING_ZM;
+					}
+					else if (North)
+					{
+						Facing = E_META_CHEST_FACING_ZP;
+					}
+				}
+				else
+				{
+					Facing = END_CITY_FACING_NORTH;
+					if (West)
+					{
+						Facing = END_CITY_FACING_WEST;
+					}
+					else if (East)
+					{
+						Facing = END_CITY_FACING_EAST;
+					}
+					else if (North)
+					{
+						Facing = END_CITY_FACING_NORTH;
+					}
+					else if (South)
+					{
+						Facing = END_CITY_FACING_SOUTH;
+					}
+				}
+				a_Area.SetRelBlockTypeMeta(x, y, z, Type, Facing);
+			}
+		}
+	}
+}
+
+
+
+
+
 static std::unique_ptr<cBlockArea> MakeBlueprintArea(const sEndCityBlueprint & a_Blueprint)
 {
 	auto Area = std::make_unique<cBlockArea>();
@@ -554,40 +633,7 @@ static std::unique_ptr<cBlockArea> MakeBlueprintArea(const sEndCityBlueprint & a
 		}
 	}
 
-	// Chests need a valid facing meta (2 to 5); the blueprints do not store one, so face the chest
-	// away from an adjacent solid block, defaulting to north:
-	for (int y = 0; y < a_Blueprint.m_Height; y++)
-	{
-		for (int z = 0; z < a_Blueprint.m_SizeZ; z++)
-		{
-			for (int x = 0; x < a_Blueprint.m_SizeX; x++)
-			{
-				const BLOCKTYPE Type = Area->GetRelBlockType(x, y, z);
-				if ((Type != E_BLOCK_CHEST) && (Type != E_BLOCK_ENDER_CHEST))
-				{
-					continue;
-				}
-				NIBBLETYPE Facing = E_META_CHEST_FACING_ZM;
-				if ((x > 0) && (Area->GetRelBlockType(x - 1, y, z) != E_BLOCK_AIR))
-				{
-					Facing = E_META_CHEST_FACING_XP;
-				}
-				else if ((x < a_Blueprint.m_SizeX - 1) && (Area->GetRelBlockType(x + 1, y, z) != E_BLOCK_AIR))
-				{
-					Facing = E_META_CHEST_FACING_XM;
-				}
-				else if ((z < a_Blueprint.m_SizeZ - 1) && (Area->GetRelBlockType(x, y, z + 1) != E_BLOCK_AIR))
-				{
-					Facing = E_META_CHEST_FACING_ZM;
-				}
-				else if ((z > 0) && (Area->GetRelBlockType(x, y, z - 1) != E_BLOCK_AIR))
-				{
-					Facing = E_META_CHEST_FACING_ZP;
-				}
-				Area->SetRelBlockTypeMeta(x, y, z, Type, Facing);
-			}
-		}
-	}
+	FixFacingMetas(*Area);
 
 	if (!CropToContent(*Area))
 	{
@@ -642,6 +688,7 @@ static sOrientedPrefab OrientAreaZ(const cBlockArea & a_Area, int a_DirX, int a_
 	{
 		Out.RotateCCW();
 	}
+	FixFacingMetas(Out);
 
 	// The ship's item frame marker is a placeholder block; record it and remove the placeholder:
 	std::vector<sEntityMarker> ItemFrames;
@@ -679,20 +726,21 @@ static sOrientedPrefab OrientAreaZ(const cBlockArea & a_Area, int a_DirX, int a_
 		}
 	}
 
-	// The ship's dragon head points away from the ship; the base blueprint has it facing -Z, so
-	// rotate its facing with the ship:
-	eMobHeadRotation HeadRotation = SKULL_ROTATION_NORTH;
+	// The ship's dragon head points away from the ship; the base blueprint has it facing -Z, so face
+	// it along the ship's forward direction. A floor head at rotation 0 renders facing +Z, the opposite
+	// of the value's name, so the local -Z facing is rotation 8 and the other directions follow:
+	eMobHeadRotation HeadRotation = SKULL_ROTATION_SOUTH;
 	if (a_DirX > 0)
-	{
-		HeadRotation = SKULL_ROTATION_WEST;
-	}
-	else if (a_DirX < 0)
 	{
 		HeadRotation = SKULL_ROTATION_EAST;
 	}
+	else if (a_DirX < 0)
+	{
+		HeadRotation = SKULL_ROTATION_WEST;
+	}
 	else if (a_DirZ < 0)
 	{
-		HeadRotation = SKULL_ROTATION_SOUTH;
+		HeadRotation = SKULL_ROTATION_NORTH;
 	}
 	std::vector<sMobHeadMarker> MobHeads;
 	for (const auto & HeadPos: CollectBlocks(Out, E_BLOCK_HEAD))
@@ -1031,6 +1079,7 @@ protected:
 			{
 				Rotated->RotateCCW();
 			}
+			FixFacingMetas(*Rotated);
 			a_Out[r].m_DoorwaySide = DoorwaySide(*Rotated, a_Out[r].m_DoorX, a_Out[r].m_DoorZ);
 			a_Out[r].m_Chests = CollectBlocks(*Rotated, E_BLOCK_CHEST);
 			auto Prefab = std::make_unique<cPrefab>(*Rotated);

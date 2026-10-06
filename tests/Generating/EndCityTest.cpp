@@ -173,6 +173,77 @@ static void testChestMeta(void)
 
 
 
+/** Verifies that every ladder the city places is attached to a solid block. A ladder's meta names
+the side its support block is on, so a wrong meta leaves the ladder floating. */
+static void testLadderAttachment(void)
+{
+	LOG("Testing the End City ladder attachment...");
+
+	cTestHeightGen HeightGen(TEST_SURFACE_Y, 0);
+	int LadderCount = 0;
+	for (int seed = 1; seed <= 2; seed++)
+	{
+		cEndCityGen Gen(seed, HeightGen);
+		for (int chunkX = 55; chunkX <= 70; chunkX++)
+		{
+			for (int chunkZ = 55; chunkZ <= 70; chunkZ++)
+			{
+				cChunkDesc Chunk({chunkX, chunkZ});
+				Gen.GenFinish(Chunk);
+				for (int y = 0; y <= TEST_MAX_SCAN_Y; y++)
+				{
+					for (int z = 0; z < cChunkDef::Width; z++)
+					{
+						for (int x = 0; x < cChunkDef::Width; x++)
+						{
+							if (Chunk.GetBlockType(x, y, z) != E_BLOCK_LADDER)
+							{
+								continue;
+							}
+							const NIBBLETYPE Meta = Chunk.GetBlockMeta(x, y, z);
+							int Dx = 0;
+							int Dz = 0;
+							switch (Meta)
+							{
+								case 2: { Dz = -1; break; }
+								case 3: { Dz = 1; break; }
+								case 4: { Dx = -1; break; }
+								case 5: { Dx = 1; break; }
+								default: { TEST_FAIL("Invalid ladder meta"); break; }
+							}
+							const int Nx = x + Dx;
+							const int Nz = z + Dz;
+							if ((Nx < 0) || (Nx >= cChunkDef::Width) || (Nz < 0) || (Nz >= cChunkDef::Width))
+							{
+								continue;
+							}
+							if (Chunk.GetBlockType(Nx, y, Nz) == E_BLOCK_AIR)
+							{
+								const auto At = [&Chunk](int rx, int rz, int ry) -> int
+								{
+									if ((rx < 0) || (rx >= cChunkDef::Width) || (rz < 0) || (rz >= cChunkDef::Width))
+									{
+										return -1;
+									}
+									return Chunk.GetBlockType(rx, ry, rz);
+								};
+								LOG("Ladder chunk (%d, %d) rel (%d, %d, %d) meta %d air; W=%d E=%d N=%d S=%d U=%d D=%d", chunkX, chunkZ, x, y, z, Meta, At(x - 1, z, y), At(x + 1, z, y), At(x, z - 1, y), At(x, z + 1, y), At(x, z, y + 1), At(x, z, y - 1));
+							}
+							TEST_NOTEQUAL(Chunk.GetBlockType(Nx, y, Nz), E_BLOCK_AIR);
+							LadderCount++;
+						}
+					}
+				}
+			}
+		}
+	}
+	TEST_GREATER_THAN_OR_EQUAL(LadderCount, 1);
+}
+
+
+
+
+
 /** Verifies the 20-chunk grid rule: every origin chunk lies in the [0 .. 8] range within its cell. */
 static void testGridOrigin(void)
 {
@@ -277,6 +348,7 @@ IMPLEMENT_TEST_MAIN("EndCityTest",
 	testGridOrigin();
 	testGeneration();
 	testChestMeta();
+	testLadderAttachment();
 	testRejectedLocations();
 	testDeterminism();
 )
