@@ -446,7 +446,9 @@ static sOrientedPrefab OrientAreaZ(const cBlockArea & a_Area, int a_DirX, int a_
 			}
 		}
 	}
-	return { std::make_unique<cPrefab>(Out), Vector3i(MinX, 0, MinZ) };
+	auto Prefab = std::make_unique<cPrefab>(Out);
+	Prefab->SetMergeStrategy(cBlockArea::msImprint);
+	return { std::move(Prefab), Vector3i(MinX, 0, MinZ) };
 }
 
 
@@ -539,7 +541,11 @@ protected:
 		{
 			return nullptr;
 		}
-		return std::make_unique<cPrefab>(*Area);
+
+		// Air cells must behave like structure voids: they must not erase blocks placed by other pieces:
+		auto Prefab = std::make_unique<cPrefab>(*Area);
+		Prefab->SetMergeStrategy(cBlockArea::msImprint);
+		return Prefab;
 	}
 } ;
 
