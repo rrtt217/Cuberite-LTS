@@ -646,7 +646,9 @@ protected:
 		if (P.m_BaseRoom != nullptr)
 		{
 			AddCentered(P.m_BaseRoom.get(), m_OriginX, Y, m_OriginZ);
-			Y += PrefabSize(*P.m_BaseRoom).y;
+
+			// The base room's top layer is only decorative end rods; let the tower sit on its roof:
+			Y += PrefabSize(*P.m_BaseRoom).y - 1;
 		}
 
 		// Choose and stack a tower:
