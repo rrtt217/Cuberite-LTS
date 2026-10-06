@@ -14,6 +14,7 @@ enum eEndCityContentKind
 	ecctChest,
 	ecctBrewingStand,
 	ecctItemFrame,
+	ecctMobHead,
 } ;
 
 /** A generated End City special content, in world coordinates. */
@@ -22,6 +23,9 @@ struct sEndCityContent
 	eEndCityContentKind m_Kind;
 	Vector3i m_Pos;
 	eBlockFace m_Face;
+
+	/** Extra data, currently the mob head rotation for ecctMobHead. */
+	int m_Data;
 } ;
 
 /** Fills the generated End City special contents that fall in a chunk. */

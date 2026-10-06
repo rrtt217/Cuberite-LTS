@@ -16,6 +16,7 @@ chest loot specification.
 #include "ChunkDesc.h"
 #include "../BlockEntities/ChestEntity.h"
 #include "../BlockEntities/BrewingstandEntity.h"
+#include "../BlockEntities/MobHeadEntity.h"
 #include "../Entities/ItemFrame.h"
 #include "../Enchantments.h"
 #include "../FastRandom.h"
@@ -157,6 +158,18 @@ static void FillEndCityContents(cChunkDesc & a_Chunk, const std::vector<sEndCity
 				cItem Elytra(E_ITEM_ELYTRA);
 				Frame->SetItem(Elytra);
 				a_Chunk.GetEntities().emplace_back(std::move(Frame));
+				break;
+			}
+
+			case ecctMobHead:
+			{
+				// The head's mob type lives in its block entity, not in the block metadata:
+				auto * Head = static_cast<cMobHeadEntity *>(a_Chunk.GetBlockEntity(RelX, Content.m_Pos.y, RelZ));
+				if (Head != nullptr)
+				{
+					Head->SetType(SKULL_TYPE_DRAGON);
+					Head->SetRotation(static_cast<eMobHeadRotation>(Content.m_Data));
+				}
 				break;
 			}
 		}

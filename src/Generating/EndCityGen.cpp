@@ -117,6 +117,20 @@ struct sEntityMarker
 
 
 
+/** A generated mob head (for example the ship's dragon head) in a prefab's local coordinates. */
+struct sMobHeadMarker
+{
+	/** The cell the head occupies. */
+	Vector3i m_Pos;
+
+	/** The direction the head faces. */
+	eMobHeadRotation m_Rotation;
+} ;
+
+
+
+
+
 /** A prefab together with the oriented coordinate of its minimum corner.
 Used when a blueprint built along the +Z axis is rotated into an arbitrary horizontal direction. */
 struct sOrientedPrefab
@@ -135,6 +149,9 @@ struct sOrientedPrefab
 
 	/** Offsets of the brewing stands, relative to the prefab's minimum corner. */
 	std::vector<Vector3i> m_BrewingStands;
+
+	/** Mob head markers, relative to the prefab's minimum corner. */
+	std::vector<sMobHeadMarker> m_MobHeads;
 } ;
 
 
@@ -662,9 +679,30 @@ static sOrientedPrefab OrientAreaZ(const cBlockArea & a_Area, int a_DirX, int a_
 		}
 	}
 
+	// The ship's dragon head points away from the ship; the base blueprint has it facing -Z, so
+	// rotate its facing with the ship:
+	eMobHeadRotation HeadRotation = SKULL_ROTATION_NORTH;
+	if (a_DirX > 0)
+	{
+		HeadRotation = SKULL_ROTATION_WEST;
+	}
+	else if (a_DirX < 0)
+	{
+		HeadRotation = SKULL_ROTATION_EAST;
+	}
+	else if (a_DirZ < 0)
+	{
+		HeadRotation = SKULL_ROTATION_SOUTH;
+	}
+	std::vector<sMobHeadMarker> MobHeads;
+	for (const auto & HeadPos: CollectBlocks(Out, E_BLOCK_HEAD))
+	{
+		MobHeads.push_back({HeadPos, HeadRotation});
+	}
+
 	auto Prefab = std::make_unique<cPrefab>(Out);
 	Prefab->SetMergeStrategy(cBlockArea::msImprint);
-	return { std::move(Prefab), Vector3i(-NearX, 0, -NearZ), CollectBlocks(Out, E_BLOCK_CHEST), ItemFrames, CollectBlocks(Out, E_BLOCK_BREWING_STAND) };
+	return { std::move(Prefab), Vector3i(-NearX, 0, -NearZ), CollectBlocks(Out, E_BLOCK_CHEST), ItemFrames, CollectBlocks(Out, E_BLOCK_BREWING_STAND), MobHeads };
 }
 
 
@@ -1072,7 +1110,7 @@ public:
 					const Vector3i World = Piece.m_Pos + Chest;
 					if (IsInChunk(World, ChunkMinX, ChunkMinZ))
 					{
-						Contents.push_back({ecctChest, World, BLOCK_FACE_NONE});
+						Contents.push_back({ecctChest, World, BLOCK_FACE_NONE, 0});
 					}
 				}
 				for (const auto & Stand: Piece.m_BrewingStands)
@@ -1080,7 +1118,7 @@ public:
 					const Vector3i World = Piece.m_Pos + Stand;
 					if (IsInChunk(World, ChunkMinX, ChunkMinZ))
 					{
-						Contents.push_back({ecctBrewingStand, World, BLOCK_FACE_NONE});
+						Contents.push_back({ecctBrewingStand, World, BLOCK_FACE_NONE, 0});
 					}
 				}
 				for (const auto & Frame: Piece.m_ItemFrames)
@@ -1088,7 +1126,15 @@ public:
 					const Vector3i World = Piece.m_Pos + Frame.m_Pos;
 					if (IsInChunk(World, ChunkMinX, ChunkMinZ))
 					{
-						Contents.push_back({ecctItemFrame, World, Frame.m_Face});
+						Contents.push_back({ecctItemFrame, World, Frame.m_Face, 0});
+					}
+				}
+				for (const auto & Head: Piece.m_MobHeads)
+				{
+					const Vector3i World = Piece.m_Pos + Head.m_Pos;
+					if (IsInChunk(World, ChunkMinX, ChunkMinZ))
+					{
+						Contents.push_back({ecctMobHead, World, BLOCK_FACE_NONE, static_cast<int>(Head.m_Rotation)});
 					}
 				}
 			}
@@ -1106,6 +1152,7 @@ protected:
 		std::vector<Vector3i> m_Chests;
 		std::vector<Vector3i> m_BrewingStands;
 		std::vector<sEntityMarker> m_ItemFrames;
+		std::vector<sMobHeadMarker> m_MobHeads;
 	} ;
 
 	/** An axis-aligned box that is cleared to air after the pieces are drawn, to open doorways. */
@@ -1134,16 +1181,16 @@ protected:
 
 
 	/** Adds a piece at the specified minimum-corner coordinates, tracking its loot chests and entity markers. */
-	void Add(const cPrefab * a_Prefab, const Vector3i & a_Pos, const std::vector<Vector3i> & a_Chests = {}, const std::vector<Vector3i> & a_BrewingStands = {}, const std::vector<sEntityMarker> & a_ItemFrames = {})
+	void Add(const cPrefab * a_Prefab, const Vector3i & a_Pos, const std::vector<Vector3i> & a_Chests = {}, const std::vector<Vector3i> & a_BrewingStands = {}, const std::vector<sEntityMarker> & a_ItemFrames = {}, const std::vector<sMobHeadMarker> & a_MobHeads = {})
 	{
-		m_Pieces.push_back({a_Prefab, a_Pos, a_Chests, a_BrewingStands, a_ItemFrames});
+		m_Pieces.push_back({a_Prefab, a_Pos, a_Chests, a_BrewingStands, a_ItemFrames, a_MobHeads});
 	}
 
 	/** Adds a piece centered horizontally, tracking its loot chests and entity markers. */
-	void AddCentered(const cPrefab * a_Prefab, int a_CenterX, int a_Y, int a_CenterZ, const std::vector<Vector3i> & a_Chests = {}, const std::vector<Vector3i> & a_BrewingStands = {}, const std::vector<sEntityMarker> & a_ItemFrames = {})
+	void AddCentered(const cPrefab * a_Prefab, int a_CenterX, int a_Y, int a_CenterZ, const std::vector<Vector3i> & a_Chests = {}, const std::vector<Vector3i> & a_BrewingStands = {}, const std::vector<sEntityMarker> & a_ItemFrames = {}, const std::vector<sMobHeadMarker> & a_MobHeads = {})
 	{
 		const Vector3i Size = PrefabSize(*a_Prefab);
-		Add(a_Prefab, Vector3i(a_CenterX - (Size.x / 2), a_Y, a_CenterZ - (Size.z / 2)), a_Chests, a_BrewingStands, a_ItemFrames);
+		Add(a_Prefab, Vector3i(a_CenterX - (Size.x / 2), a_Y, a_CenterZ - (Size.z / 2)), a_Chests, a_BrewingStands, a_ItemFrames, a_MobHeads);
 	}
 
 	/** Builds the whole city layout, or leaves it empty if the location is not suitable. */
@@ -1326,7 +1373,7 @@ protected:
 			const sOrientedPrefab & Ship = P.m_Ship[a_Dir];
 			if (!ShipPlaced && (Ship.m_Prefab != nullptr) && ((Rng() % END_CITY_SHIP_DENOMINATOR) == 0))
 			{
-				Add(Ship.m_Prefab.get(), Vector3i(Edge.x + Ship.m_MinOffset.x, Edge.y, Edge.z + Ship.m_MinOffset.z), Ship.m_Chests, Ship.m_BrewingStands, Ship.m_ItemFrames);
+				Add(Ship.m_Prefab.get(), Vector3i(Edge.x + Ship.m_MinOffset.x, Edge.y, Edge.z + Ship.m_MinOffset.z), Ship.m_Chests, Ship.m_BrewingStands, Ship.m_ItemFrames, Ship.m_MobHeads);
 				ShipPlaced = true;
 				return;
 			}
