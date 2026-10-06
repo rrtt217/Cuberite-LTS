@@ -478,8 +478,10 @@ static int StackHeightForName(const AString & a_Name)
 
 
 
-/** Crops the area to its non-air bounding box. Returns false if the area is empty. */
-static bool CropToContent(cBlockArea & a_Area)
+/** Crops the area to its content. When a_KeepFrame is set the declared X and Z frame is kept and only
+empty top and bottom layers are trimmed, so the piece's frame coordinates stay meaningful. Returns
+false if the area is empty. */
+static bool CropToContent(cBlockArea & a_Area, bool a_KeepFrame = false)
 {
 	int MinX = a_Area.GetSizeX();
 	int MaxX = -1;
@@ -513,11 +515,18 @@ static bool CropToContent(cBlockArea & a_Area)
 	{
 		return false;
 	}
-	a_Area.Crop(
-		MinX, a_Area.GetSizeX() - 1 - MaxX,
-		MinY, a_Area.GetSizeY() - 1 - MaxY,
-		MinZ, a_Area.GetSizeZ() - 1 - MaxZ
-	);
+	if (a_KeepFrame)
+	{
+		a_Area.Crop(0, 0, MinY, a_Area.GetSizeY() - 1 - MaxY, 0, 0);
+	}
+	else
+	{
+		a_Area.Crop(
+			MinX, a_Area.GetSizeX() - 1 - MaxX,
+			MinY, a_Area.GetSizeY() - 1 - MaxY,
+			MinZ, a_Area.GetSizeZ() - 1 - MaxZ
+		);
+	}
 	return true;
 }
 
@@ -646,7 +655,7 @@ static std::unique_ptr<cBlockArea> MakeBlueprintArea(const sEndCityBlueprint & a
 
 	FixFacingMetas(*Area);
 
-	if (!CropToContent(*Area))
+	if (!CropToContent(*Area, a_Blueprint.m_KeepFrame))
 	{
 		return nullptr;
 	}

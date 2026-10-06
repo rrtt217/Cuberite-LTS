@@ -284,7 +284,7 @@ static const sEndCityBlueprintLayer Layers_Ship[] =
 
 const sEndCityBlueprint g_EndCityBlueprints[] =
 {
-	{"BaseRoom", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|Y=Green Wool|N=Red Wool|D=End Rod|A=Ladder|O=EntitySprite:Shulker|B=Black Wool", 18, 18, 14, Layers_BaseRoom},
+	{"BaseRoom", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|Y=Green Wool|N=Red Wool|D=End Rod|A=Ladder|O=EntitySprite:Shulker|B=Black Wool", 18, 18, 14, Layers_BaseRoom, true},
 	{"TowerBase", "P=Purpur Block|U=Purpur Pillar@top|u=Purpur Pillar@horizontal|p=Purpur Pillar|L=Purpur Slab|S=Purpur Stairs|l=Ladder", 7, 7, 7, Layers_TowerBase},
 	{"TowerPiece", "P=Purpur Block|U=Purpur Pillar@top|u=Purpur Pillar@horizontal|p=Purpur Pillar|L=Purpur Slab|S=Purpur Stairs", 7, 7, 4, Layers_TowerPiece},
 	{"TowerFloor", "P=Purpur Block|U=Purpur Pillar@top|u=Purpur Pillar@horizontal|p=Purpur Pillar|L=Purpur Slab|S=Purpur Stairs", 7, 7, 4, Layers_TowerFloor},
