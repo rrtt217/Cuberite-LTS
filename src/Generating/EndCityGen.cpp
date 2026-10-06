@@ -58,6 +58,18 @@ static constexpr int END_CITY_SHIP_DENOMINATOR = 8;
 /** The chance (1 in N) that a two or three storey loot room carries a small tower on its roof. */
 static constexpr int END_CITY_ROOM_TOWER_DENOMINATOR = 2;
 
+/** The width and depth of the base room frame that the base floor slices share. Centring them on this
+frame instead of their own cropped bounding boxes keeps their staircases and ceiling openings aligned. */
+static constexpr int END_CITY_BASE_FRAME = 18;
+
+/** The base room's ladder shaft position within that frame, and the small tower's ladder position
+within its own frame. Placing the tower so the two coincide keeps its shaft over the room's ceiling
+opening. */
+static constexpr int END_CITY_BASE_LADDER_X = 10;
+static constexpr int END_CITY_BASE_LADDER_Z = 9;
+static constexpr int END_CITY_TOWER_LADDER_X = 3;
+static constexpr int END_CITY_TOWER_LADDER_Z = 4;
+
 /** The number of straight bridge segments, and the extra random range. */
 static constexpr int END_CITY_BRIDGE_MIN_SEGMENTS = 2;
 static constexpr int END_CITY_BRIDGE_EXTRA_SEGMENTS = 3;
@@ -467,7 +479,9 @@ static int StackHeightForName(const AString & a_Name)
 
 
 
-/** Crops the area to its non-air bounding box. Returns false if the area is empty. */
+/** Trims the area's empty top and bottom layers, keeping the declared X and Z frame intact so that
+pieces built from the same blueprint (for example the stacked base floors) stay aligned to it.
+Returns false if the area is empty. */
 static bool CropToContent(cBlockArea & a_Area)
 {
 	int MinX = a_Area.GetSizeX();
@@ -1242,6 +1256,13 @@ protected:
 		Add(a_Prefab, Vector3i(a_CenterX - (Size.x / 2), a_Y, a_CenterZ - (Size.z / 2)), a_Chests, a_BrewingStands, a_ItemFrames, a_MobHeads);
 	}
 
+	/** Adds a piece centered on a shared blueprint frame rather than its own cropped bounding box. This
+	is what keeps pieces built from slices of one blueprint aligned to it. */
+	void AddCenteredFrame(const cPrefab * a_Prefab, int a_FrameX, int a_FrameZ, int a_CenterX, int a_Y, int a_CenterZ)
+	{
+		Add(a_Prefab, Vector3i(a_CenterX - (a_FrameX / 2), a_Y, a_CenterZ - (a_FrameZ / 2)));
+	}
+
 	/** Builds the whole city layout, or leaves it empty if the location is not suitable. */
 	void Build(int a_Seed, cTerrainHeightGen & a_HeightGen)
 	{
@@ -1270,22 +1291,22 @@ protected:
 		int Y = BaseY;
 		if (P.m_BaseFloor != nullptr)
 		{
-			AddCentered(P.m_BaseFloor.get(), m_OriginX, Y, m_OriginZ);
+			AddCenteredFrame(P.m_BaseFloor.get(), END_CITY_BASE_FRAME, END_CITY_BASE_FRAME, m_OriginX, Y, m_OriginZ);
 			Y += StackHeightForName("BaseFloor");
 		}
 		if (P.m_SecondFloor != nullptr)
 		{
-			AddCentered(P.m_SecondFloor.get(), m_OriginX, Y, m_OriginZ);
+			AddCenteredFrame(P.m_SecondFloor.get(), END_CITY_BASE_FRAME, END_CITY_BASE_FRAME, m_OriginX, Y, m_OriginZ);
 			Y += StackHeightForName("SecondFloor");
 		}
 		if (P.m_ThirdFloor != nullptr)
 		{
-			AddCentered(P.m_ThirdFloor.get(), m_OriginX, Y, m_OriginZ);
+			AddCenteredFrame(P.m_ThirdFloor.get(), END_CITY_BASE_FRAME, END_CITY_BASE_FRAME, m_OriginX, Y, m_OriginZ);
 			Y += StackHeightForName("ThirdFloor");
 		}
 		if (P.m_ThirdRoof != nullptr)
 		{
-			AddCentered(P.m_ThirdRoof.get(), m_OriginX, Y, m_OriginZ);
+			AddCenteredFrame(P.m_ThirdRoof.get(), END_CITY_BASE_FRAME, END_CITY_BASE_FRAME, m_OriginX, Y, m_OriginZ);
 			Y += StackHeightForName("ThirdRoof");
 		}
 
@@ -1316,21 +1337,26 @@ protected:
 		{
 			StoreyCount = 3 + static_cast<int>(Rng() % 3);  // 3, 4 or 5
 
+			// Shift the small tower so that its ladder shaft sits over the base room's ceiling opening:
+			const int SmallTowerX = m_OriginX - (END_CITY_BASE_FRAME / 2) + END_CITY_BASE_LADDER_X - END_CITY_TOWER_LADDER_X;
+			const int SmallTowerZ = m_OriginZ - (END_CITY_BASE_FRAME / 2) + END_CITY_BASE_LADDER_Z - END_CITY_TOWER_LADDER_Z;
+
 			// The tower base starts with a ladder shaft, let it descend into the room below:
 			StoreyYs.push_back(TowerBaseY);
-			AddCentered(P.m_TowerBase.get(), m_OriginX, TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH, m_OriginZ);
+			Add(P.m_TowerBase.get(), Vector3i(SmallTowerX, TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH, SmallTowerZ));
 			Y = TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
 			for (int i = 1; i < StoreyCount; i++)
 			{
 				StoreyYs.push_back(Y);
-				AddCentered(P.m_TowerPiece.get(), m_OriginX, Y, m_OriginZ);
+				Add(P.m_TowerPiece.get(), Vector3i(SmallTowerX, Y, SmallTowerZ));
 				Y += StackHeightForName("TowerPiece");
 			}
 
 			// Cap the small tower with its banner roof:
 			if (P.m_TowerTop != nullptr)
 			{
-				AddCentered(P.m_TowerTop.get(), m_OriginX, Y, m_OriginZ);
+				const int TopOffset = (PrefabSize(*P.m_TowerTop).x - PrefabSize(*P.m_TowerPiece).x) / 2;
+				Add(P.m_TowerTop.get(), Vector3i(SmallTowerX - TopOffset, Y, SmallTowerZ - TopOffset));
 				Y += StackHeightForName("TowerTop");
 			}
 		}
