@@ -10,6 +10,7 @@ target_sources(
 	ComposableGenerator.cpp
 	DistortedHeightmap.cpp
 	DungeonRoomsFinisher.cpp
+	EndCityGen.cpp
 	EndGen.cpp
 	EndPlatform.cpp
 	EnderDragonFightStructuresGen.cpp
@@ -46,6 +47,7 @@ target_sources(
 	CompositedHeiGen.h
 	DistortedHeightmap.h
 	DungeonRoomsFinisher.h
+	EndCityGen.h
 	EndGen.h
 	EndGateway.h
 	EnderDragonFightStructuresGen.h

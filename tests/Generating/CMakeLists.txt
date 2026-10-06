@@ -43,6 +43,7 @@ set (GENERATING_SRCS
 	${PROJECT_SOURCE_DIR}/src/Generating/ComposableGenerator.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/DistortedHeightmap.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/DungeonRoomsFinisher.cpp
+	${PROJECT_SOURCE_DIR}/src/Generating/EndCityGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EndGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EnderDragonFightStructuresGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EnderDragonReturnGatewayGen.cpp
@@ -113,6 +114,7 @@ set (GENERATING_HDRS
 	${PROJECT_SOURCE_DIR}/src/Generating/CompositedHeiGen.h
 	${PROJECT_SOURCE_DIR}/src/Generating/DistortedHeightmap.h
 	${PROJECT_SOURCE_DIR}/src/Generating/DungeonRoomsFinisher.h
+	${PROJECT_SOURCE_DIR}/src/Generating/EndCityGen.h
 	${PROJECT_SOURCE_DIR}/src/Generating/EndGen.h
 	${PROJECT_SOURCE_DIR}/src/Generating/EndGateway.h
 	${PROJECT_SOURCE_DIR}/src/Generating/EnderDragonReturnGatewayGen.h
@@ -268,5 +270,28 @@ set_target_properties(
 	PieceGeneratorBFSTree
 	PieceRotation
 	ReturnGatewayTest
+	PROPERTIES FOLDER Tests/Generating
+)
+
+
+
+
+
+# End City test:
+add_executable(EndCityTest
+	EndCityTest.cpp
+)
+target_link_libraries(EndCityTest GeneratorTestingSupport)
+add_test(
+	NAME EndCityTest
+	COMMAND EndCityTest
+)
+
+
+
+
+
+set_target_properties(
+	EndCityTest
 	PROPERTIES FOLDER Tests/Generating
 )

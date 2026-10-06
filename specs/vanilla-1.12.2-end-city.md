@@ -205,6 +205,16 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 - 建议文件：src/Generating/EndCityGen.h/.cpp（骨架）+ src/Generating/EndCityPieces.h/.cpp（cPrefab::sDef 数据，若选 B1）。
 - 与紫颂树 finisher 的先后由实机决定；默认建议末地城在紫颂树之后（先放树、后放城）。wiki 观察到的「房间里的紫颂树」只是说明城可覆盖树区域，不是硬证据——标为待确认。
 
+### 6.6 本分支实现状态（feature/generating-end-city）
+
+本分支已落地：
+
+- src/Generating/EndCityGen.{h,cpp}：cEndCityGen : cGridStructGen（格点 320 块 / 原点区块 0..8 / 外岛距离门 / 平坦度门），骨架 = 三层基础层 -> 屋顶 -> 小塔或胖塔 -> 每方向 50% 桥 -> 每桥 1/8 船（全城至多一艘）。
+- finisher token EndCity，已加入 End 默认 Finishers（EnderDragonFightStructures, EndCity）。
+- tests/Generating/EndCityTest.cpp：格点规则、正常生成、三道拒绝门（虚空 / 内岛 / 不平坦）、确定性。
+
+**已知偏差**：房间 / 塔 / 桥 / 船的方块几何是**程序化近似**（MakeRoom / BuildBridgeArea / BuildShipArea），不是 wiki 蓝图的逐方块复刻；潜影贝、战利品表、旗帜图案、酿造台内容、物品展示框均未实现（见第 8 节）。精确蓝图复刻列为后续增量。
+
 ---
 
 ## 7. Cuberite 集成点清单

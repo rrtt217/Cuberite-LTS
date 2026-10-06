@@ -25,6 +25,7 @@
 #include "EndGen.h"
 #include "EnderDragonFightStructuresGen.h"
 #include "EnderDragonReturnGatewayGen.h"
+#include "EndCityGen.h"
 #include "MineShafts.h"
 #include "Noise3DGenerator.h"
 #include "Ravines.h"
@@ -265,7 +266,7 @@ void cComposableGenerator::InitializeGeneratorDefaults(cIniFile & a_IniFile, eDi
 			a_IniFile.GetValueSet("Generator", "ConstantBiome",  "End");
 			a_IniFile.GetValueSet("Generator", "ShapeGen",       "End");
 			a_IniFile.GetValueSet("Generator", "CompositionGen", "End");
-			a_IniFile.GetValueSet("Generator", "Finishers",      "EnderDragonFightStructures");
+			a_IniFile.GetValueSet("Generator", "Finishers",      "EnderDragonFightStructures, EndCity");
 			break;
 		}  // dimEnd
 
@@ -467,6 +468,10 @@ void cComposableGenerator::InitFinishGens(cIniFile & a_IniFile)
 
 			// The natural outer-island return gateways are part of the End's generated terrain:
 			m_FinishGens.push_back(std::make_unique<cEnderDragonReturnGatewayGen>(m_Seed));
+		}
+		else if (NoCaseCompare(finisher, "EndCity") == 0)
+		{
+			m_FinishGens.push_back(std::make_unique<cEndCityGen>(m_Seed, *m_CompositedHeightCache));
 		}
 		else if (NoCaseCompare(finisher, "ForestRocks") == 0)
 		{
