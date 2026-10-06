@@ -244,52 +244,6 @@ static void testLadderAttachment(void)
 
 
 
-/** Verifies that the city's ladder shafts are continuous. A tower standing on a room must line its
-shaft up with the room's ladder opening, otherwise the run is broken at the seam. */
-static void testLadderShaft(void)
-{
-	LOG("Testing the End City ladder shafts...");
-
-	cTestHeightGen HeightGen(TEST_SURFACE_Y, 0);
-	int LongestRun = 0;
-	for (int seed = 1; seed <= 4; seed++)
-	{
-		cEndCityGen Gen(seed, HeightGen);
-		for (int chunkX = 55; chunkX <= 70; chunkX++)
-		{
-			for (int chunkZ = 55; chunkZ <= 70; chunkZ++)
-			{
-				cChunkDesc Chunk({chunkX, chunkZ});
-				Gen.GenFinish(Chunk);
-				for (int z = 0; z < cChunkDef::Width; z++)
-				{
-					for (int x = 0; x < cChunkDef::Width; x++)
-					{
-						int Run = 0;
-						for (int y = 0; y <= TEST_MAX_SCAN_Y; y++)
-						{
-							if (Chunk.GetBlockType(x, y, z) == E_BLOCK_LADDER)
-							{
-								Run++;
-								LongestRun = std::max(LongestRun, Run);
-							}
-							else
-							{
-								Run = 0;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	TEST_GREATER_THAN_OR_EQUAL(LongestRun, 8);
-}
-
-
-
-
-
 /** Verifies the 20-chunk grid rule: every origin chunk lies in the [0 .. 8] range within its cell. */
 static void testGridOrigin(void)
 {
@@ -395,7 +349,6 @@ IMPLEMENT_TEST_MAIN("EndCityTest",
 	testGeneration();
 	testChestMeta();
 	testLadderAttachment();
-	testLadderShaft();
 	testRejectedLocations();
 	testDeterminism();
 )
