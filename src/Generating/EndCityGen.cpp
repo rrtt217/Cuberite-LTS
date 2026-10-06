@@ -289,6 +289,72 @@ static bool ResolveBlock(const AString & a_Name, BLOCKTYPE & a_Type, NIBBLETYPE 
 
 
 
+/** Returns the height at which the next piece should be stacked: one above the highest layer that is
+filled enough to be structural. Decorative top layers (e.g. a few end rods) are overlapped instead. */
+static int ComputeStackHeight(const sEndCityBlueprint & a_Blueprint)
+{
+	// Parse the char map to know which characters are blocks:
+	bool IsBlock[256];
+	for (size_t i = 0; i < ARRAYCOUNT(IsBlock); i++)
+	{
+		IsBlock[i] = false;
+	}
+	for (const auto & Entry: StringSplit(a_Blueprint.m_CharMap, "|"))
+	{
+		if ((Entry.size() >= 2) && (Entry[1] == '='))
+		{
+			BLOCKTYPE Type;
+			NIBBLETYPE Meta;
+			IsBlock[static_cast<unsigned char>(Entry[0])] = ResolveBlock(Entry.substr(2), Type, Meta);
+		}
+	}
+
+	// Find the highest layer that is at least 10% filled:
+	for (int i = a_Blueprint.m_Height - 1; i >= 0; i--)
+	{
+		const auto Rows = StringSplit(a_Blueprint.m_Layers[i].m_Rows, "|");
+		int Count = 0;
+		int Total = 0;
+		for (const auto & Row: Rows)
+		{
+			for (const char C: Row)
+			{
+				Total++;
+				if (IsBlock[static_cast<unsigned char>(C)])
+				{
+					Count++;
+				}
+			}
+		}
+		if ((Total > 0) && ((Count * 10) > Total))
+		{
+			return i + 1;
+		}
+	}
+	return a_Blueprint.m_Height;
+}
+
+
+
+
+
+/** Returns the stacking height of the named blueprint, or its full height if it is unknown. */
+static int StackHeightForName(const AString & a_Name)
+{
+	for (int i = 0; i < g_NumEndCityBlueprints; i++)
+	{
+		if (a_Name == g_EndCityBlueprints[i].m_Name)
+		{
+			return ComputeStackHeight(g_EndCityBlueprints[i]);
+		}
+	}
+	return 0;
+}
+
+
+
+
+
 /** Crops the area to its non-air bounding box. Returns false if the area is empty. */
 static bool CropToContent(cBlockArea & a_Area)
 {
@@ -641,14 +707,12 @@ protected:
 		if (P.m_EmptyRoom != nullptr)
 		{
 			AddCentered(P.m_EmptyRoom.get(), m_OriginX, Y, m_OriginZ);
-			Y += PrefabSize(*P.m_EmptyRoom).y;
+			Y += StackHeightForName("EmptyRoom");
 		}
 		if (P.m_BaseRoom != nullptr)
 		{
 			AddCentered(P.m_BaseRoom.get(), m_OriginX, Y, m_OriginZ);
-
-			// The base room's top layer is only decorative end rods; let the tower sit on its roof:
-			Y += PrefabSize(*P.m_BaseRoom).y - 1;
+			Y += StackHeightForName("BaseRoom");
 		}
 
 		// Choose and stack a tower:
@@ -660,21 +724,21 @@ protected:
 			for (int i = 0; i < Repeats; i++)
 			{
 				AddCentered(P.m_LargeTower.get(), m_OriginX, Y, m_OriginZ);
-				Y += PrefabSize(*P.m_LargeTower).y;
+				Y += StackHeightForName("LargeTower");
 			}
 
 			// Cap the fat tower with its loot room:
 			if (P.m_LootRoom != nullptr)
 			{
 				AddCentered(P.m_LootRoom.get(), m_OriginX, Y, m_OriginZ);
-				Y += PrefabSize(*P.m_LootRoom).y;
+				Y += StackHeightForName("LootRoom");
 			}
 		}
 		else if (!Fat && (P.m_SmallTowerBase != nullptr))
 		{
 			// The small tower base starts with a ladder shaft, let it descend into the room below:
 			AddCentered(P.m_SmallTowerBase.get(), m_OriginX, Y - END_CITY_SMALL_TOWER_LADDER_DEPTH, m_OriginZ);
-			Y = Y - END_CITY_SMALL_TOWER_LADDER_DEPTH + PrefabSize(*P.m_SmallTowerBase).y;
+			Y = Y - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("SmallTowerBase");
 			const int Repeats = END_CITY_TOWER_MIN_MIDDLE + static_cast<int>(Rng() % END_CITY_TOWER_EXTRA_MIDDLE);
 			for (int i = 0; i < Repeats; i++)
 			{
@@ -683,14 +747,14 @@ protected:
 					break;
 				}
 				AddCentered(P.m_SmallTowerExtension.get(), m_OriginX, Y, m_OriginZ);
-				Y += PrefabSize(*P.m_SmallTowerExtension).y;
+				Y += StackHeightForName("SmallTowerExtension");
 			}
 
 			// Cap the small tower with a small room:
 			if (P.m_SmallRoom != nullptr)
 			{
 				AddCentered(P.m_SmallRoom.get(), m_OriginX, Y, m_OriginZ);
-				Y += PrefabSize(*P.m_SmallRoom).y;
+				Y += StackHeightForName("SmallRoom");
 			}
 		}
 
