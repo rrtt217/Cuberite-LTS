@@ -74,7 +74,9 @@ From the 1.12-era module notes:
 
 - The enchanted entries are enchanted with the **same probability as one 20-39 level enchantment at
   an enchanting table** (`end-city-enchantment` note; the note explicitly says 20-39 even though
-  the table normally stops at 30).
+  the table normally stops at 30). Implementation: pick a level in [20, 39] and run the server's
+  existing enchanting-table algorithm, `cItem::EnchantByXPLevels`, which already models the
+  enchantability roll and the extra-enchantment chances.
 - **Within one chest, the same kind of item always carries the same enchantments**
   (`end-city-enchantment` note).
 - From 1.11 (16w39a) onwards **cursed enchantments** can appear on items in End City chests
@@ -137,5 +139,8 @@ blueprint; the exact piece-to-blueprint mapping should be re-checked while imple
    revision, oldid=230915). The only remaining detail is whether a later roll may overwrite an
    already-filled slot; with 2-6 rolls against 27 slots it is unlikely to matter, but it is still
    **待确认**.
+2. The module note also says that within one chest the same kind of item carries the same
+   enchantments; the reason is not documented and it is not implemented (enchantments are rolled per
+   item). **待确认**.
 2. The piece-to-blueprint mapping of `third_floor_2` vs `Loot Room` in this generator - needs a
    re-check during implementation.

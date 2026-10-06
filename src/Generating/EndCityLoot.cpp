@@ -12,6 +12,7 @@ full behaviour specification and its sources live in the structure chest loot sp
 #include "EndCityLoot.h"
 #include "EndCityLootTable.h"
 #include "../Enchantments.h"
+#include "../FastRandom.h"
 #include "../Item.h"
 #include "../ItemGrid.h"
 
@@ -25,9 +26,6 @@ full behaviour specification and its sources live in the structure chest loot sp
 static constexpr int END_CITY_LOOT_MIN_ENCHANT_LEVEL = 20;
 static constexpr int END_CITY_LOOT_MAX_ENCHANT_LEVEL = 39;
 
-/** The most enchantments one enchanting-table application at that level can add. */
-static constexpr int END_CITY_LOOT_MAX_ENCHANTMENTS = 5;
-
 /** Seeds the enchantment rolls apart from the table rolls. */
 static constexpr int END_CITY_LOOT_ENCHANT_SEED = 0x5f3759df;
 
@@ -37,23 +35,12 @@ static constexpr int END_CITY_LOOT_ENCHANT_SEED = 0x5f3759df;
 
 /** Applies the vanilla enchant_with_levels behaviour to the item.
 The wiki states the enchanted End City entries are enchanted like one 20-39 level enchanting-table
-application. This reuses the server's existing weight helper, so it approximates the exact
-enchanting-table algorithm. */
-static void EnchantEndCityItem(cItem & a_Item, std::minstd_rand & a_Rng)
+application, so pick a level in that range and run the server's enchanting-table algorithm, which
+already models the enchantability roll and the extra-enchantment chances. */
+static void EnchantEndCityItem(cItem & a_Item, MTRand & a_Random)
 {
-	const int Level = END_CITY_LOOT_MIN_ENCHANT_LEVEL + static_cast<int>(a_Rng() % (END_CITY_LOOT_MAX_ENCHANT_LEVEL - END_CITY_LOOT_MIN_ENCHANT_LEVEL + 1));
-
-	cWeightedEnchantments Enchantments;
-	cEnchantments::AddItemEnchantmentWeights(Enchantments, a_Item.m_ItemType, static_cast<unsigned>(Level));
-
-	const int NumEnchantments = 1 + static_cast<int>(a_Rng() % END_CITY_LOOT_MAX_ENCHANTMENTS);
-	for (int i = 0; i < NumEnchantments; i++)
-	{
-		const cEnchantments Enchantment = cEnchantments::SelectEnchantmentFromVector(Enchantments, static_cast<int>(a_Rng()));
-		a_Item.m_Enchantments.Add(Enchantment);
-		cEnchantments::RemoveEnchantmentWeightFromVector(Enchantments, Enchantment);
-		cEnchantments::CheckEnchantmentConflictsFromVector(Enchantments, Enchantment);
-	}
+	const int Level = END_CITY_LOOT_MIN_ENCHANT_LEVEL + a_Random.RandInt(END_CITY_LOOT_MAX_ENCHANT_LEVEL - END_CITY_LOOT_MIN_ENCHANT_LEVEL);
+	a_Item.EnchantByXPLevels(static_cast<unsigned>(Level), a_Random);
 }
 
 
@@ -73,7 +60,8 @@ static void FillEndCityChest(cItemGrid & a_Contents, int a_Seed)
 	}
 
 	// The enchantment choices roll separately from the table picks:
-	std::minstd_rand Rng(a_Seed ^ END_CITY_LOOT_ENCHANT_SEED);
+	MTRand Rng;
+	Rng.Engine().seed(static_cast<unsigned>(a_Seed) ^ END_CITY_LOOT_ENCHANT_SEED);
 	for (const auto & Roll: Rolls)
 	{
 		cItem Item(Roll.m_ItemType, Roll.m_Amount);
@@ -84,7 +72,7 @@ static void FillEndCityChest(cItemGrid & a_Contents, int a_Seed)
 
 		// The wiki only says the slot arrangement is random and seed-driven, so use a random
 		// still-empty slot:
-		int Slot = static_cast<int>(Rng() % NumSlots);
+		int Slot = Rng.RandInt(NumSlots - 1);
 		for (int Tries = 0; (Tries < NumSlots) && !a_Contents.IsSlotEmpty(Slot); Tries++)
 		{
 			Slot = (Slot + 1) % NumSlots;
