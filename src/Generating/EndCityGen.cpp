@@ -786,7 +786,112 @@ struct sRotatedPrefab
 
 	/** Offsets of the loot chests, relative to the prefab's minimum corner. */
 	std::vector<Vector3i> m_Chests;
+
+	/** The room's roof opening centre in the prefab's local X and Z coordinates, or -1 when it has none.
+	A tower placed on the roof lines its ladder shaft up with this. */
+	int m_OpeningX = -1;
+	int m_OpeningZ = -1;
 } ;
+
+
+
+
+
+/** Finds the centre of the roof opening: the air cells in the topmost largely solid layer that are
+enclosed by blocks on all four sides. Returns false when there is no such layer or opening. */
+static bool FindRoofOpening(const cBlockArea & a_Area, int & a_OpeningX, int & a_OpeningZ)
+{
+	const int CellCount = a_Area.GetSizeX() * a_Area.GetSizeZ();
+	int RoofY = -1;
+	for (int y = a_Area.GetSizeY() - 1; y >= 0; y--)
+	{
+		int Count = 0;
+		for (int z = 0; z < a_Area.GetSizeZ(); z++)
+		{
+			for (int x = 0; x < a_Area.GetSizeX(); x++)
+			{
+				if (a_Area.GetRelBlockType(x, y, z) != E_BLOCK_AIR)
+				{
+					Count++;
+				}
+			}
+		}
+		if (Count >= (CellCount / 4))
+		{
+			RoofY = y;
+			break;
+		}
+	}
+	if (RoofY < 0)
+	{
+		return false;
+	}
+
+	// Flood fill every air cell reachable from the layer's border; whatever air is left is the
+	// enclosed opening:
+	const int SizeX = a_Area.GetSizeX();
+	const int SizeZ = a_Area.GetSizeZ();
+	std::vector<bool> Outside(SizeX * SizeZ, false);
+	std::vector<int> Stack;
+	auto Push = [&](int a_X, int a_Z)
+	{
+		if ((a_X < 0) || (a_X >= SizeX) || (a_Z < 0) || (a_Z >= SizeZ))
+		{
+			return;
+		}
+		const int Idx = (a_Z * SizeX) + a_X;
+		if (Outside[Idx] || (a_Area.GetRelBlockType(a_X, RoofY, a_Z) != E_BLOCK_AIR))
+		{
+			return;
+		}
+		Outside[Idx] = true;
+		Stack.push_back(Idx);
+	};
+	for (int x = 0; x < SizeX; x++)
+	{
+		Push(x, 0);
+		Push(x, SizeZ - 1);
+	}
+	for (int z = 0; z < SizeZ; z++)
+	{
+		Push(0, z);
+		Push(SizeX - 1, z);
+	}
+	while (!Stack.empty())
+	{
+		const int Idx = Stack.back();
+		Stack.pop_back();
+		const int x = Idx % SizeX;
+		const int z = Idx / SizeX;
+		Push(x - 1, z);
+		Push(x + 1, z);
+		Push(x, z - 1);
+		Push(x, z + 1);
+	}
+
+	int SumX = 0;
+	int SumZ = 0;
+	int Num = 0;
+	for (int z = 0; z < SizeZ; z++)
+	{
+		for (int x = 0; x < SizeX; x++)
+		{
+			if ((a_Area.GetRelBlockType(x, RoofY, z) == E_BLOCK_AIR) && !Outside[(z * SizeX) + x])
+			{
+				SumX += x;
+				SumZ += z;
+				Num++;
+			}
+		}
+	}
+	if (Num == 0)
+	{
+		return false;
+	}
+	a_OpeningX = SumX / Num;
+	a_OpeningZ = SumZ / Num;
+	return true;
+}
 
 
 
@@ -1095,6 +1200,7 @@ protected:
 			}
 			FixFacingMetas(*Rotated);
 			a_Out[r].m_DoorwaySide = DoorwaySide(*Rotated, a_Out[r].m_DoorX, a_Out[r].m_DoorZ);
+			FindRoofOpening(*Rotated, a_Out[r].m_OpeningX, a_Out[r].m_OpeningZ);
 			a_Out[r].m_Chests = CollectBlocks(*Rotated, E_BLOCK_CHEST);
 			auto Prefab = std::make_unique<cPrefab>(*Rotated);
 			Prefab->SetMergeStrategy(cBlockArea::msImprint);
@@ -1508,27 +1614,27 @@ protected:
 				const int PosZ = Edge.z - DirZ - Room->m_DoorZ;
 				Add(Room->m_Prefab.get(), Vector3i(PosX, Edge.y, PosZ), Room->m_Chests);
 
-				// The room's centre, for a tower that may sit on its roof:
-				const Vector3i RoomSize = PrefabSize(*Room->m_Prefab);
-				const int RoomX = PosX + (RoomSize.x / 2);
-				const int RoomZ = PosZ + (RoomSize.z / 2);
-
 				// The taller rooms may carry a small tower on their roof:
-				if (RoomTower)
+				if (RoomTower && (Room->m_OpeningX >= 0))
 				{
 					const AString RoomName = (RoomStoreys == 2) ? "LootRoom2" : "LootRoom3";
+
+					// Line the tower's ladder shaft up with the room's roof opening:
+					const int TowerX = PosX + Room->m_OpeningX - END_CITY_TOWER_LADDER_X;
+					const int TowerZ = PosZ + Room->m_OpeningZ - END_CITY_TOWER_LADDER_Z;
 					int TowerY = Edge.y + StackHeightForName(RoomName);
-					AddCentered(P.m_TowerFloor.get(), RoomX, TowerY, RoomZ);
+					Add(P.m_TowerFloor.get(), Vector3i(TowerX, TowerY, TowerZ));
 					TowerY += StackHeightForName("TowerFloor");
 					const int TowerStoreys = 3 + static_cast<int>(Rng() % 3);
 					for (int i = 1; i < TowerStoreys; i++)
 					{
-						AddCentered(P.m_TowerPiece.get(), RoomX, TowerY, RoomZ);
+						Add(P.m_TowerPiece.get(), Vector3i(TowerX, TowerY, TowerZ));
 						TowerY += StackHeightForName("TowerPiece");
 					}
 					if (P.m_TowerTop != nullptr)
 					{
-						AddCentered(P.m_TowerTop.get(), RoomX, TowerY, RoomZ);
+						const int TopOffset = (PrefabSize(*P.m_TowerTop).x - PrefabSize(*P.m_TowerPiece).x) / 2;
+						Add(P.m_TowerTop.get(), Vector3i(TowerX - TopOffset, TowerY, TowerZ - TopOffset));
 					}
 				}
 				AddCarve(Edge.x, Edge.y + 1, Edge.z);
