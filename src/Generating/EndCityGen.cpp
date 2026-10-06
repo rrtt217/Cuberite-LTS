@@ -1452,7 +1452,7 @@ protected:
 			{
 				RoomStoreys = 1 + static_cast<int>(Rng() % 3);
 				RoomTower = (RoomStoreys >= 2) &&
-					(P.m_TowerFloor != nullptr) && (P.m_TowerPiece != nullptr) &&
+					(P.m_TowerBase != nullptr) && (P.m_TowerPiece != nullptr) &&
 					((Rng() % END_CITY_ROOM_TOWER_DENOMINATOR) == 0);
 
 				if (RoomStoreys == 1)
@@ -1502,9 +1502,11 @@ protected:
 				if (RoomTower)
 				{
 					const AString RoomName = (RoomStoreys == 2) ? "LootRoom2" : "LootRoom3";
-					int TowerY = Edge.y + StackHeightForName(RoomName);
-					AddCentered(P.m_TowerFloor.get(), RoomX, TowerY, RoomZ);
-					TowerY += StackHeightForName("TowerFloor");
+
+					// The tower's base carries the ladder entrance, so let it descend into the room below:
+					const int RoomTopY = Edge.y + StackHeightForName(RoomName);
+					AddCentered(P.m_TowerBase.get(), RoomX, RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH, RoomZ);
+					int TowerY = RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
 					const int TowerStoreys = 3 + static_cast<int>(Rng() % 3);
 					for (int i = 1; i < TowerStoreys; i++)
 					{
