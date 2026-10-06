@@ -9,6 +9,8 @@
 #include "Prefab.h"
 #include "../BlockInfo.h"
 #include "../StringUtils.h"
+#include "EndCityLoot.h"
+#include "../BlockEntities/ChestEntity.h"
 
 #include <algorithm>
 #include <memory>
@@ -68,6 +70,8 @@ static constexpr int END_CITY_STACK_MIN_PERCENT = 3;
 /** The number of horizontal directions a tower can branch into. */
 static constexpr int END_CITY_DIR_COUNT = 4;
 
+
+
 /** The horizontal direction vectors used for branches. */
 static const int END_CITY_DIR_X[END_CITY_DIR_COUNT] = {1, 0, -1, 0};
 static const int END_CITY_DIR_Z[END_CITY_DIR_COUNT] = {0, 1, 0, -1};
@@ -107,6 +111,9 @@ struct sOrientedPrefab
 
 	/** The oriented coordinate that ends up at the prefab's minimum corner. */
 	Vector3i m_MinOffset;
+
+	/** Offsets of the loot chests, relative to the prefab's minimum corner. */
+	std::vector<Vector3i> m_Chests;
 } ;
 
 
@@ -129,6 +136,54 @@ static UInt32 MakeCellSeed(int a_Seed, int a_CellX, int a_CellZ)
 static Vector3i PrefabSize(const cPrefab & a_Prefab)
 {
 	return static_cast<const cPiece &>(a_Prefab).GetSize();
+}
+
+
+
+
+
+/** Returns a deterministic loot seed for the chest at the specified world coordinates. */
+static int MakeChestLootSeed(const Vector3i & a_Pos)
+{
+	return (a_Pos.x * 73856093) ^ (a_Pos.y * 19349663) ^ (a_Pos.z * 83492791);
+}
+
+
+
+
+
+/** The chest filler installed by the loot table module. When it is absent (for example in the test
+build, which does not link the item system) generated chests are left empty. */
+static EndCityChestFiller g_EndCityChestFiller = nullptr;
+
+void SetEndCityChestFiller(EndCityChestFiller a_Filler)
+{
+	g_EndCityChestFiller = a_Filler;
+}
+
+
+
+
+
+/** Returns the offsets, relative to the area's minimum corner, of its loot chests (ender chests are
+deliberately excluded: they never hold loot). */
+static std::vector<Vector3i> CollectChests(const cBlockArea & a_Area)
+{
+	std::vector<Vector3i> Chests;
+	for (int y = 0; y < a_Area.GetSizeY(); y++)
+	{
+		for (int z = 0; z < a_Area.GetSizeZ(); z++)
+		{
+			for (int x = 0; x < a_Area.GetSizeX(); x++)
+			{
+				if (a_Area.GetRelBlockType(x, y, z) == E_BLOCK_CHEST)
+				{
+					Chests.push_back(Vector3i(x, y, z));
+				}
+			}
+		}
+	}
+	return Chests;
 }
 
 
@@ -504,7 +559,7 @@ static sOrientedPrefab OrientAreaZ(const cBlockArea & a_Area, int a_DirX, int a_
 	}
 	auto Prefab = std::make_unique<cPrefab>(Out);
 	Prefab->SetMergeStrategy(cBlockArea::msImprint);
-	return { std::move(Prefab), Vector3i(-NearX, 0, -NearZ) };
+	return { std::move(Prefab), Vector3i(-NearX, 0, -NearZ), CollectChests(Out) };
 }
 
 
@@ -523,6 +578,9 @@ struct sRotatedPrefab
 	/** The doorway centre in the prefab's local X and Z coordinates. */
 	int m_DoorX = 0;
 	int m_DoorZ = 0;
+
+	/** Offsets of the loot chests, relative to the prefab's minimum corner. */
+	std::vector<Vector3i> m_Chests;
 } ;
 
 
@@ -686,6 +744,7 @@ public:
 		m_TowerTop = MakePrefab("TowerTop");
 		m_FatTower = MakePrefab("FatTower");
 		m_FatTowerTop = MakePrefab("FatTowerTop");
+		m_FatTowerTopChests = ChestsOf("FatTowerTop");
 		MakeRotatedPrefabs("EmptyRoom", m_EmptyRoom);
 		MakeRotatedPrefabs("LootRoom1", m_LootRoom1);
 		MakeRotatedPrefabs("LootRoom2", m_LootRoom2);
@@ -715,6 +774,7 @@ public:
 	std::unique_ptr<cPrefab> m_TowerTop;
 	std::unique_ptr<cPrefab> m_FatTower;
 	std::unique_ptr<cPrefab> m_FatTowerTop;
+	std::vector<Vector3i> m_FatTowerTopChests;
 	sRotatedPrefab m_EmptyRoom[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_LootRoom1[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_LootRoom2[END_CITY_DIR_COUNT];
@@ -758,6 +818,26 @@ protected:
 		{
 			a_Out[i] = OrientAreaZ(*Area, END_CITY_DIR_X[i], END_CITY_DIR_Z[i]);
 		}
+	}
+
+
+
+
+
+	/** Returns the loot-chest offsets of the named blueprint, relative to its minimum corner. */
+	static std::vector<Vector3i> ChestsOf(const AString & a_Name)
+	{
+		const sEndCityBlueprint * Blueprint = FindBlueprint(a_Name);
+		if (Blueprint == nullptr)
+		{
+			return {};
+		}
+		auto Area = MakeBlueprintArea(*Blueprint);
+		if (Area == nullptr)
+		{
+			return {};
+		}
+		return CollectChests(*Area);
 	}
 
 
@@ -809,6 +889,7 @@ protected:
 				Rotated->RotateCCW();
 			}
 			a_Out[r].m_DoorwaySide = DoorwaySide(*Rotated, a_Out[r].m_DoorX, a_Out[r].m_DoorZ);
+			a_Out[r].m_Chests = CollectChests(*Rotated);
 			auto Prefab = std::make_unique<cPrefab>(*Rotated);
 			Prefab->SetMergeStrategy(cBlockArea::msImprint);
 			a_Out[r].m_Prefab = std::move(Prefab);
@@ -869,8 +950,36 @@ public:
 				{
 					for (int x = MinX; x <= MaxX; x++)
 					{
-						a_Chunk.SetBlockTypeMeta(x - ChunkMinX, y, z - ChunkMinZ, E_BLOCK_AIR, 0);
+					a_Chunk.SetBlockTypeMeta(x - ChunkMinX, y, z - ChunkMinZ, E_BLOCK_AIR, 0);
 					}
+				}
+			}
+		}
+
+		// Fill the loot of any End City chest that landed in this chunk:
+		for (const auto & Piece: m_Pieces)
+		{
+			for (const auto & Chest: Piece.m_Chests)
+			{
+				const Vector3i World = Piece.m_Pos + Chest;
+				const int RelX = World.x - ChunkMinX;
+				const int RelZ = World.z - ChunkMinZ;
+				if ((RelX < 0) || (RelX >= cChunkDef::Width) || (RelZ < 0) || (RelZ >= cChunkDef::Width))
+				{
+					continue;
+				}
+				if (a_Chunk.GetBlockType(RelX, World.y, RelZ) != E_BLOCK_CHEST)
+				{
+					continue;
+				}
+				auto * ChestEntity = static_cast<cChestEntity *>(a_Chunk.GetBlockEntity(RelX, World.y, RelZ));
+				if (ChestEntity == nullptr)
+				{
+					continue;
+				}
+				if (g_EndCityChestFiller != nullptr)
+				{
+					g_EndCityChestFiller(ChestEntity->GetContents(), MakeChestLootSeed(World));
 				}
 			}
 		}
@@ -883,6 +992,7 @@ protected:
 	{
 		const cPrefab * m_Prefab;
 		Vector3i m_Pos;
+		std::vector<Vector3i> m_Chests;
 	} ;
 
 	/** An axis-aligned box that is cleared to air after the pieces are drawn, to open doorways. */
@@ -910,17 +1020,17 @@ protected:
 	}
 
 
-	/** Adds a piece at the specified minimum-corner coordinates. */
-	void Add(const cPrefab * a_Prefab, const Vector3i & a_Pos)
+	/** Adds a piece at the specified minimum-corner coordinates, tracking its loot chest offsets. */
+	void Add(const cPrefab * a_Prefab, const Vector3i & a_Pos, const std::vector<Vector3i> & a_Chests = {})
 	{
-		m_Pieces.push_back({a_Prefab, a_Pos});
+		m_Pieces.push_back({a_Prefab, a_Pos, a_Chests});
 	}
 
-	/** Adds a piece centered horizontally on the specified coordinates. */
-	void AddCentered(const cPrefab * a_Prefab, int a_CenterX, int a_Y, int a_CenterZ)
+	/** Adds a piece centered horizontally on the specified coordinates, tracking its loot chest offsets. */
+	void AddCentered(const cPrefab * a_Prefab, int a_CenterX, int a_Y, int a_CenterZ, const std::vector<Vector3i> & a_Chests = {})
 	{
 		const Vector3i Size = PrefabSize(*a_Prefab);
-		Add(a_Prefab, Vector3i(a_CenterX - (Size.x / 2), a_Y, a_CenterZ - (Size.z / 2)));
+		Add(a_Prefab, Vector3i(a_CenterX - (Size.x / 2), a_Y, a_CenterZ - (Size.z / 2)), a_Chests);
 	}
 
 	/** Builds the whole city layout, or leaves it empty if the location is not suitable. */
@@ -989,7 +1099,7 @@ protected:
 			// Cap the fat tower with its loot room:
 			if (P.m_FatTowerTop != nullptr)
 			{
-				AddCentered(P.m_FatTowerTop.get(), m_OriginX, Y, m_OriginZ);
+				AddCentered(P.m_FatTowerTop.get(), m_OriginX, Y, m_OriginZ, P.m_FatTowerTopChests);
 				Y += StackHeightForName("FatTowerTop");
 			}
 		}
@@ -1103,7 +1213,7 @@ protected:
 			const sOrientedPrefab & Ship = P.m_Ship[a_Dir];
 			if (!ShipPlaced && (Ship.m_Prefab != nullptr) && ((Rng() % END_CITY_SHIP_DENOMINATOR) == 0))
 			{
-				Add(Ship.m_Prefab.get(), Vector3i(Edge.x + Ship.m_MinOffset.x, Edge.y, Edge.z + Ship.m_MinOffset.z));
+				Add(Ship.m_Prefab.get(), Vector3i(Edge.x + Ship.m_MinOffset.x, Edge.y, Edge.z + Ship.m_MinOffset.z), Ship.m_Chests);
 				ShipPlaced = true;
 				return;
 			}
@@ -1161,7 +1271,7 @@ protected:
 				// the roof edge instead of at the opening:
 				const int PosX = Edge.x - DirX - Room->m_DoorX;
 				const int PosZ = Edge.z - DirZ - Room->m_DoorZ;
-				Add(Room->m_Prefab.get(), Vector3i(PosX, Edge.y, PosZ));
+				Add(Room->m_Prefab.get(), Vector3i(PosX, Edge.y, PosZ), Room->m_Chests);
 
 				// The room's centre, for a tower that may sit on its roof:
 				const Vector3i RoomSize = PrefabSize(*Room->m_Prefab);
