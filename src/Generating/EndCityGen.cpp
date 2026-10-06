@@ -60,8 +60,12 @@ static constexpr int END_CITY_BRIDGE_EXTRA_SEGMENTS = 3;
 static constexpr int END_CITY_SMALL_TOWER_LADDER_DEPTH = 3;
 
 /** The minimum, and the extra random range, of a tower's middle section count. */
-static constexpr int END_CITY_TOWER_MIN_MIDDLE = 2;
-static constexpr int END_CITY_TOWER_EXTRA_MIDDLE = 3;
+static constexpr int END_CITY_TOWER_MIN_MIDDLE = 3;
+static constexpr int END_CITY_TOWER_EXTRA_MIDDLE = 5;
+
+/** The number of heights at which a tower may grow bridges, and the vertical distance between them. */
+static constexpr int END_CITY_BRANCH_LEVELS = 2;
+static constexpr int END_CITY_BRANCH_LEVEL_HEIGHT = 8;
 
 /** The number of horizontal directions a tower can branch into. */
 static constexpr int END_CITY_DIR_COUNT = 4;
@@ -824,25 +828,22 @@ protected:
 			}
 		}
 
-		// Branch each tower side into a bridge; the bridge ends in a ship or in another tower:
+		// Grow a bridge from the tower's wall in one direction; it ends in a ship or another tower:
 		const int TowerSize = Fat ? PrefabSize(*P.m_FatTower).x : PrefabSize(*P.m_TowerBase).x;
 		const int Half = TowerSize / 2;
-		const int BridgeY = TowerBaseY;
 		const int SecondaryHalf = (P.m_TowerBase != nullptr) ? (PrefabSize(*P.m_TowerBase).x / 2) : 0;
 		bool ShipPlaced = false;
-		for (int Dir = 0; Dir < END_CITY_DIR_COUNT; Dir++)
+		bool BranchUsed[END_CITY_DIR_COUNT] = {false, false, false, false};
+
+		auto AddTowerBranch = [&](int a_Dir, int a_BranchY)
 		{
-			if ((Rng() % END_CITY_BRIDGE_DENOMINATOR) != 0)
-			{
-				continue;
-			}
-			const sOrientedPrefab & Straight = P.m_Bridge[Dir];
+			const sOrientedPrefab & Straight = P.m_Bridge[a_Dir];
 			if (Straight.m_Prefab == nullptr)
 			{
-				continue;
+				return;
 			}
-			const int DirX = END_CITY_DIR_X[Dir];
-			const int DirZ = END_CITY_DIR_Z[Dir];
+			const int DirX = END_CITY_DIR_X[a_Dir];
+			const int DirZ = END_CITY_DIR_Z[a_Dir];
 
 			// The length of an oriented piece along the branch direction:
 			auto LengthOf = [&](const sOrientedPrefab & a_Piece) -> int
@@ -855,11 +856,10 @@ protected:
 				return (DirX != 0) ? Size.x : Size.z;
 			};
 
-			// The bridge starts at the main tower's outer wall and extends outwards. The staircase
-			// piece raises the far end cumulatively, so bridges can reach towers at other heights:
-			Vector3i Edge(m_OriginX + (DirX * Half), BridgeY, m_OriginZ + (DirZ * Half));
+			// The bridge starts at the tower's outer wall. The staircase piece raises the far end
+			// cumulatively, so bridges can reach towers at other heights:
+			Vector3i Edge(m_OriginX + (DirX * Half), a_BranchY, m_OriginZ + (DirZ * Half));
 
-			// Straight bridge pieces:
 			const int StraightCount = END_CITY_BRIDGE_MIN_SEGMENTS + static_cast<int>(Rng() % END_CITY_BRIDGE_EXTRA_SEGMENTS);
 			for (int i = 0; i < StraightCount; i++)
 			{
@@ -869,9 +869,8 @@ protected:
 				Edge.z += DirZ * Step;
 			}
 
-			// One staircase piece, which raises the rest of the bridge:
 			const bool Gentle = ((Rng() % 2) == 0);
-			const sOrientedPrefab & Stairs = Gentle ? P.m_BridgeGentle[Dir] : P.m_BridgeSteep[Dir];
+			const sOrientedPrefab & Stairs = Gentle ? P.m_BridgeGentle[a_Dir] : P.m_BridgeSteep[a_Dir];
 			if (Stairs.m_Prefab != nullptr)
 			{
 				Add(Stairs.m_Prefab.get(), Vector3i(Edge.x + Stairs.m_MinOffset.x, Edge.y, Edge.z + Stairs.m_MinOffset.z));
@@ -881,8 +880,7 @@ protected:
 				Edge.y += StackHeightForName(Gentle ? "BridgeGentleStairs" : "BridgeSteepStairs") - 1;
 			}
 
-			// The arch that ends the bridge:
-			const sOrientedPrefab & End = P.m_BridgeEnd[Dir];
+			const sOrientedPrefab & End = P.m_BridgeEnd[a_Dir];
 			if (End.m_Prefab != nullptr)
 			{
 				Add(End.m_Prefab.get(), Vector3i(Edge.x + End.m_MinOffset.x, Edge.y, Edge.z + End.m_MinOffset.z));
@@ -891,23 +889,23 @@ protected:
 				Edge.z += DirZ * Step;
 			}
 
-			// Open a doorway through the main tower wall where the bridge meets it:
-			AddCarve(m_OriginX + (DirX * Half), BridgeY + 1, m_OriginZ + (DirZ * Half));
+			// Open a doorway through the tower wall where the bridge meets it:
+			AddCarve(m_OriginX + (DirX * Half), a_BranchY + 1, m_OriginZ + (DirZ * Half));
 
 			// An End ship may end the bridge instead of another tower:
-			const sOrientedPrefab & Ship = P.m_Ship[Dir];
+			const sOrientedPrefab & Ship = P.m_Ship[a_Dir];
 			if (!ShipPlaced && (Ship.m_Prefab != nullptr) && ((Rng() % END_CITY_SHIP_DENOMINATOR) == 0))
 			{
 				Add(Ship.m_Prefab.get(), Vector3i(Edge.x + Ship.m_MinOffset.x, Edge.y, Edge.z + Ship.m_MinOffset.z));
 				ShipPlaced = true;
-				continue;
+				return;
 			}
 
 			// Otherwise grow a small tower at the far end, connected through a doorway. Its ladder
 			// shaft is allowed to hang below the bridge, as the wiki gallery shows:
 			if (P.m_TowerBase == nullptr)
 			{
-				continue;
+				return;
 			}
 			const Vector3i SecondaryCenter(Edge.x + (DirX * SecondaryHalf), Edge.y, Edge.z + (DirZ * SecondaryHalf));
 			int SecondaryY = Edge.y - END_CITY_SMALL_TOWER_LADDER_DEPTH;
@@ -928,6 +926,25 @@ protected:
 				AddCentered(P.m_TowerTop.get(), SecondaryCenter.x, SecondaryY, SecondaryCenter.z);
 			}
 			AddCarve(Edge.x, Edge.y + 1, Edge.z);
+		};
+
+		// Several branch levels, so bridges can leave the tower at different heights:
+		for (int Level = 0; Level < END_CITY_BRANCH_LEVELS; Level++)
+		{
+			const int BranchY = TowerBaseY + (Level * END_CITY_BRANCH_LEVEL_HEIGHT);
+			for (int Dir = 0; Dir < END_CITY_DIR_COUNT; Dir++)
+			{
+				if (BranchUsed[Dir])
+				{
+					continue;
+				}
+				if ((Rng() % (END_CITY_BRIDGE_DENOMINATOR * (Level + 1))) != 0)
+				{
+					continue;
+				}
+				BranchUsed[Dir] = true;
+				AddTowerBranch(Dir, BranchY);
+			}
 		}
 	}
 } ;
