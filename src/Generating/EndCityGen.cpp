@@ -525,6 +525,67 @@ static sOrientedPrefab OrientAreaZ(const cBlockArea & a_Area, int a_DirX, int a_
 
 
 
+/** A prefab and the side its doorway opens onto (END_CITY_DIR_* index, or -1 when it has none). */
+struct sRotatedPrefab
+{
+	/** The prefab itself. */
+	std::unique_ptr<cPrefab> m_Prefab;
+
+	/** The horizontal side the doorway opens onto, or -1 when the piece has no doorway. */
+	int m_DoorwaySide = -1;
+} ;
+
+
+
+
+/** Returns the side (an END_CITY_DIR_* index) with the most open wall cells near the floor, or -1.
+Used to find which way a room's doorway faces so the room can be rotated toward a bridge. */
+static int DoorwaySide(const cBlockArea & a_Area)
+{
+	const int SizeX = a_Area.GetSizeX();
+	const int SizeY = a_Area.GetSizeY();
+	const int SizeZ = a_Area.GetSizeZ();
+	const int MaxY = std::min(4, SizeY);
+	int Air[END_CITY_DIR_COUNT] = {0, 0, 0, 0};
+	for (int y = 1; y < MaxY; y++)
+	{
+		for (int z = 0; z < SizeZ; z++)
+		{
+			if (a_Area.GetRelBlockType(SizeX - 1, y, z) == E_BLOCK_AIR)
+			{
+				Air[0]++;  // +X
+			}
+			if (a_Area.GetRelBlockType(0, y, z) == E_BLOCK_AIR)
+			{
+				Air[2]++;  // -X
+			}
+		}
+		for (int x = 0; x < SizeX; x++)
+		{
+			if (a_Area.GetRelBlockType(x, y, SizeZ - 1) == E_BLOCK_AIR)
+			{
+				Air[1]++;  // +Z
+			}
+			if (a_Area.GetRelBlockType(x, y, 0) == E_BLOCK_AIR)
+			{
+				Air[3]++;  // -Z
+			}
+		}
+	}
+	int Best = 0;
+	for (int i = 1; i < END_CITY_DIR_COUNT; i++)
+	{
+		if (Air[i] > Air[Best])
+		{
+			Best = i;
+		}
+	}
+	return (Air[Best] > 0) ? Best : -1;
+}
+
+
+
+
 /** Holds one prefab for every End City piece used by the generator. */
 class cEndCityPieces
 {
@@ -542,10 +603,10 @@ public:
 		m_TowerTop = MakePrefab("TowerTop");
 		m_FatTower = MakePrefab("FatTower");
 		m_FatTowerTop = MakePrefab("FatTowerTop");
-		m_EmptyRoom = MakePrefab("EmptyRoom");
-		m_LootRoom1 = MakePrefab("LootRoom1");
-		m_LootRoom2 = MakePrefab("LootRoom2");
-		m_LootRoom3 = MakePrefab("LootRoom3");
+		MakeRotatedPrefabs("EmptyRoom", m_EmptyRoom);
+		MakeRotatedPrefabs("LootRoom1", m_LootRoom1);
+		MakeRotatedPrefabs("LootRoom2", m_LootRoom2);
+		MakeRotatedPrefabs("LootRoom3", m_LootRoom3);
 
 		// Extend the bottom piece down to the terrain so that slopes do not leave a gap:
 		if (m_BaseFloor != nullptr)
@@ -571,10 +632,10 @@ public:
 	std::unique_ptr<cPrefab> m_TowerTop;
 	std::unique_ptr<cPrefab> m_FatTower;
 	std::unique_ptr<cPrefab> m_FatTowerTop;
-	std::unique_ptr<cPrefab> m_EmptyRoom;
-	std::unique_ptr<cPrefab> m_LootRoom1;
-	std::unique_ptr<cPrefab> m_LootRoom2;
-	std::unique_ptr<cPrefab> m_LootRoom3;
+	sRotatedPrefab m_EmptyRoom[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_LootRoom1[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_LootRoom2[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_LootRoom3[END_CITY_DIR_COUNT];
 
 	sOrientedPrefab m_Bridge[END_CITY_DIR_COUNT];
 	sOrientedPrefab m_BridgeGentle[END_CITY_DIR_COUNT];
@@ -638,6 +699,37 @@ protected:
 		auto Prefab = std::make_unique<cPrefab>(*Area);
 		Prefab->SetMergeStrategy(cBlockArea::msImprint);
 		return Prefab;
+	}
+
+
+
+
+
+	/** Builds the named blueprint in all four rotations and records which side each doorway faces. */
+	static void MakeRotatedPrefabs(const AString & a_Name, sRotatedPrefab (&a_Out)[END_CITY_DIR_COUNT])
+	{
+		const sEndCityBlueprint * Blueprint = FindBlueprint(a_Name);
+		if (Blueprint == nullptr)
+		{
+			return;
+		}
+		for (int r = 0; r < END_CITY_DIR_COUNT; r++)
+		{
+			// cBlockArea is not copyable, so build a fresh area for every rotation:
+			auto Rotated = MakeBlueprintArea(*Blueprint);
+			if (Rotated == nullptr)
+			{
+				return;
+			}
+			for (int k = 0; k < r; k++)
+			{
+				Rotated->RotateCCW();
+			}
+			a_Out[r].m_DoorwaySide = DoorwaySide(*Rotated);
+			auto Prefab = std::make_unique<cPrefab>(*Rotated);
+			Prefab->SetMergeStrategy(cBlockArea::msImprint);
+			a_Out[r].m_Prefab = std::move(Prefab);
+		}
 	}
 } ;
 
@@ -936,35 +1028,52 @@ protected:
 			// A loot room may end the bridge. The wiki gives one, two and three storey variants; the
 			// two and three storey ones may carry a small tower on their roof:
 			int RoomStoreys = 1;
-			const cPrefab * Room = nullptr;
+			const sRotatedPrefab * RoomSet = nullptr;
 			if ((Rng() % 4) == 0)
 			{
 				// The wiki notes that base_floor also forms the "empty rooms" found higher up:
-				Room = P.m_EmptyRoom.get();
+				RoomSet = P.m_EmptyRoom;
 			}
 			else
 			{
 				RoomStoreys = 1 + static_cast<int>(Rng() % 3);
 				if (RoomStoreys == 1)
 				{
-					Room = P.m_LootRoom1.get();
+					RoomSet = P.m_LootRoom1;
 				}
 				else if (RoomStoreys == 2)
 				{
-					Room = P.m_LootRoom2.get();
+					RoomSet = P.m_LootRoom2;
 				}
 				else
 				{
-					Room = P.m_LootRoom3.get();
+					RoomSet = P.m_LootRoom3;
 				}
+			}
+
+			// Rotate the room so that its doorway faces back toward the bridge:
+			const int RequiredSide = (a_Dir + (END_CITY_DIR_COUNT / 2)) % END_CITY_DIR_COUNT;
+			const sRotatedPrefab * Room = nullptr;
+			for (int r = 0; r < END_CITY_DIR_COUNT; r++)
+			{
+				if ((RoomSet[r].m_Prefab != nullptr) && (RoomSet[r].m_DoorwaySide == RequiredSide))
+				{
+					Room = &RoomSet[r];
+					break;
+				}
+			}
+			if ((Room == nullptr) && (RoomSet[0].m_Prefab != nullptr))
+			{
+				Room = &RoomSet[0];
 			}
 			if (Room != nullptr)
 			{
 				// Overlap the last bridge block by one so that the room is not separated by a gap:
-				const int RoomHalf = PrefabSize(*Room).x / 2;
+				const Vector3i RoomSize = PrefabSize(*Room->m_Prefab);
+				const int RoomHalf = ((DirX != 0) ? RoomSize.x : RoomSize.z) / 2;
 				const int RoomX = Edge.x + (DirX * (RoomHalf == 0 ? 0 : RoomHalf - 1));
 				const int RoomZ = Edge.z + (DirZ * (RoomHalf == 0 ? 0 : RoomHalf - 1));
-				AddCentered(Room, RoomX, Edge.y, RoomZ);
+				AddCentered(Room->m_Prefab.get(), RoomX, Edge.y, RoomZ);
 
 				// The taller rooms may carry a small tower on their roof:
 				if ((RoomStoreys >= 2) && (P.m_TowerFloor != nullptr) && (P.m_TowerPiece != nullptr) && ((Rng() % END_CITY_ROOM_TOWER_DENOMINATOR) == 0))
