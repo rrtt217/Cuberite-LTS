@@ -65,6 +65,17 @@ static constexpr int END_CITY_BRIDGE_EXTRA_SEGMENTS = 3;
 /** How far the small tower's ladder shaft descends into the room below. */
 static constexpr int END_CITY_SMALL_TOWER_LADDER_DEPTH = 3;
 
+/** The width and depth of the base room's declared frame. Its content does not fill that frame, so
+centring on the cropped bounding box would shift its internal spiral ladder and floor openings. */
+static constexpr int END_CITY_BASE_FRAME = 18;
+
+/** The base room's topmost ladder cell within that frame, and the small tower's ladder cell within its
+own frame. Placing the tower so the two coincide continues the room's spiral ladder into the tower. */
+static constexpr int END_CITY_BASE_LADDER_X = 10;
+static constexpr int END_CITY_BASE_LADDER_Z = 9;
+static constexpr int END_CITY_TOWER_LADDER_X = 3;
+static constexpr int END_CITY_TOWER_LADDER_Z = 4;
+
 /** The minimum fill percentage of a layer for it to count as the structural top when stacking pieces. */
 static constexpr int END_CITY_STACK_MIN_PERCENT = 3;
 
@@ -925,10 +936,7 @@ public:
 
 	cEndCityPieces()
 	{
-		m_BaseFloor = MakePrefab("BaseFloor");
-		m_SecondFloor = MakePrefab("SecondFloor");
-		m_ThirdFloor = MakePrefab("ThirdFloor");
-		m_ThirdRoof = MakePrefab("ThirdRoof");
+		m_BaseRoom = MakePrefab("BaseRoom");
 		m_TowerBase = MakePrefab("TowerBase");
 		m_TowerPiece = MakePrefab("TowerPiece");
 		m_TowerFloor = MakePrefab("TowerFloor");
@@ -942,9 +950,9 @@ public:
 		MakeRotatedPrefabs("LootRoom3", m_LootRoom3);
 
 		// Extend the bottom piece down to the terrain so that slopes do not leave a gap:
-		if (m_BaseFloor != nullptr)
+		if (m_BaseRoom != nullptr)
 		{
-			m_BaseFloor->SetExtendFloorStrategy(cPrefab::efsRepeatBottomTillSolid);
+			m_BaseRoom->SetExtendFloorStrategy(cPrefab::efsRepeatBottomTillSolid);
 		}
 
 		// The bridge and ship pieces are authored along +Z, so build one orientation per direction:
@@ -955,10 +963,7 @@ public:
 		OrientForAllDirections("Ship", m_Ship);
 	}
 
-	std::unique_ptr<cPrefab> m_BaseFloor;
-	std::unique_ptr<cPrefab> m_SecondFloor;
-	std::unique_ptr<cPrefab> m_ThirdFloor;
-	std::unique_ptr<cPrefab> m_ThirdRoof;
+	std::unique_ptr<cPrefab> m_BaseRoom;
 	std::unique_ptr<cPrefab> m_TowerBase;
 	std::unique_ptr<cPrefab> m_TowerPiece;
 	std::unique_ptr<cPrefab> m_TowerFloor;
@@ -1242,6 +1247,13 @@ protected:
 		Add(a_Prefab, Vector3i(a_CenterX - (Size.x / 2), a_Y, a_CenterZ - (Size.z / 2)), a_Chests, a_BrewingStands, a_ItemFrames, a_MobHeads);
 	}
 
+	/** Adds a piece centered on a shared blueprint frame rather than its own cropped bounding box, so
+	pieces whose content does not fill the frame keep their blueprint coordinates. */
+	void AddCenteredFrame(const cPrefab * a_Prefab, int a_FrameX, int a_FrameZ, int a_CenterX, int a_Y, int a_CenterZ)
+	{
+		Add(a_Prefab, Vector3i(a_CenterX - (a_FrameX / 2), a_Y, a_CenterZ - (a_FrameZ / 2)));
+	}
+
 	/** Builds the whole city layout, or leaves it empty if the location is not suitable. */
 	void Build(int a_Seed, cTerrainHeightGen & a_HeightGen)
 	{
@@ -1266,27 +1278,13 @@ protected:
 		const cEndCityPieces & P = GetEndCityPieces();
 		std::minstd_rand Rng(MakeCellSeed(a_Seed, m_GridX + END_CITY_SEED_OFFSET_X, m_GridZ + END_CITY_SEED_OFFSET_Z));
 
-		// The base tower: three widening floors connected by staircases, capped by the roof:
+		// The base tower is one combined room whose spiral ladder and floor openings are internally
+		// consistent. Place it on its declared frame so its contents keep their blueprint coordinates:
 		int Y = BaseY;
-		if (P.m_BaseFloor != nullptr)
+		if (P.m_BaseRoom != nullptr)
 		{
-			AddCentered(P.m_BaseFloor.get(), m_OriginX, Y, m_OriginZ);
-			Y += StackHeightForName("BaseFloor");
-		}
-		if (P.m_SecondFloor != nullptr)
-		{
-			AddCentered(P.m_SecondFloor.get(), m_OriginX, Y, m_OriginZ);
-			Y += StackHeightForName("SecondFloor");
-		}
-		if (P.m_ThirdFloor != nullptr)
-		{
-			AddCentered(P.m_ThirdFloor.get(), m_OriginX, Y, m_OriginZ);
-			Y += StackHeightForName("ThirdFloor");
-		}
-		if (P.m_ThirdRoof != nullptr)
-		{
-			AddCentered(P.m_ThirdRoof.get(), m_OriginX, Y, m_OriginZ);
-			Y += StackHeightForName("ThirdRoof");
+			AddCenteredFrame(P.m_BaseRoom.get(), END_CITY_BASE_FRAME, END_CITY_BASE_FRAME, m_OriginX, Y, m_OriginZ);
+			Y += StackHeightForName("BaseRoom");
 		}
 
 		// Choose and stack a tower. The wiki gives the small tower 3, 4 or 5 storeys and the fat
@@ -1316,21 +1314,25 @@ protected:
 		{
 			StoreyCount = 3 + static_cast<int>(Rng() % 3);  // 3, 4 or 5
 
-			// The tower base starts with a ladder shaft, let it descend into the room below:
+			// The tower base starts with a ladder shaft, let it descend into the room below. Shift the
+			// tower so its shaft continues the room's spiral ladder:
+			const int SmallTowerX = m_OriginX - (END_CITY_BASE_FRAME / 2) + END_CITY_BASE_LADDER_X - END_CITY_TOWER_LADDER_X;
+			const int SmallTowerZ = m_OriginZ - (END_CITY_BASE_FRAME / 2) + END_CITY_BASE_LADDER_Z - END_CITY_TOWER_LADDER_Z;
 			StoreyYs.push_back(TowerBaseY);
-			AddCentered(P.m_TowerBase.get(), m_OriginX, TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH, m_OriginZ);
+			Add(P.m_TowerBase.get(), Vector3i(SmallTowerX, TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH, SmallTowerZ));
 			Y = TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
 			for (int i = 1; i < StoreyCount; i++)
 			{
 				StoreyYs.push_back(Y);
-				AddCentered(P.m_TowerPiece.get(), m_OriginX, Y, m_OriginZ);
+				Add(P.m_TowerPiece.get(), Vector3i(SmallTowerX, Y, SmallTowerZ));
 				Y += StackHeightForName("TowerPiece");
 			}
 
 			// Cap the small tower with its banner roof:
 			if (P.m_TowerTop != nullptr)
 			{
-				AddCentered(P.m_TowerTop.get(), m_OriginX, Y, m_OriginZ);
+				const int TopOffset = (PrefabSize(*P.m_TowerTop).x - PrefabSize(*P.m_TowerPiece).x) / 2;
+				Add(P.m_TowerTop.get(), Vector3i(SmallTowerX - TopOffset, Y, SmallTowerZ - TopOffset));
 				Y += StackHeightForName("TowerTop");
 			}
 		}
