@@ -461,64 +461,50 @@ static std::unique_ptr<cBlockArea> MakeBlueprintArea(const sEndCityBlueprint & a
 
 
 /** Orients an area whose length runs along +Z into the given horizontal direction.
-Returns the prefab together with the oriented coordinate of its minimum corner. */
+Returns the prefab together with the offset of its minimum corner; the area's near end (the middle of
+its local z = 0 edge) ends up at the requested edge. Rotating with cBlockArea::RotateCCW keeps the
+stairs and pillars facing the right way, which a plain coordinate transform would not. */
 static sOrientedPrefab OrientAreaZ(const cBlockArea & a_Area, int a_DirX, int a_DirZ)
 {
-	const int Length = a_Area.GetSizeZ();
-	const int Width = a_Area.GetSizeX();
-	const int CenterX = Width / 2;
-
-	int MinX = 0;
-	int MinZ = 0;
-	int MaxX = 0;
-	int MaxZ = 0;
-	bool First = true;
-	for (int z = 0; z < Length; z++)
+	// The base area runs along +Z, so a quarter turn maps +Z to +X:
+	int Turns = 0;
+	if (a_DirX > 0)
 	{
-		for (int x = 0; x < Width; x++)
-		{
-			const int OffsetX = x - CenterX;
-			const int OutX = (a_DirX * z) + (-a_DirZ * OffsetX);
-			const int OutZ = (a_DirZ * z) + (a_DirX * OffsetX);
-			if (First)
-			{
-				MinX = MaxX = OutX;
-				MinZ = MaxZ = OutZ;
-				First = false;
-				continue;
-			}
-			MinX = std::min(MinX, OutX);
-			MaxX = std::max(MaxX, OutX);
-			MinZ = std::min(MinZ, OutZ);
-			MaxZ = std::max(MaxZ, OutZ);
-		}
+		Turns = 1;
+	}
+	else if (a_DirX < 0)
+	{
+		Turns = 3;
+	}
+	else if (a_DirZ < 0)
+	{
+		Turns = 2;
 	}
 
-	cBlockArea Out;
-	Out.Create(MaxX - MinX + 1, a_Area.GetSizeY(), MaxZ - MinZ + 1);
-	for (int z = 0; z < Length; z++)
+	// Track where the near end ends up so the caller can place the prefab's minimum corner:
+	int SizeX = a_Area.GetSizeX();
+	int SizeZ = a_Area.GetSizeZ();
+	int NearX = SizeX / 2;
+	int NearZ = 0;
+	for (int i = 0; i < Turns; i++)
 	{
-		for (int y = 0; y < a_Area.GetSizeY(); y++)
-		{
-			for (int x = 0; x < Width; x++)
-			{
-				BLOCKTYPE Type;
-				NIBBLETYPE Meta;
-				a_Area.GetRelBlockTypeMeta(x, y, z, Type, Meta);
-				if (Type == E_BLOCK_AIR)
-				{
-					continue;
-				}
-				const int OffsetX = x - CenterX;
-				const int OutX = (a_DirX * z) + (-a_DirZ * OffsetX);
-				const int OutZ = (a_DirZ * z) + (a_DirX * OffsetX);
-				Out.SetRelBlockTypeMeta(OutX - MinX, y, OutZ - MinZ, Type, Meta);
-			}
-		}
+		const int NewX = NearZ;
+		const int NewZ = SizeX - NearX - 1;
+		NearX = NewX;
+		NearZ = NewZ;
+		std::swap(SizeX, SizeZ);
+	}
+
+	// cBlockArea is not copyable, so copy through CopyFrom:
+	cBlockArea Out;
+	Out.CopyFrom(a_Area);
+	for (int i = 0; i < Turns; i++)
+	{
+		Out.RotateCCW();
 	}
 	auto Prefab = std::make_unique<cPrefab>(Out);
 	Prefab->SetMergeStrategy(cBlockArea::msImprint);
-	return { std::move(Prefab), Vector3i(MinX, 0, MinZ) };
+	return { std::move(Prefab), Vector3i(-NearX, 0, -NearZ) };
 }
 
 
