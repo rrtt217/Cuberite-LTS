@@ -1,6 +1,7 @@
 
 #include "Globals.h"
 #include "BlockPiston.h"
+#include "BlockHandler.h"
 #include "../BlockInfo.h"
 #include "../Item.h"
 #include "../World.h"
@@ -206,8 +207,16 @@ void cBlockPistonHandler::PushBlocks(
 		{
 			if (cBlockInfo::IsPistonBreakable(moveBlock))
 			{
-				// Block is breakable, drop it:
-				a_World.DropBlockAsPickups(moveBlockPos, nullptr, nullptr);
+				if (cBlockHandler::For(moveBlock).DoesDropOnPistonPush())
+				{
+					// Block is breakable, drop it:
+					a_World.DropBlockAsPickups(moveBlockPos, nullptr, nullptr);
+				}
+				else
+				{
+					// Block is destroyed without any drops (e.g. a chorus flower):
+					a_World.SetBlock(moveBlockPos, E_BLOCK_AIR, 0);
+				}
 			}
 			else
 			{

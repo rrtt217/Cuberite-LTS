@@ -13,6 +13,7 @@
 #include "../BoundingBox.h"
 #include "../ChunkMap.h"
 #include "../Chunk.h"
+#include "../World.h"
 
 #include "ArrowEntity.h"
 #include "ThrownEggEntity.h"
@@ -63,7 +64,8 @@ protected:
 		);
 		*/
 
-		if (cBlockInfo::IsSolid(a_BlockType))
+		// The chorus flower is not solid, but some projectiles break it when they hit it:
+		if (cBlockInfo::IsSolid(a_BlockType) || (m_Projectile->BreaksChorusFlower() && (a_BlockType == E_BLOCK_CHORUS_FLOWER)))
 		{
 			// The projectile hit a solid block, calculate the exact hit coords:
 			cBoundingBox bb(a_BlockPos, a_BlockPos + Vector3i(1, 1, 1));  // Bounding box of the block hit
@@ -296,8 +298,75 @@ std::unique_ptr<cProjectileEntity> cProjectileEntity::Create(
 
 
 
+/** Returns the outward normal of the given block face. */
+static Vector3i FaceNormal(eBlockFace a_Face)
+{
+	switch (a_Face)
+	{
+		case BLOCK_FACE_YP: return Vector3i(0, 1, 0);
+		case BLOCK_FACE_YM: return Vector3i(0, -1, 0);
+		case BLOCK_FACE_ZP: return Vector3i(0, 0, 1);
+		case BLOCK_FACE_ZM: return Vector3i(0, 0, -1);
+		case BLOCK_FACE_XP: return Vector3i(1, 0, 0);
+		case BLOCK_FACE_XM: return Vector3i(-1, 0, 0);
+		case BLOCK_FACE_NONE: break;
+	}
+	return Vector3i(0, 0, 0);
+}
+
+
+
+
+
+bool cProjectileEntity::BreaksChorusFlower() const
+{
+	switch (m_ProjectileKind)
+	{
+		// These projectiles break a chorus flower and make it drop:
+		case pkArrow:
+		case pkEgg:
+		case pkFirework:
+		case pkSnowball:
+		{
+			return true;
+		}
+
+		// The rest either do not break it, or destroy it through their explosion instead:
+		case pkDragonFireball:
+		case pkEnderPearl:
+		case pkExpBottle:
+		case pkFireCharge:
+		case pkGhastFireball:
+		case pkSplashPotion:
+		case pkWitherSkull:
+		{
+			return false;
+		}
+	}
+	return false;
+}
+
+
+
+
+
 void cProjectileEntity::OnHitSolidBlock(Vector3d a_HitPos, eBlockFace a_HitFace)
 {
+	// Some projectiles break a chorus flower, which then drops as an item:
+	if (BreaksChorusFlower() && (m_World != nullptr))
+	{
+		// The hit position lies on the face of the block; step half a block against the face normal
+		// so that flooring it lands inside the block that was hit (and not in the block in front of it):
+		const Vector3i HitBlock = (a_HitPos - Vector3d(FaceNormal(a_HitFace)) * 0.5).Floor();
+
+		BLOCKTYPE BlockType;
+		NIBBLETYPE BlockMeta;
+		if (m_World->GetBlockTypeMeta(HitBlock, BlockType, BlockMeta) && (BlockType == E_BLOCK_CHORUS_FLOWER))
+		{
+			m_World->DropBlockAsPickups(HitBlock, this, nullptr);
+		}
+	}
+
 	// Set the position based on what face was hit:
 	SetPosition(a_HitPos);
 	SetSpeed(0, 0, 0);

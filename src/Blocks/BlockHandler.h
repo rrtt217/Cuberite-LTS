@@ -121,6 +121,10 @@ public:
 	The default implementation drops a single item created from m_BlockType and the current meta. */
 	virtual cItems ConvertToPickups(NIBBLETYPE a_BlockMeta, const cItem * a_Tool = nullptr) const;
 
+	/** Returns whether the block drops its pickups when a piston destroys it.
+	The default is true; some blocks (such as the chorus flower) are destroyed without any drops. */
+	virtual bool DoesDropOnPistonPush() const { return true; }
+
 	/** Checks if the block can stay at the specified relative coords in the chunk */
 	virtual bool CanBeAt(const cChunk & a_Chunk, Vector3i a_Position, NIBBLETYPE a_Meta) const;
 
