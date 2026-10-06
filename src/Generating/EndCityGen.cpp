@@ -792,6 +792,11 @@ struct sRotatedPrefab
 
 	/** Offsets of the loot chests, relative to the prefab's minimum corner. */
 	std::vector<Vector3i> m_Chests;
+
+	/** The X and Z of the ladder column, relative to the prefab's minimum corner, or -1 when the
+	piece has no ladder. A tower stacked on the room continues this column. */
+	int m_LadderX = -1;
+	int m_LadderZ = -1;
 } ;
 
 
@@ -1095,6 +1100,33 @@ protected:
 			FixFacingMetas(*Rotated);
 			a_Out[r].m_DoorwaySide = DoorwaySide(*Rotated, a_Out[r].m_DoorX, a_Out[r].m_DoorZ);
 			a_Out[r].m_Chests = CollectBlocks(*Rotated, E_BLOCK_CHEST);
+			a_Out[r].m_LadderX = -1;
+			a_Out[r].m_LadderZ = -1;
+			for (int y = Rotated->GetSizeY() - 1; y >= 0; y--)
+			{
+				bool Found = false;
+				for (int z = 0; z < Rotated->GetSizeZ(); z++)
+				{
+					for (int x = 0; x < Rotated->GetSizeX(); x++)
+					{
+						if (Rotated->GetRelBlockType(x, y, z) == E_BLOCK_LADDER)
+						{
+							a_Out[r].m_LadderX = x;
+							a_Out[r].m_LadderZ = z;
+							Found = true;
+							break;
+						}
+					}
+					if (Found)
+					{
+						break;
+					}
+				}
+				if (Found)
+				{
+					break;
+				}
+			}
 			auto Prefab = std::make_unique<cPrefab>(*Rotated);
 			Prefab->SetMergeStrategy(cBlockArea::msImprint);
 			a_Out[r].m_Prefab = std::move(Prefab);
@@ -1492,29 +1524,28 @@ protected:
 				const int PosZ = Edge.z - DirZ - Room->m_DoorZ;
 				Add(Room->m_Prefab.get(), Vector3i(PosX, Edge.y, PosZ), Room->m_Chests);
 
-				// The room's centre, for a tower that may sit on its roof:
-				const Vector3i RoomSize = PrefabSize(*Room->m_Prefab);
-				const int RoomX = PosX + (RoomSize.x / 2);
-				const int RoomZ = PosZ + (RoomSize.z / 2);
-
-				// The taller rooms may carry a small tower on their roof:
+				// The taller rooms may carry a small tower on their roof. The tower continues the room's
+				// own ladder column, so line the tower's ladder up with the room's ladder instead of
+				// centring the tower on the room:
 				if (RoomTower)
 				{
 					const AString RoomName = (RoomStoreys == 2) ? "LootRoom2" : "LootRoom3";
-
+					const int TowerX = PosX + Room->m_LadderX - END_CITY_TOWER_LADDER_X;
+					const int TowerZ = PosZ + Room->m_LadderZ - END_CITY_TOWER_LADDER_Z;
 					// The tower's base carries the ladder entrance, so let it descend into the room below:
 					const int RoomTopY = Edge.y + StackHeightForName(RoomName);
-					AddCentered(P.m_TowerBase.get(), RoomX, RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH, RoomZ);
+					Add(P.m_TowerBase.get(), Vector3i(TowerX, RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH, TowerZ));
 					int TowerY = RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
 					const int TowerStoreys = 3 + static_cast<int>(Rng() % 3);
 					for (int i = 1; i < TowerStoreys; i++)
 					{
-						AddCentered(P.m_TowerPiece.get(), RoomX, TowerY, RoomZ);
+						Add(P.m_TowerPiece.get(), Vector3i(TowerX, TowerY, TowerZ));
 						TowerY += StackHeightForName("TowerPiece");
 					}
 					if (P.m_TowerTop != nullptr)
 					{
-						AddCentered(P.m_TowerTop.get(), RoomX, TowerY, RoomZ);
+						const int TopOffset = (PrefabSize(*P.m_TowerTop).x - PrefabSize(*P.m_TowerPiece).x) / 2;
+						Add(P.m_TowerTop.get(), Vector3i(TowerX - TopOffset, TowerY, TowerZ - TopOffset));
 					}
 				}
 				AddCarve(Edge.x, Edge.y + 1, Edge.z);
