@@ -855,48 +855,50 @@ protected:
 				return (DirX != 0) ? Size.x : Size.z;
 			};
 
-			// The bridge starts at the main tower's outer wall and extends outwards:
-			const Vector3i TowerEdge(m_OriginX + (DirX * Half), BridgeY, m_OriginZ + (DirZ * Half));
-			Vector3i Edge = TowerEdge;
+			// The bridge starts at the main tower's outer wall and extends outwards. The staircase
+			// piece raises the far end cumulatively, so bridges can reach towers at other heights:
+			Vector3i Edge(m_OriginX + (DirX * Half), BridgeY, m_OriginZ + (DirZ * Half));
 
 			// Straight bridge pieces:
 			const int StraightCount = END_CITY_BRIDGE_MIN_SEGMENTS + static_cast<int>(Rng() % END_CITY_BRIDGE_EXTRA_SEGMENTS);
 			for (int i = 0; i < StraightCount; i++)
 			{
-				Add(Straight.m_Prefab.get(), Vector3i(Edge.x + Straight.m_MinOffset.x, BridgeY, Edge.z + Straight.m_MinOffset.z));
+				Add(Straight.m_Prefab.get(), Vector3i(Edge.x + Straight.m_MinOffset.x, Edge.y, Edge.z + Straight.m_MinOffset.z));
 				const int Step = LengthOf(Straight);
 				Edge.x += DirX * Step;
 				Edge.z += DirZ * Step;
 			}
 
-			// One staircase piece:
-			const sOrientedPrefab & Stairs = ((Rng() % 2) == 0) ? P.m_BridgeGentle[Dir] : P.m_BridgeSteep[Dir];
+			// One staircase piece, which raises the rest of the bridge:
+			const bool Gentle = ((Rng() % 2) == 0);
+			const sOrientedPrefab & Stairs = Gentle ? P.m_BridgeGentle[Dir] : P.m_BridgeSteep[Dir];
 			if (Stairs.m_Prefab != nullptr)
 			{
-				Add(Stairs.m_Prefab.get(), Vector3i(Edge.x + Stairs.m_MinOffset.x, BridgeY, Edge.z + Stairs.m_MinOffset.z));
+				Add(Stairs.m_Prefab.get(), Vector3i(Edge.x + Stairs.m_MinOffset.x, Edge.y, Edge.z + Stairs.m_MinOffset.z));
 				const int Step = LengthOf(Stairs);
 				Edge.x += DirX * Step;
 				Edge.z += DirZ * Step;
+				Edge.y += StackHeightForName(Gentle ? "BridgeGentleStairs" : "BridgeSteepStairs") - 1;
 			}
 
 			// The arch that ends the bridge:
 			const sOrientedPrefab & End = P.m_BridgeEnd[Dir];
 			if (End.m_Prefab != nullptr)
 			{
-				Add(End.m_Prefab.get(), Vector3i(Edge.x + End.m_MinOffset.x, BridgeY, Edge.z + End.m_MinOffset.z));
+				Add(End.m_Prefab.get(), Vector3i(Edge.x + End.m_MinOffset.x, Edge.y, Edge.z + End.m_MinOffset.z));
 				const int Step = LengthOf(End);
 				Edge.x += DirX * Step;
 				Edge.z += DirZ * Step;
 			}
 
 			// Open a doorway through the main tower wall where the bridge meets it:
-			AddCarve(TowerEdge.x, BridgeY + 1, TowerEdge.z);
+			AddCarve(m_OriginX + (DirX * Half), BridgeY + 1, m_OriginZ + (DirZ * Half));
 
 			// An End ship may end the bridge instead of another tower:
 			const sOrientedPrefab & Ship = P.m_Ship[Dir];
 			if (!ShipPlaced && (Ship.m_Prefab != nullptr) && ((Rng() % END_CITY_SHIP_DENOMINATOR) == 0))
 			{
-				Add(Ship.m_Prefab.get(), Vector3i(Edge.x + Ship.m_MinOffset.x, BridgeY, Edge.z + Ship.m_MinOffset.z));
+				Add(Ship.m_Prefab.get(), Vector3i(Edge.x + Ship.m_MinOffset.x, Edge.y, Edge.z + Ship.m_MinOffset.z));
 				ShipPlaced = true;
 				continue;
 			}
@@ -907,8 +909,8 @@ protected:
 			{
 				continue;
 			}
-			const Vector3i SecondaryCenter(Edge.x + (DirX * SecondaryHalf), BridgeY, Edge.z + (DirZ * SecondaryHalf));
-			int SecondaryY = BridgeY - END_CITY_SMALL_TOWER_LADDER_DEPTH;
+			const Vector3i SecondaryCenter(Edge.x + (DirX * SecondaryHalf), Edge.y, Edge.z + (DirZ * SecondaryHalf));
+			int SecondaryY = Edge.y - END_CITY_SMALL_TOWER_LADDER_DEPTH;
 			AddCentered(P.m_TowerBase.get(), SecondaryCenter.x, SecondaryY, SecondaryCenter.z);
 			SecondaryY += StackHeightForName("TowerBase");
 			const int SecondaryRepeats = END_CITY_TOWER_MIN_MIDDLE + static_cast<int>(Rng() % END_CITY_TOWER_EXTRA_MIDDLE);
@@ -925,7 +927,7 @@ protected:
 			{
 				AddCentered(P.m_TowerTop.get(), SecondaryCenter.x, SecondaryY, SecondaryCenter.z);
 			}
-			AddCarve(Edge.x, BridgeY + 1, Edge.z);
+			AddCarve(Edge.x, Edge.y + 1, Edge.z);
 		}
 	}
 } ;
