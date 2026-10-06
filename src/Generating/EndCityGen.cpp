@@ -66,6 +66,9 @@ static constexpr int END_CITY_SMALL_TOWER_LADDER_DEPTH = 3;
 static constexpr int END_CITY_TOWER_MIN_MIDDLE = 3;
 static constexpr int END_CITY_TOWER_EXTRA_MIDDLE = 5;
 
+/** The minimum fill percentage of a layer for it to count as the structural top when stacking pieces. */
+static constexpr int END_CITY_STACK_MIN_PERCENT = 3;
+
 /** The number of heights at which a tower may grow bridges, and the vertical distance between them. */
 static constexpr int END_CITY_BRANCH_LEVELS = 2;
 static constexpr int END_CITY_BRANCH_LEVEL_HEIGHT = 8;
@@ -333,7 +336,9 @@ static int ComputeStackHeight(const sEndCityBlueprint & a_Blueprint)
 				}
 			}
 		}
-		if ((Total > 0) && ((Count * 10) > Total))
+		// Only the trailing decorative layers (a few end rods) are sparse enough to be overlapped;
+		// a room's wall layers are also sparse, so the threshold must stay below them:
+		if ((Total > 0) && ((Count * 100) > (Total * END_CITY_STACK_MIN_PERCENT)))
 		{
 			return i + 1;
 		}
