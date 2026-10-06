@@ -316,11 +316,13 @@ static bool ResolveBlock(const AString & a_Name, BLOCKTYPE & a_Type, NIBBLETYPE 
 	if (Name == "Chest")
 	{
 		a_Type = E_BLOCK_CHEST;
+		a_Meta = E_META_CHEST_FACING_ZM;
 		return true;
 	}
 	if (Name == "Ender Chest")
 	{
 		a_Type = E_BLOCK_ENDER_CHEST;
+		a_Meta = E_META_CHEST_FACING_ZM;
 		return true;
 	}
 	if (Name == "Brewing Stand")
@@ -500,6 +502,41 @@ static std::unique_ptr<cBlockArea> MakeBlueprintArea(const sEndCityBlueprint & a
 				{
 					Area->SetRelBlockTypeMeta(static_cast<int>(x), Layer.m_Y, static_cast<int>(z), Types[Key], Metas[Key]);
 				}
+			}
+		}
+	}
+
+	// Chests need a valid facing meta (2 to 5); the blueprints do not store one, so face the chest
+	// away from an adjacent solid block, defaulting to north:
+	for (int y = 0; y < a_Blueprint.m_Height; y++)
+	{
+		for (int z = 0; z < a_Blueprint.m_SizeZ; z++)
+		{
+			for (int x = 0; x < a_Blueprint.m_SizeX; x++)
+			{
+				const BLOCKTYPE Type = Area->GetRelBlockType(x, y, z);
+				if ((Type != E_BLOCK_CHEST) && (Type != E_BLOCK_ENDER_CHEST))
+				{
+					continue;
+				}
+				NIBBLETYPE Facing = E_META_CHEST_FACING_ZM;
+				if ((x > 0) && (Area->GetRelBlockType(x - 1, y, z) != E_BLOCK_AIR))
+				{
+					Facing = E_META_CHEST_FACING_XP;
+				}
+				else if ((x < a_Blueprint.m_SizeX - 1) && (Area->GetRelBlockType(x + 1, y, z) != E_BLOCK_AIR))
+				{
+					Facing = E_META_CHEST_FACING_XM;
+				}
+				else if ((z < a_Blueprint.m_SizeZ - 1) && (Area->GetRelBlockType(x, y, z + 1) != E_BLOCK_AIR))
+				{
+					Facing = E_META_CHEST_FACING_ZM;
+				}
+				else if ((z > 0) && (Area->GetRelBlockType(x, y, z - 1) != E_BLOCK_AIR))
+				{
+					Facing = E_META_CHEST_FACING_ZP;
+				}
+				Area->SetRelBlockTypeMeta(x, y, z, Type, Facing);
 			}
 		}
 	}
