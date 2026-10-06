@@ -12,6 +12,8 @@ target_sources(
 	DistortedHeightmap.cpp
 	DungeonRoomsFinisher.cpp
 	EndChorusGen.cpp
+	EndCityBlueprintData.cpp
+	EndCityGen.cpp
 	EndGen.cpp
 	EndPlatform.cpp
 	EnderDragonFightStructuresGen.cpp
@@ -50,6 +52,8 @@ target_sources(
 	DistortedHeightmap.h
 	DungeonRoomsFinisher.h
 	EndChorusGen.h
+	EndCityBlueprintData.h
+	EndCityGen.h
 	EndGen.h
 	EndGateway.h
 	EnderDragonFightStructuresGen.h
