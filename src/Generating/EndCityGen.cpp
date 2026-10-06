@@ -519,6 +519,10 @@ struct sRotatedPrefab
 
 	/** The horizontal side the doorway opens onto, or -1 when the piece has no doorway. */
 	int m_DoorwaySide = -1;
+
+	/** The doorway centre in the prefab's local X and Z coordinates. */
+	int m_DoorX = 0;
+	int m_DoorZ = 0;
 } ;
 
 
@@ -526,33 +530,61 @@ struct sRotatedPrefab
 
 /** Returns the side (an END_CITY_DIR_* index) with the most open wall cells near the floor, or -1.
 Used to find which way a room's doorway faces so the room can be rotated toward a bridge. */
-static int DoorwaySide(const cBlockArea & a_Area)
+static int DoorwaySide(const cBlockArea & a_Area, int & a_DoorX, int & a_DoorZ)
 {
 	const int SizeX = a_Area.GetSizeX();
 	const int SizeY = a_Area.GetSizeY();
 	const int SizeZ = a_Area.GetSizeZ();
 	const int MaxY = std::min(4, SizeY);
-	int Air[END_CITY_DIR_COUNT] = {0, 0, 0, 0};
+
+	// The roof of a room is wider than its lower walls, so the walls are not at the area's edge.
+	// Find the wall ring near the floor first, then look for a gap in each of its four sides:
+	int MinX = SizeX;
+	int MaxX = -1;
+	int MinZ = SizeZ;
+	int MaxZ = -1;
 	for (int y = 1; y < MaxY; y++)
 	{
 		for (int z = 0; z < SizeZ; z++)
 		{
-			if (a_Area.GetRelBlockType(SizeX - 1, y, z) == E_BLOCK_AIR)
+			for (int x = 0; x < SizeX; x++)
+			{
+				if (a_Area.GetRelBlockType(x, y, z) != E_BLOCK_AIR)
+				{
+					MinX = std::min(MinX, x);
+					MaxX = std::max(MaxX, x);
+					MinZ = std::min(MinZ, z);
+					MaxZ = std::max(MaxZ, z);
+				}
+			}
+		}
+	}
+	if (MaxX < MinX)
+	{
+		return -1;
+	}
+
+	int Air[END_CITY_DIR_COUNT] = {0, 0, 0, 0};
+	for (int y = 1; y < MaxY; y++)
+	{
+		for (int z = MinZ; z <= MaxZ; z++)
+		{
+			if (a_Area.GetRelBlockType(MaxX, y, z) == E_BLOCK_AIR)
 			{
 				Air[0]++;  // +X
 			}
-			if (a_Area.GetRelBlockType(0, y, z) == E_BLOCK_AIR)
+			if (a_Area.GetRelBlockType(MinX, y, z) == E_BLOCK_AIR)
 			{
 				Air[2]++;  // -X
 			}
 		}
-		for (int x = 0; x < SizeX; x++)
+		for (int x = MinX; x <= MaxX; x++)
 		{
-			if (a_Area.GetRelBlockType(x, y, SizeZ - 1) == E_BLOCK_AIR)
+			if (a_Area.GetRelBlockType(x, y, MaxZ) == E_BLOCK_AIR)
 			{
 				Air[1]++;  // +Z
 			}
-			if (a_Area.GetRelBlockType(x, y, 0) == E_BLOCK_AIR)
+			if (a_Area.GetRelBlockType(x, y, MinZ) == E_BLOCK_AIR)
 			{
 				Air[3]++;  // -Z
 			}
@@ -566,7 +598,72 @@ static int DoorwaySide(const cBlockArea & a_Area)
 			Best = i;
 		}
 	}
-	return (Air[Best] > 0) ? Best : -1;
+	if (Air[Best] == 0)
+	{
+		return -1;
+	}
+
+	// The doorway centre, so a caller can line the opening up with a bridge:
+	long SumX = 0;
+	long SumZ = 0;
+	long Count = 0;
+	for (int y = 1; y < MaxY; y++)
+	{
+		if (Best == 0)
+		{
+			for (int z = MinZ; z <= MaxZ; z++)
+			{
+				if (a_Area.GetRelBlockType(MaxX, y, z) == E_BLOCK_AIR)
+				{
+					SumX += MaxX;
+					SumZ += z;
+					Count++;
+				}
+			}
+		}
+		else if (Best == 2)
+		{
+			for (int z = MinZ; z <= MaxZ; z++)
+			{
+				if (a_Area.GetRelBlockType(MinX, y, z) == E_BLOCK_AIR)
+				{
+					SumX += MinX;
+					SumZ += z;
+					Count++;
+				}
+			}
+		}
+		else if (Best == 1)
+		{
+			for (int x = MinX; x <= MaxX; x++)
+			{
+				if (a_Area.GetRelBlockType(x, y, MaxZ) == E_BLOCK_AIR)
+				{
+					SumX += x;
+					SumZ += MaxZ;
+					Count++;
+				}
+			}
+		}
+		else
+		{
+			for (int x = MinX; x <= MaxX; x++)
+			{
+				if (a_Area.GetRelBlockType(x, y, MinZ) == E_BLOCK_AIR)
+				{
+					SumX += x;
+					SumZ += MinZ;
+					Count++;
+				}
+			}
+		}
+	}
+	if (Count > 0)
+	{
+		a_DoorX = static_cast<int>(SumX / Count);
+		a_DoorZ = static_cast<int>(SumZ / Count);
+	}
+	return Best;
 }
 
 
@@ -711,7 +808,7 @@ protected:
 			{
 				Rotated->RotateCCW();
 			}
-			a_Out[r].m_DoorwaySide = DoorwaySide(*Rotated);
+			a_Out[r].m_DoorwaySide = DoorwaySide(*Rotated, a_Out[r].m_DoorX, a_Out[r].m_DoorZ);
 			auto Prefab = std::make_unique<cPrefab>(*Rotated);
 			Prefab->SetMergeStrategy(cBlockArea::msImprint);
 			a_Out[r].m_Prefab = std::move(Prefab);
@@ -1014,6 +1111,7 @@ protected:
 			// A loot room may end the bridge. The wiki gives one, two and three storey variants; the
 			// two and three storey ones may carry a small tower on their roof:
 			int RoomStoreys = 1;
+			bool RoomTower = false;
 			const sRotatedPrefab * RoomSet = nullptr;
 			if ((Rng() % 4) == 0)
 			{
@@ -1023,6 +1121,10 @@ protected:
 			else
 			{
 				RoomStoreys = 1 + static_cast<int>(Rng() % 3);
+				RoomTower = (RoomStoreys >= 2) &&
+					(P.m_TowerFloor != nullptr) && (P.m_TowerPiece != nullptr) &&
+					((Rng() % END_CITY_ROOM_TOWER_DENOMINATOR) == 0);
+
 				if (RoomStoreys == 1)
 				{
 					RoomSet = P.m_LootRoom1;
@@ -1054,15 +1156,20 @@ protected:
 			}
 			if (Room != nullptr)
 			{
-				// Overlap the last bridge block by one so that the room is not separated by a gap:
+				// Line the room's doorway up with the bridge's last block. A room's roof is wider than
+				// its lower walls, so centring on the bounding box would leave the bridge pointing at
+				// the roof edge instead of at the opening:
+				const int PosX = Edge.x - DirX - Room->m_DoorX;
+				const int PosZ = Edge.z - DirZ - Room->m_DoorZ;
+				Add(Room->m_Prefab.get(), Vector3i(PosX, Edge.y, PosZ));
+
+				// The room's centre, for a tower that may sit on its roof:
 				const Vector3i RoomSize = PrefabSize(*Room->m_Prefab);
-				const int RoomHalf = ((DirX != 0) ? RoomSize.x : RoomSize.z) / 2;
-				const int RoomX = Edge.x + (DirX * (RoomHalf == 0 ? 0 : RoomHalf - 1));
-				const int RoomZ = Edge.z + (DirZ * (RoomHalf == 0 ? 0 : RoomHalf - 1));
-				AddCentered(Room->m_Prefab.get(), RoomX, Edge.y, RoomZ);
+				const int RoomX = PosX + (RoomSize.x / 2);
+				const int RoomZ = PosZ + (RoomSize.z / 2);
 
 				// The taller rooms may carry a small tower on their roof:
-				if ((RoomStoreys >= 2) && (P.m_TowerFloor != nullptr) && (P.m_TowerPiece != nullptr) && ((Rng() % END_CITY_ROOM_TOWER_DENOMINATOR) == 0))
+				if (RoomTower)
 				{
 					const AString RoomName = (RoomStoreys == 2) ? "LootRoom2" : "LootRoom3";
 					int TowerY = Edge.y + StackHeightForName(RoomName);
