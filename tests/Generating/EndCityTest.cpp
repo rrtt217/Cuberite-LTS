@@ -69,11 +69,17 @@ static bool isCityBlock(BLOCKTYPE a_Type)
 		case E_BLOCK_PURPUR_BLOCK:
 		case E_BLOCK_PURPUR_PILLAR:
 		case E_BLOCK_PURPUR_STAIRS:
+		case E_BLOCK_PURPUR_SLAB:
 		case E_BLOCK_END_BRICKS:
 		case E_BLOCK_STAINED_GLASS:
 		case E_BLOCK_END_ROD:
 		case E_BLOCK_OBSIDIAN:
 		case E_BLOCK_HEAD:
+		case E_BLOCK_LADDER:
+		case E_BLOCK_CHEST:
+		case E_BLOCK_ENDER_CHEST:
+		case E_BLOCK_BREWING_STAND:
+		case E_BLOCK_WALL_BANNER:
 		{
 			return true;
 		}

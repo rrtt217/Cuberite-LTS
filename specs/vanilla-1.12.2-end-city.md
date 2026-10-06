@@ -209,11 +209,17 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 
 本分支已落地：
 
-- src/Generating/EndCityGen.{h,cpp}：cEndCityGen : cGridStructGen（格点 320 块 / 原点区块 0..8 / 外岛距离门 / 平坦度门），骨架 = 三层基础层 -> 屋顶 -> 小塔或胖塔 -> 每方向 50% 桥 -> 每桥 1/8 船（全城至多一艘）。
+- src/Generating/EndCityGen.{h,cpp}：cEndCityGen : cGridStructGen（格点 320 块 / 原点区块 0..8 / 外岛距离门 / 平坦度门），骨架 = 入口（EmptyRoom）-> 基础层（BaseRoom）-> 小塔（SmallTowerBase + N x SmallTowerExtension + SmallRoom）或胖塔（N x LargeTower + LootRoom）-> 每方向 50% 桥（Bridge）-> 每桥 1/8 船（Ship，全城至多一艘）。
+- src/Generating/EndCityBlueprintData.{h,cpp}：从 wiki layered blueprint **逐方块转录**的 14 个蓝图（BaseRoom、SmallTowerBase/Extension、LargeTower、SmallRoom、LargeRoomTwoStorey/ThreeStorey、LootRoom、EmptyRoom、Bridge/GentleStairs/SteepStairs/Dock、Ship）；运行时由 char map + 层串构建 cBlockArea，裁剪到非空气包围盒后包成 cPrefab。
 - finisher token EndCity，已加入 End 默认 Finishers（EnderDragonFightStructures, EndCity）。
 - tests/Generating/EndCityTest.cpp：格点规则、正常生成、三道拒绝门（虚空 / 内岛 / 不平坦）、确定性。
 
-**已知偏差**：房间 / 塔 / 桥 / 船的方块几何是**程序化近似**（MakeRoom / BuildBridgeArea / BuildShipArea），不是 wiki 蓝图的逐方块复刻；潜影贝、战利品表、旗帜图案、酿造台内容、物品展示框均未实现（见第 8 节）。精确蓝图复刻列为后续增量。
+**已知偏差（待实机对照）**：
+
+1. 方块布局来自 wiki 蓝图；但各构件之间的**锚点与拼接顺序**不是 vanilla 的（wiki 不公开 EndCityPieces 的递归与偏移），骨架按几何堆叠近似。
+2. 楼梯 / 旗帜 / 龙首 / 梯子的**朝向**为最佳猜测（蓝图以文字+羊毛标注表示翻面，未逐块编码）。
+3. 桥梁的缓/陡坡与船坞（BridgeGentleStairs/SteepStairs/Dock）、LargeRoom 两个变体、SmallRoom 之外的房间变体尚未接入骨架。
+4. 潜影贝、战利品表、旗帜图案 NBT、酿造台内容、物品展示框均未实现（见第 8 节）。
 
 ---
 

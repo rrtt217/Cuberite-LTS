@@ -43,6 +43,7 @@ set (GENERATING_SRCS
 	${PROJECT_SOURCE_DIR}/src/Generating/ComposableGenerator.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/DistortedHeightmap.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/DungeonRoomsFinisher.cpp
+	${PROJECT_SOURCE_DIR}/src/Generating/EndCityBlueprintData.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EndCityGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EndGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EnderDragonFightStructuresGen.cpp
@@ -114,6 +115,7 @@ set (GENERATING_HDRS
 	${PROJECT_SOURCE_DIR}/src/Generating/CompositedHeiGen.h
 	${PROJECT_SOURCE_DIR}/src/Generating/DistortedHeightmap.h
 	${PROJECT_SOURCE_DIR}/src/Generating/DungeonRoomsFinisher.h
+	${PROJECT_SOURCE_DIR}/src/Generating/EndCityBlueprintData.h
 	${PROJECT_SOURCE_DIR}/src/Generating/EndCityGen.h
 	${PROJECT_SOURCE_DIR}/src/Generating/EndGen.h
 	${PROJECT_SOURCE_DIR}/src/Generating/EndGateway.h

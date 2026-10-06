@@ -5,8 +5,10 @@
 #include "Globals.h"
 #include "EndCityGen.h"
 #include "ComposableGenerator.h"
+#include "EndCityBlueprintData.h"
 #include "Prefab.h"
 #include "../BlockInfo.h"
+#include "../StringUtils.h"
 
 #include <algorithm>
 #include <memory>
@@ -24,7 +26,7 @@ static constexpr int END_CITY_GRID_SIZE = 20 * cChunkDef::Width;
 static constexpr int END_CITY_MAX_OFFSET = 8 * cChunkDef::Width;
 
 /** The maximum theoretical size of a city, in blocks. */
-static constexpr int END_CITY_MAX_SIZE = 10 * cChunkDef::Width;
+static constexpr int END_CITY_MAX_SIZE = 12 * cChunkDef::Width;
 
 /** The maximum number of structures kept in the grid cache. */
 static constexpr size_t END_CITY_MAX_CACHE = 64;
@@ -50,22 +52,16 @@ static constexpr int END_CITY_BRIDGE_DENOMINATOR = 2;
 /** The chance (1 in N) that a bridge ends in an End ship. */
 static constexpr int END_CITY_SHIP_DENOMINATOR = 8;
 
-/** The minimum, and the extra random range, of a tower's middle segment count. */
+/** The number of straight bridge segments, and the extra random range. */
+static constexpr int END_CITY_BRIDGE_MIN_SEGMENTS = 1;
+static constexpr int END_CITY_BRIDGE_EXTRA_SEGMENTS = 2;
+
+/** How far the small tower's ladder shaft descends into the room below. */
+static constexpr int END_CITY_SMALL_TOWER_LADDER_DEPTH = 3;
+
+/** The minimum, and the extra random range, of a tower's middle section count. */
 static constexpr int END_CITY_TOWER_MIN_MIDDLE = 2;
 static constexpr int END_CITY_TOWER_EXTRA_MIDDLE = 3;
-
-/** The horizontal size of the two tower types. */
-static constexpr int END_CITY_SMALL_TOWER_SIZE = 7;
-static constexpr int END_CITY_FAT_TOWER_SIZE = 13;
-
-/** The length (along its main axis) and the width of a bridge piece. */
-static constexpr int END_CITY_BRIDGE_LENGTH = 7;
-static constexpr int END_CITY_BRIDGE_WIDTH = 5;
-static constexpr int END_CITY_BRIDGE_HEIGHT = 3;
-
-/** The deck height and the top of the mast of the End ship. */
-static constexpr int END_CITY_SHIP_DECK_Y = 5;
-static constexpr int END_CITY_SHIP_MAST_TOP = 16;
 
 /** The number of horizontal directions a tower can branch into. */
 static constexpr int END_CITY_DIR_COUNT = 4;
@@ -78,15 +74,30 @@ static const int END_CITY_DIR_Z[END_CITY_DIR_COUNT] = {0, 1, 0, -1};
 static constexpr int END_CITY_SEED_OFFSET_X = 7919;
 static constexpr int END_CITY_SEED_OFFSET_Z = 104729;
 
-/** End rod metadata for an upward-facing rod. */
+/** End rod facing metadata. */
+static constexpr NIBBLETYPE END_CITY_END_ROD_DOWN = 0;
 static constexpr NIBBLETYPE END_CITY_END_ROD_UP = 1;
+static constexpr NIBBLETYPE END_CITY_END_ROD_NORTH = 2;
+static constexpr NIBBLETYPE END_CITY_END_ROD_SOUTH = 3;
+
+/** Ladder and wall banner facing metadata. These use the vanilla facing values. */
+static constexpr NIBBLETYPE END_CITY_FACING_NORTH = 2;
+
+/** Purpur pillar axis metadata. */
+static constexpr NIBBLETYPE END_CITY_PILLAR_VERTICAL = 0;
+static constexpr NIBBLETYPE END_CITY_PILLAR_X = 4;
+static constexpr NIBBLETYPE END_CITY_PILLAR_Z = 8;
+
+/** Purpur slab half metadata. */
+static constexpr NIBBLETYPE END_CITY_SLAB_BOTTOM = 0;
+static constexpr NIBBLETYPE END_CITY_SLAB_TOP = 8;
 
 
 
 
 
 /** A prefab together with the oriented coordinate of its minimum corner.
-Used when a prefab built along the +X axis is rotated into an arbitrary horizontal direction. */
+Used when a blueprint built along the +Z axis is rotated into an arbitrary horizontal direction. */
 struct sOrientedPrefab
 {
 	/** The prefab itself. */
@@ -122,121 +133,283 @@ static Vector3i PrefabSize(const cPrefab & a_Prefab)
 
 
 
-/** Builds a square room: a solid floor, hollow perimeter walls, magenta glass windows, an optional
-door on the -X face, and an optional ceiling with a stair parapet. */
-static std::unique_ptr<cPrefab> MakeRoom(int a_Size, int a_WallHeight, bool a_HasDoor, bool a_HasWindows, bool a_HasCeiling)
+/** Returns the purpur stair metadata for the specified clockwise rotation. */
+static NIBBLETYPE StairMetaForRotation(int a_Degrees)
 {
-	const int SizeY = a_WallHeight + 1 + (a_HasCeiling ? 2 : 0);
-	cBlockArea Area;
-	Area.Create(a_Size, SizeY, a_Size);
-
-	// Floor:
-	for (int x = 0; x < a_Size; x++)
+	switch (a_Degrees)
 	{
-		for (int z = 0; z < a_Size; z++)
-		{
-			Area.SetRelBlockTypeMeta(x, 0, z, E_BLOCK_END_BRICKS, 0);
-		}
+		case 90:  return E_BLOCK_STAIRS_XM;
+		case 180: return E_BLOCK_STAIRS_ZM;
+		case 270: return E_BLOCK_STAIRS_XP;
+		default:  return E_BLOCK_STAIRS_ZP;
 	}
-
-	// Walls:
-	for (int y = 1; y <= a_WallHeight; y++)
-	{
-		for (int x = 0; x < a_Size; x++)
-		{
-			for (int z = 0; z < a_Size; z++)
-			{
-				const bool IsCorner = ((x == 0) || (x == a_Size - 1)) && ((z == 0) || (z == a_Size - 1));
-				const bool IsPerimeter = (x == 0) || (z == 0) || (x == a_Size - 1) || (z == a_Size - 1);
-				if (!IsPerimeter)
-				{
-					continue;
-				}
-				Area.SetRelBlockTypeMeta(x, y, z, IsCorner ? E_BLOCK_PURPUR_PILLAR : E_BLOCK_PURPUR_BLOCK, 0);
-			}
-		}
-	}
-
-	// Windows along the middle wall row:
-	if (a_HasWindows)
-	{
-		const int WindowY = std::max(2, a_WallHeight - 1);
-		for (int x = 2; x < a_Size - 1; x += 2)
-		{
-			Area.SetRelBlockTypeMeta(x, WindowY, 0, E_BLOCK_STAINED_GLASS, E_META_STAINED_GLASS_MAGENTA);
-			Area.SetRelBlockTypeMeta(x, WindowY, a_Size - 1, E_BLOCK_STAINED_GLASS, E_META_STAINED_GLASS_MAGENTA);
-		}
-		for (int z = 2; z < a_Size - 1; z += 2)
-		{
-			Area.SetRelBlockTypeMeta(0, WindowY, z, E_BLOCK_STAINED_GLASS, E_META_STAINED_GLASS_MAGENTA);
-			Area.SetRelBlockTypeMeta(a_Size - 1, WindowY, z, E_BLOCK_STAINED_GLASS, E_META_STAINED_GLASS_MAGENTA);
-		}
-	}
-
-	// Door on the -X face:
-	if (a_HasDoor)
-	{
-		const int DoorZ = a_Size / 2;
-		Area.SetRelBlockTypeMeta(0, 1, DoorZ, E_BLOCK_AIR, 0);
-		Area.SetRelBlockTypeMeta(0, 2, DoorZ, E_BLOCK_AIR, 0);
-	}
-
-	// Ceiling with a stair parapet and a corner end rod:
-	if (a_HasCeiling)
-	{
-		const int CeilY = a_WallHeight + 1;
-		for (int x = 0; x < a_Size; x++)
-		{
-			for (int z = 0; z < a_Size; z++)
-			{
-				Area.SetRelBlockTypeMeta(x, CeilY, z, E_BLOCK_PURPUR_BLOCK, 0);
-			}
-		}
-		const int ParapetY = CeilY + 1;
-		for (int x = 0; x < a_Size; x++)
-		{
-			Area.SetRelBlockTypeMeta(x, ParapetY, 0, E_BLOCK_PURPUR_STAIRS, E_BLOCK_STAIRS_ZM);
-			Area.SetRelBlockTypeMeta(x, ParapetY, a_Size - 1, E_BLOCK_PURPUR_STAIRS, E_BLOCK_STAIRS_ZP);
-		}
-		for (int z = 0; z < a_Size; z++)
-		{
-			Area.SetRelBlockTypeMeta(0, ParapetY, z, E_BLOCK_PURPUR_STAIRS, E_BLOCK_STAIRS_XM);
-			Area.SetRelBlockTypeMeta(a_Size - 1, ParapetY, z, E_BLOCK_PURPUR_STAIRS, E_BLOCK_STAIRS_XP);
-		}
-		Area.SetRelBlockTypeMeta(0, ParapetY, 0, E_BLOCK_END_ROD, END_CITY_END_ROD_UP);
-		Area.SetRelBlockTypeMeta(a_Size - 1, ParapetY, 0, E_BLOCK_END_ROD, END_CITY_END_ROD_UP);
-		Area.SetRelBlockTypeMeta(0, ParapetY, a_Size - 1, E_BLOCK_END_ROD, END_CITY_END_ROD_UP);
-		Area.SetRelBlockTypeMeta(a_Size - 1, ParapetY, a_Size - 1, E_BLOCK_END_ROD, END_CITY_END_ROD_UP);
-	}
-
-	return std::make_unique<cPrefab>(Area);
 }
 
 
 
 
 
-/** Orients an area built along the +X axis into the given horizontal direction.
-Returns the prefab together with the oriented coordinate of its minimum corner.
-The input area's Z axis is its width; it is centered on Width / 2. */
-static sOrientedPrefab OrientArea(const cBlockArea & a_Area, int a_DirX, int a_DirZ)
+/** Returns the End rod metadata for the specified clockwise rotation. */
+static NIBBLETYPE EndRodMetaForRotation(int a_Degrees)
 {
-	const int Length = a_Area.GetSizeX();
-	const int Width = a_Area.GetSizeZ();
-	const int CenterZ = Width / 2;
+	switch (a_Degrees)
+	{
+		case 90:  return END_CITY_END_ROD_NORTH;
+		case 180: return END_CITY_END_ROD_DOWN;
+		case 270: return END_CITY_END_ROD_SOUTH;
+		default:  return END_CITY_END_ROD_UP;
+	}
+}
+
+
+
+
+
+/** Resolves a blueprint block name (and optional orientation suffix) into a Cuberite block type and metadata.
+Reference markers (wool) and entity sprites resolve to air. Returns true if the cell holds a block. */
+static bool ResolveBlock(const AString & a_Name, BLOCKTYPE & a_Type, NIBBLETYPE & a_Meta)
+{
+	a_Type = E_BLOCK_AIR;
+	a_Meta = 0;
+
+	// Entity sprites and the wool reference markers are not blocks:
+	if (
+		(a_Name.compare(0, 13, "EntitySprite:") == 0) ||
+		(a_Name.find("Wool") != AString::npos)
+	)
+	{
+		return false;
+	}
+
+	// Split off the "@modifier" and "-rotNNN" suffixes:
+	AString Name = a_Name;
+	AString Modifier;
+	const size_t ModPos = Name.find('@');
+	if (ModPos != AString::npos)
+	{
+		Modifier = Name.substr(ModPos + 1);
+		Name = Name.substr(0, ModPos);
+	}
+	int Rotation = 0;
+	const size_t RotPos = Name.find("-rot");
+	if (RotPos != AString::npos)
+	{
+		Rotation = std::atoi(Name.substr(RotPos + 4).c_str());
+		Name = Name.substr(0, RotPos);
+	}
+
+	if (Name == "Purpur Block")
+	{
+		a_Type = E_BLOCK_PURPUR_BLOCK;
+		return true;
+	}
+	if (Name == "Purpur Pillar")
+	{
+		a_Type = E_BLOCK_PURPUR_PILLAR;
+		a_Meta = (Modifier == "horizontal") ? END_CITY_PILLAR_Z : END_CITY_PILLAR_VERTICAL;
+		return true;
+	}
+	if (Name == "Purpur Slab")
+	{
+		a_Type = E_BLOCK_PURPUR_SLAB;
+		a_Meta = (Modifier == "top") ? END_CITY_SLAB_TOP : END_CITY_SLAB_BOTTOM;
+		return true;
+	}
+	if (Name == "Purpur Stairs")
+	{
+		a_Type = E_BLOCK_PURPUR_STAIRS;
+		a_Meta = StairMetaForRotation(Rotation);
+		return true;
+	}
+	if (Name == "End Stone Bricks")
+	{
+		a_Type = E_BLOCK_END_BRICKS;
+		return true;
+	}
+	if (Name == "Magenta Stained Glass")
+	{
+		a_Type = E_BLOCK_STAINED_GLASS;
+		a_Meta = E_META_STAINED_GLASS_MAGENTA;
+		return true;
+	}
+	if (Name == "Purple Stained Glass")
+	{
+		a_Type = E_BLOCK_STAINED_GLASS;
+		a_Meta = E_META_STAINED_GLASS_PURPLE;
+		return true;
+	}
+	if (Name == "End Rod")
+	{
+		a_Type = E_BLOCK_END_ROD;
+		a_Meta = EndRodMetaForRotation(Rotation);
+		return true;
+	}
+	if (Name == "Ladder")
+	{
+		a_Type = E_BLOCK_LADDER;
+		a_Meta = END_CITY_FACING_NORTH;
+		return true;
+	}
+	if (Name == "Magenta Wall Banner")
+	{
+		a_Type = E_BLOCK_WALL_BANNER;
+		a_Meta = END_CITY_FACING_NORTH;
+		return true;
+	}
+	if (Name == "Chest")
+	{
+		a_Type = E_BLOCK_CHEST;
+		return true;
+	}
+	if (Name == "Ender Chest")
+	{
+		a_Type = E_BLOCK_ENDER_CHEST;
+		return true;
+	}
+	if (Name == "Brewing Stand")
+	{
+		a_Type = E_BLOCK_BREWING_STAND;
+		return true;
+	}
+	if (Name == "Obsidian")
+	{
+		a_Type = E_BLOCK_OBSIDIAN;
+		return true;
+	}
+	if (Name == "Dragon Head")
+	{
+		a_Type = E_BLOCK_HEAD;
+		a_Meta = E_META_HEAD_DRAGON;
+		return true;
+	}
+	return false;
+}
+
+
+
+
+
+/** Crops the area to its non-air bounding box. Returns false if the area is empty. */
+static bool CropToContent(cBlockArea & a_Area)
+{
+	int MinX = a_Area.GetSizeX();
+	int MaxX = -1;
+	int MinY = a_Area.GetSizeY();
+	int MaxY = -1;
+	int MinZ = a_Area.GetSizeZ();
+	int MaxZ = -1;
+	for (int y = 0; y < a_Area.GetSizeY(); y++)
+	{
+		for (int z = 0; z < a_Area.GetSizeZ(); z++)
+		{
+			for (int x = 0; x < a_Area.GetSizeX(); x++)
+			{
+				BLOCKTYPE Type;
+				NIBBLETYPE Meta;
+				a_Area.GetRelBlockTypeMeta(x, y, z, Type, Meta);
+				if (Type == E_BLOCK_AIR)
+				{
+					continue;
+				}
+				MinX = std::min(MinX, x);
+				MaxX = std::max(MaxX, x);
+				MinY = std::min(MinY, y);
+				MaxY = std::max(MaxY, y);
+				MinZ = std::min(MinZ, z);
+				MaxZ = std::max(MaxZ, z);
+			}
+		}
+	}
+	if (MaxX < 0)
+	{
+		return false;
+	}
+	a_Area.Crop(
+		MinX, a_Area.GetSizeX() - 1 - MaxX,
+		MinY, a_Area.GetSizeY() - 1 - MaxY,
+		MinZ, a_Area.GetSizeZ() - 1 - MaxZ
+	);
+	return true;
+}
+
+
+
+
+
+/** Builds a block area from a blueprint, cropped to its non-air bounding box.
+Returns nullptr if the blueprint holds no blocks. */
+static std::unique_ptr<cBlockArea> MakeBlueprintArea(const sEndCityBlueprint & a_Blueprint)
+{
+	auto Area = std::make_unique<cBlockArea>();
+	Area->Create(a_Blueprint.m_SizeX, a_Blueprint.m_Height, a_Blueprint.m_SizeZ);
+
+	// Parse the char map:
+	BLOCKTYPE Types[256];
+	NIBBLETYPE Metas[256];
+	for (size_t i = 0; i < ARRAYCOUNT(Types); i++)
+	{
+		Types[i] = E_BLOCK_AIR;
+		Metas[i] = 0;
+	}
+	for (const auto & Entry: StringSplit(a_Blueprint.m_CharMap, "|"))
+	{
+		if ((Entry.size() < 2) || (Entry[1] != '='))
+		{
+			continue;
+		}
+		const unsigned char Key = static_cast<unsigned char>(Entry[0]);
+		ResolveBlock(Entry.substr(2), Types[Key], Metas[Key]);
+	}
+
+	// Fill the layers:
+	for (int i = 0; i < a_Blueprint.m_Height; i++)
+	{
+		const sEndCityBlueprintLayer & Layer = a_Blueprint.m_Layers[i];
+		const auto Rows = StringSplit(Layer.m_Rows, "|");
+		for (size_t z = 0; z < Rows.size(); z++)
+		{
+			for (size_t x = 0; x < Rows[z].size(); x++)
+			{
+				const unsigned char Key = static_cast<unsigned char>(Rows[z][x]);
+				if (Types[Key] != E_BLOCK_AIR)
+				{
+					Area->SetRelBlockTypeMeta(static_cast<int>(x), Layer.m_Y, static_cast<int>(z), Types[Key], Metas[Key]);
+				}
+			}
+		}
+	}
+
+	if (!CropToContent(*Area))
+	{
+		return nullptr;
+	}
+	return Area;
+}
+
+
+
+
+
+/** Orients an area whose length runs along +Z into the given horizontal direction.
+Returns the prefab together with the oriented coordinate of its minimum corner. */
+static sOrientedPrefab OrientAreaZ(const cBlockArea & a_Area, int a_DirX, int a_DirZ)
+{
+	const int Length = a_Area.GetSizeZ();
+	const int Width = a_Area.GetSizeX();
+	const int CenterX = Width / 2;
 
 	int MinX = 0;
 	int MinZ = 0;
 	int MaxX = 0;
 	int MaxZ = 0;
 	bool First = true;
-	for (int x = 0; x < Length; x++)
+	for (int z = 0; z < Length; z++)
 	{
-		for (int z = 0; z < Width; z++)
+		for (int x = 0; x < Width; x++)
 		{
-			const int OffsetZ = z - CenterZ;
-			const int OutX = (a_DirX * x) + (-a_DirZ * OffsetZ);
-			const int OutZ = (a_DirZ * x) + (a_DirX * OffsetZ);
+			const int OffsetX = x - CenterX;
+			const int OutX = (a_DirX * z) + (-a_DirZ * OffsetX);
+			const int OutZ = (a_DirZ * z) + (a_DirX * OffsetX);
 			if (First)
 			{
 				MinX = MaxX = OutX;
@@ -253,11 +426,11 @@ static sOrientedPrefab OrientArea(const cBlockArea & a_Area, int a_DirX, int a_D
 
 	cBlockArea Out;
 	Out.Create(MaxX - MinX + 1, a_Area.GetSizeY(), MaxZ - MinZ + 1);
-	for (int x = 0; x < Length; x++)
+	for (int z = 0; z < Length; z++)
 	{
 		for (int y = 0; y < a_Area.GetSizeY(); y++)
 		{
-			for (int z = 0; z < Width; z++)
+			for (int x = 0; x < Width; x++)
 			{
 				BLOCKTYPE Type;
 				NIBBLETYPE Meta;
@@ -266,9 +439,9 @@ static sOrientedPrefab OrientArea(const cBlockArea & a_Area, int a_DirX, int a_D
 				{
 					continue;
 				}
-				const int OffsetZ = z - CenterZ;
-				const int OutX = (a_DirX * x) + (-a_DirZ * OffsetZ);
-				const int OutZ = (a_DirZ * x) + (a_DirX * OffsetZ);
+				const int OffsetX = x - CenterX;
+				const int OutX = (a_DirX * z) + (-a_DirZ * OffsetX);
+				const int OutZ = (a_DirZ * z) + (a_DirX * OffsetX);
 				Out.SetRelBlockTypeMeta(OutX - MinX, y, OutZ - MinZ, Type, Meta);
 			}
 		}
@@ -280,192 +453,94 @@ static sOrientedPrefab OrientArea(const cBlockArea & a_Area, int a_DirX, int a_D
 
 
 
-/** Builds a bridge along the +X axis: a purpur floor with purpur railing and pillar posts. */
-static void BuildBridgeArea(cBlockArea & a_Area)
-{
-	const int Length = a_Area.GetSizeX();
-	const int Width = a_Area.GetSizeZ();
-	for (int x = 0; x < Length; x++)
-	{
-		for (int z = 0; z < Width; z++)
-		{
-			a_Area.SetRelBlockTypeMeta(x, 0, z, E_BLOCK_PURPUR_BLOCK, 0);
-			if ((z == 0) || (z == Width - 1))
-			{
-				a_Area.SetRelBlockTypeMeta(x, 1, z, E_BLOCK_PURPUR_BLOCK, 0);
-				a_Area.SetRelBlockTypeMeta(x, 2, z, E_BLOCK_PURPUR_PILLAR, 0);
-			}
-		}
-	}
-}
-
-
-
-
-
-static sOrientedPrefab MakeBridge(int a_DirX, int a_DirZ)
-{
-	cBlockArea Area;
-	Area.Create(END_CITY_BRIDGE_LENGTH, END_CITY_BRIDGE_HEIGHT, END_CITY_BRIDGE_WIDTH);
-	BuildBridgeArea(Area);
-	return OrientArea(Area, a_DirX, a_DirZ);
-}
-
-
-
-
-
-/** Builds the End ship along the +X axis: an obsidian-bottomed hull, a deck, a stern cabin and a mast. */
-static void BuildShipArea(cBlockArea & a_Area)
-{
-	const int Length = a_Area.GetSizeX();
-	const int Width = a_Area.GetSizeZ();
-
-	// Hull bottom, doubling as the treasure room floor:
-	for (int x = 0; x < Length; x++)
-	{
-		for (int z = 0; z < Width; z++)
-		{
-			a_Area.SetRelBlockTypeMeta(x, 0, z, E_BLOCK_OBSIDIAN, 0);
-		}
-	}
-
-	// Hull walls:
-	for (int y = 1; y < END_CITY_SHIP_DECK_Y; y++)
-	{
-		for (int x = 0; x < Length; x++)
-		{
-			for (int z = 0; z < Width; z++)
-			{
-				const bool IsPerimeter = (x == 0) || (z == 0) || (x == Length - 1) || (z == Width - 1);
-				if (!IsPerimeter)
-				{
-					continue;
-				}
-				a_Area.SetRelBlockTypeMeta(x, y, z, E_BLOCK_PURPUR_BLOCK, 0);
-			}
-		}
-	}
-
-	// Deck:
-	for (int x = 0; x < Length; x++)
-	{
-		for (int z = 0; z < Width; z++)
-		{
-			a_Area.SetRelBlockTypeMeta(x, END_CITY_SHIP_DECK_Y, z, E_BLOCK_PURPUR_BLOCK, 0);
-		}
-	}
-
-	// Magenta glass windows:
-	for (int x = 2; x < Length - 2; x += 3)
-	{
-		a_Area.SetRelBlockTypeMeta(x, 2, 0, E_BLOCK_STAINED_GLASS, E_META_STAINED_GLASS_MAGENTA);
-		a_Area.SetRelBlockTypeMeta(x, 2, Width - 1, E_BLOCK_STAINED_GLASS, E_META_STAINED_GLASS_MAGENTA);
-	}
-
-	// Stern cabin:
-	const int CabinMinX = Length - 6;
-	const int CabinMaxX = Length - 2;
-	const int CabinMinZ = 1;
-	const int CabinMaxZ = Width - 2;
-	for (int y = END_CITY_SHIP_DECK_Y + 1; y <= END_CITY_SHIP_DECK_Y + 4; y++)
-	{
-		for (int x = CabinMinX; x <= CabinMaxX; x++)
-		{
-			for (int z = CabinMinZ; z <= CabinMaxZ; z++)
-			{
-				const bool IsPerimeter = (x == CabinMinX) || (x == CabinMaxX) || (z == CabinMinZ) || (z == CabinMaxZ);
-				if (!IsPerimeter)
-				{
-					continue;
-				}
-				a_Area.SetRelBlockTypeMeta(x, y, z, E_BLOCK_PURPUR_BLOCK, 0);
-			}
-		}
-	}
-	for (int x = CabinMinX; x <= CabinMaxX; x++)
-	{
-		for (int z = CabinMinZ; z <= CabinMaxZ; z++)
-		{
-			a_Area.SetRelBlockTypeMeta(x, END_CITY_SHIP_DECK_Y + 5, z, E_BLOCK_PURPUR_BLOCK, 0);
-		}
-	}
-	a_Area.SetRelBlockTypeMeta(CabinMinX, END_CITY_SHIP_DECK_Y + 1, (CabinMinZ + CabinMaxZ) / 2, E_BLOCK_AIR, 0);
-
-	// Mast and bow dragon head:
-	for (int y = END_CITY_SHIP_DECK_Y + 1; y <= END_CITY_SHIP_MAST_TOP; y++)
-	{
-		a_Area.SetRelBlockTypeMeta(Length / 2, y, Width / 2, E_BLOCK_PURPUR_BLOCK, 0);
-	}
-	a_Area.SetRelBlockTypeMeta(0, END_CITY_SHIP_DECK_Y + 1, Width / 2, E_BLOCK_HEAD, E_META_HEAD_DRAGON);
-}
-
-
-
-
-
-static sOrientedPrefab MakeShip(int a_DirX, int a_DirZ)
-{
-	cBlockArea Area;
-	Area.Create(21, END_CITY_SHIP_MAST_TOP + 1, 9);
-	BuildShipArea(Area);
-	return OrientArea(Area, a_DirX, a_DirZ);
-}
-
-
-
-
-
-/** Holds one prefab for every End City room type. Built once, then shared read-only by all cities. */
+/** Holds one prefab for every End City piece used by the generator. */
 class cEndCityPieces
 {
 public:
 
 	cEndCityPieces()
 	{
-		// Base floors, each wider than the one below it:
-		m_BaseFloor[0] = MakeRoom(9, 4, true, true, false);
-		m_BaseFloor[1] = MakeRoom(11, 4, true, true, false);
-		m_BaseFloor[2] = MakeRoom(13, 4, true, true, false);
-		for (int i = 0; i < 3; i++)
+		m_EmptyRoom = MakePrefab("EmptyRoom");
+		m_BaseRoom = MakePrefab("BaseRoom");
+		m_SmallTowerBase = MakePrefab("SmallTowerBase");
+		m_SmallTowerExtension = MakePrefab("SmallTowerExtension");
+		m_LargeTower = MakePrefab("LargeTower");
+		m_SmallRoom = MakePrefab("SmallRoom");
+		m_LootRoom = MakePrefab("LootRoom");
+		m_LargeRoomTwoStorey = MakePrefab("LargeRoomTwoStorey");
+		m_LargeRoomThreeStorey = MakePrefab("LargeRoomThreeStorey");
+
+		// Extend the bottom piece down to the terrain so that slopes do not leave a gap:
+		if (m_EmptyRoom != nullptr)
 		{
-			m_BaseFloor[i]->SetExtendFloorStrategy(cPrefab::efsRepeatBottomTillSolid);
+			m_EmptyRoom->SetExtendFloorStrategy(cPrefab::efsRepeatBottomTillSolid);
+		}
+		else if (m_BaseRoom != nullptr)
+		{
+			m_BaseRoom->SetExtendFloorStrategy(cPrefab::efsRepeatBottomTillSolid);
 		}
 
-		m_Roof = MakeRoom(13, 0, false, false, true);
-
-		// The two tower types and their top sections:
-		m_SmallTowerBase = MakeRoom(END_CITY_SMALL_TOWER_SIZE, 4, true, false, false);
-		m_SmallTowerPiece = MakeRoom(END_CITY_SMALL_TOWER_SIZE, 4, false, false, false);
-		m_SmallTowerTop = MakeRoom(END_CITY_SMALL_TOWER_SIZE, 4, false, true, true);
-		m_FatTowerBase = MakeRoom(END_CITY_FAT_TOWER_SIZE, 5, true, false, false);
-		m_FatTowerMiddle = MakeRoom(END_CITY_FAT_TOWER_SIZE, 5, false, true, false);
-		m_FatTowerTop = MakeRoom(END_CITY_FAT_TOWER_SIZE, 5, false, true, true);
-
-		// One orientation variant per horizontal direction:
+		// The bridge and the ship are authored along +Z, so build one orientation per direction:
+		const sEndCityBlueprint * BridgeBlueprint = FindBlueprint("Bridge");
+		const sEndCityBlueprint * ShipBlueprint = FindBlueprint("Ship");
+		auto BridgeArea = (BridgeBlueprint != nullptr) ? MakeBlueprintArea(*BridgeBlueprint) : nullptr;
+		auto ShipArea = (ShipBlueprint != nullptr) ? MakeBlueprintArea(*ShipBlueprint) : nullptr;
 		for (int i = 0; i < END_CITY_DIR_COUNT; i++)
 		{
-			m_Bridge[i] = MakeBridge(END_CITY_DIR_X[i], END_CITY_DIR_Z[i]);
-			m_Ship[i] = MakeShip(END_CITY_DIR_X[i], END_CITY_DIR_Z[i]);
+			if (BridgeArea != nullptr)
+			{
+				m_Bridge[i] = OrientAreaZ(*BridgeArea, END_CITY_DIR_X[i], END_CITY_DIR_Z[i]);
+			}
+			if (ShipArea != nullptr)
+			{
+				m_Ship[i] = OrientAreaZ(*ShipArea, END_CITY_DIR_X[i], END_CITY_DIR_Z[i]);
+			}
 		}
 	}
 
-	/** The three stacked base floors, from the narrowest to the widest. */
-	std::unique_ptr<cPrefab> m_BaseFloor[3];
-
-	/** The roof that caps the base floors and carries the tower. */
-	std::unique_ptr<cPrefab> m_Roof;
-
+	std::unique_ptr<cPrefab> m_EmptyRoom;
+	std::unique_ptr<cPrefab> m_BaseRoom;
 	std::unique_ptr<cPrefab> m_SmallTowerBase;
-	std::unique_ptr<cPrefab> m_SmallTowerPiece;
-	std::unique_ptr<cPrefab> m_SmallTowerTop;
-	std::unique_ptr<cPrefab> m_FatTowerBase;
-	std::unique_ptr<cPrefab> m_FatTowerMiddle;
-	std::unique_ptr<cPrefab> m_FatTowerTop;
+	std::unique_ptr<cPrefab> m_SmallTowerExtension;
+	std::unique_ptr<cPrefab> m_LargeTower;
+	std::unique_ptr<cPrefab> m_SmallRoom;
+	std::unique_ptr<cPrefab> m_LootRoom;
+	std::unique_ptr<cPrefab> m_LargeRoomTwoStorey;
+	std::unique_ptr<cPrefab> m_LargeRoomThreeStorey;
 
-	/** Bridge and ship prefabs, one per horizontal direction. */
 	sOrientedPrefab m_Bridge[END_CITY_DIR_COUNT];
 	sOrientedPrefab m_Ship[END_CITY_DIR_COUNT];
+
+protected:
+
+	/** Returns the blueprint with the specified logical name, or nullptr. */
+	static const sEndCityBlueprint * FindBlueprint(const AString & a_Name)
+	{
+		for (int i = 0; i < g_NumEndCityBlueprints; i++)
+		{
+			if (a_Name == g_EndCityBlueprints[i].m_Name)
+			{
+				return &g_EndCityBlueprints[i];
+			}
+		}
+		return nullptr;
+	}
+
+	/** Builds a prefab from the named blueprint, or nullptr if it is missing or empty. */
+	static std::unique_ptr<cPrefab> MakePrefab(const AString & a_Name)
+	{
+		const sEndCityBlueprint * Blueprint = FindBlueprint(a_Name);
+		if (Blueprint == nullptr)
+		{
+			return nullptr;
+		}
+		auto Area = MakeBlueprintArea(*Blueprint);
+		if (Area == nullptr)
+		{
+			return nullptr;
+		}
+		return std::make_unique<cPrefab>(*Area);
+	}
 } ;
 
 
@@ -555,35 +630,66 @@ protected:
 		const cEndCityPieces & P = GetEndCityPieces();
 		std::minstd_rand Rng(MakeCellSeed(a_Seed, m_GridX + END_CITY_SEED_OFFSET_X, m_GridZ + END_CITY_SEED_OFFSET_Z));
 
-		// Stack the three base floors, then cap them with the roof:
+		// The entrance and the base room:
 		int Y = BaseY;
-		for (int i = 0; i < 3; i++)
+		if (P.m_EmptyRoom != nullptr)
 		{
-			AddCentered(P.m_BaseFloor[i].get(), m_OriginX, Y, m_OriginZ);
-			Y += PrefabSize(*P.m_BaseFloor[i]).y;
+			AddCentered(P.m_EmptyRoom.get(), m_OriginX, Y, m_OriginZ);
+			Y += PrefabSize(*P.m_EmptyRoom).y;
 		}
-		AddCentered(P.m_Roof.get(), m_OriginX, Y, m_OriginZ);
-		Y += PrefabSize(*P.m_Roof).y;
+		if (P.m_BaseRoom != nullptr)
+		{
+			AddCentered(P.m_BaseRoom.get(), m_OriginX, Y, m_OriginZ);
+			Y += PrefabSize(*P.m_BaseRoom).y;
+		}
 
 		// Choose and stack a tower:
 		const bool Fat = ((Rng() % 2) == 0);
-		const int TowerMidY = Y;
-		const int TowerSize = Fat ? END_CITY_FAT_TOWER_SIZE : END_CITY_SMALL_TOWER_SIZE;
-		const cPrefab * TowerBase = Fat ? P.m_FatTowerBase.get() : P.m_SmallTowerBase.get();
-		const cPrefab * TowerMiddle = Fat ? P.m_FatTowerMiddle.get() : P.m_SmallTowerPiece.get();
-		const cPrefab * TowerTop = Fat ? P.m_FatTowerTop.get() : P.m_SmallTowerTop.get();
-		AddCentered(TowerBase, m_OriginX, Y, m_OriginZ);
-		Y += PrefabSize(*TowerBase).y;
-		const int MiddleCount = END_CITY_TOWER_MIN_MIDDLE + static_cast<int>(Rng() % END_CITY_TOWER_EXTRA_MIDDLE);
-		for (int i = 0; i < MiddleCount; i++)
+		const int TowerBaseY = Y;
+		if (Fat && (P.m_LargeTower != nullptr))
 		{
-			AddCentered(TowerMiddle, m_OriginX, Y, m_OriginZ);
-			Y += PrefabSize(*TowerMiddle).y;
+			const int Repeats = END_CITY_TOWER_MIN_MIDDLE + static_cast<int>(Rng() % END_CITY_TOWER_EXTRA_MIDDLE);
+			for (int i = 0; i < Repeats; i++)
+			{
+				AddCentered(P.m_LargeTower.get(), m_OriginX, Y, m_OriginZ);
+				Y += PrefabSize(*P.m_LargeTower).y;
+			}
+
+			// Cap the fat tower with its loot room:
+			if (P.m_LootRoom != nullptr)
+			{
+				AddCentered(P.m_LootRoom.get(), m_OriginX, Y, m_OriginZ);
+				Y += PrefabSize(*P.m_LootRoom).y;
+			}
 		}
-		AddCentered(TowerTop, m_OriginX, Y, m_OriginZ);
+		else if (!Fat && (P.m_SmallTowerBase != nullptr))
+		{
+			// The small tower base starts with a ladder shaft, let it descend into the room below:
+			AddCentered(P.m_SmallTowerBase.get(), m_OriginX, Y - END_CITY_SMALL_TOWER_LADDER_DEPTH, m_OriginZ);
+			Y = Y - END_CITY_SMALL_TOWER_LADDER_DEPTH + PrefabSize(*P.m_SmallTowerBase).y;
+			const int Repeats = END_CITY_TOWER_MIN_MIDDLE + static_cast<int>(Rng() % END_CITY_TOWER_EXTRA_MIDDLE);
+			for (int i = 0; i < Repeats; i++)
+			{
+				if (P.m_SmallTowerExtension == nullptr)
+				{
+					break;
+				}
+				AddCentered(P.m_SmallTowerExtension.get(), m_OriginX, Y, m_OriginZ);
+				Y += PrefabSize(*P.m_SmallTowerExtension).y;
+			}
+
+			// Cap the small tower with a small room:
+			if (P.m_SmallRoom != nullptr)
+			{
+				AddCentered(P.m_SmallRoom.get(), m_OriginX, Y, m_OriginZ);
+				Y += PrefabSize(*P.m_SmallRoom).y;
+			}
+		}
 
 		// Branch each tower side into a bridge, at most one of which carries a ship:
+		const int TowerSize = (Fat ? PrefabSize(*P.m_LargeTower).x : PrefabSize(*P.m_SmallTowerBase).x);
 		const int Half = TowerSize / 2;
+		const int BridgeY = TowerBaseY;
 		bool ShipPlaced = false;
 		for (int Dir = 0; Dir < END_CITY_DIR_COUNT; Dir++)
 		{
@@ -591,25 +697,33 @@ protected:
 			{
 				continue;
 			}
-			const int DirX = END_CITY_DIR_X[Dir];
-			const int DirZ = END_CITY_DIR_Z[Dir];
 			const sOrientedPrefab & Bridge = P.m_Bridge[Dir];
-			const Vector3i Edge(m_OriginX + (DirX * Half), TowerMidY, m_OriginZ + (DirZ * Half));
-			const Vector3i BridgePos(Edge.x + Bridge.m_MinOffset.x, TowerMidY, Edge.z + Bridge.m_MinOffset.z);
-			Add(Bridge.m_Prefab.get(), BridgePos);
-
-			if (ShipPlaced || ((Rng() % END_CITY_SHIP_DENOMINATOR) != 0))
+			if (Bridge.m_Prefab == nullptr)
 			{
 				continue;
 			}
+			const int DirX = END_CITY_DIR_X[Dir];
+			const int DirZ = END_CITY_DIR_Z[Dir];
+			const int SegmentCount = END_CITY_BRIDGE_MIN_SEGMENTS + static_cast<int>(Rng() % END_CITY_BRIDGE_EXTRA_SEGMENTS);
+			const Vector3i BridgeSize = PrefabSize(*Bridge.m_Prefab);
+			const int SegmentLength = (DirX != 0) ? BridgeSize.x : BridgeSize.z;
+
+			Vector3i Edge(m_OriginX + (DirX * Half), BridgeY, m_OriginZ + (DirZ * Half));
+			for (int Segment = 0; Segment < SegmentCount; Segment++)
+			{
+				const Vector3i BridgePos(Edge.x + Bridge.m_MinOffset.x, BridgeY, Edge.z + Bridge.m_MinOffset.z);
+				Add(Bridge.m_Prefab.get(), BridgePos);
+				Edge.x += DirX * SegmentLength;
+				Edge.z += DirZ * SegmentLength;
+			}
+
+			// Ship at the far end of the bridge:
 			const sOrientedPrefab & Ship = P.m_Ship[Dir];
-			const Vector3i BridgeFar(
-				Edge.x + (DirX * (END_CITY_BRIDGE_LENGTH - 1)),
-				TowerMidY,
-				Edge.z + (DirZ * (END_CITY_BRIDGE_LENGTH - 1))
-			);
-			const Vector3i ShipEdge(BridgeFar.x + DirX, TowerMidY, BridgeFar.z + DirZ);
-			const Vector3i ShipPos(ShipEdge.x + Ship.m_MinOffset.x, TowerMidY, ShipEdge.z + Ship.m_MinOffset.z);
+			if (ShipPlaced || (Ship.m_Prefab == nullptr) || ((Rng() % END_CITY_SHIP_DENOMINATOR) != 0))
+			{
+				continue;
+			}
+			const Vector3i ShipPos(Edge.x + Ship.m_MinOffset.x, BridgeY, Edge.z + Ship.m_MinOffset.z);
 			Add(Ship.m_Prefab.get(), ShipPos);
 			ShipPlaced = true;
 		}
