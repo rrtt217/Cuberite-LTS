@@ -19,6 +19,9 @@ target_sources(
 	BlockCarpet.h
 	BlockCauldron.h
 	BlockChest.h
+	BlockChorusFlower.h
+	BlockChorusPlant.h
+	ChorusRules.h
 	BlockCloth.h
 	BlockCobWeb.h
 	BlockCocoaPod.h
