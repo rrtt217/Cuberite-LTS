@@ -9,6 +9,9 @@
 #include "Prefab.h"
 #include "../BlockInfo.h"
 #include "../StringUtils.h"
+#include "EndCityLoot.h"
+#include "../BlockEntities/ChestEntity.h"
+#include "../Entities/ItemFrame.h"
 
 #include <algorithm>
 #include <memory>
@@ -68,6 +71,8 @@ static constexpr int END_CITY_STACK_MIN_PERCENT = 3;
 /** The number of horizontal directions a tower can branch into. */
 static constexpr int END_CITY_DIR_COUNT = 4;
 
+
+
 /** The horizontal direction vectors used for branches. */
 static const int END_CITY_DIR_X[END_CITY_DIR_COUNT] = {1, 0, -1, 0};
 static const int END_CITY_DIR_Z[END_CITY_DIR_COUNT] = {0, 1, 0, -1};
@@ -98,6 +103,34 @@ static constexpr NIBBLETYPE END_CITY_SLAB_TOP = 8;
 
 
 
+/** A generated entity marker (for example the ship's item frame) in a prefab's local coordinates. */
+struct sEntityMarker
+{
+	/** The cell the entity occupies. */
+	Vector3i m_Pos;
+
+	/** The support block face the entity hangs on. */
+	eBlockFace m_Face;
+} ;
+
+
+
+
+
+/** A generated mob head (for example the ship's dragon head) in a prefab's local coordinates. */
+struct sMobHeadMarker
+{
+	/** The cell the head occupies. */
+	Vector3i m_Pos;
+
+	/** The direction the head faces. */
+	eMobHeadRotation m_Rotation;
+} ;
+
+
+
+
+
 /** A prefab together with the oriented coordinate of its minimum corner.
 Used when a blueprint built along the +Z axis is rotated into an arbitrary horizontal direction. */
 struct sOrientedPrefab
@@ -107,6 +140,18 @@ struct sOrientedPrefab
 
 	/** The oriented coordinate that ends up at the prefab's minimum corner. */
 	Vector3i m_MinOffset;
+
+	/** Offsets of the loot chests, relative to the prefab's minimum corner. */
+	std::vector<Vector3i> m_Chests;
+
+	/** Item frame markers, relative to the prefab's minimum corner. */
+	std::vector<sEntityMarker> m_ItemFrames;
+
+	/** Offsets of the brewing stands, relative to the prefab's minimum corner. */
+	std::vector<Vector3i> m_BrewingStands;
+
+	/** Mob head markers, relative to the prefab's minimum corner. */
+	std::vector<sMobHeadMarker> m_MobHeads;
 } ;
 
 
@@ -129,6 +174,56 @@ static UInt32 MakeCellSeed(int a_Seed, int a_CellX, int a_CellZ)
 static Vector3i PrefabSize(const cPrefab & a_Prefab)
 {
 	return static_cast<const cPiece &>(a_Prefab).GetSize();
+}
+
+
+
+
+
+/** Returns true if the world XZ coordinates are inside the chunk with the specified minimum corner. */
+static bool IsInChunk(const Vector3i & a_Pos, int a_ChunkMinX, int a_ChunkMinZ)
+{
+	const int RelX = a_Pos.x - a_ChunkMinX;
+	const int RelZ = a_Pos.z - a_ChunkMinZ;
+	return (RelX >= 0) && (RelX < cChunkDef::Width) && (RelZ >= 0) && (RelZ < cChunkDef::Width);
+}
+
+
+
+
+
+/** The special-content filler installed by the loot module. When it is absent (for example in the
+test build, which does not link the item or entity systems) generated chests are left empty and no
+entities are spawned. */
+static EndCityContentsFiller g_EndCityContentsFiller = nullptr;
+
+void SetEndCityContentsFiller(EndCityContentsFiller a_Filler)
+{
+	g_EndCityContentsFiller = a_Filler;
+}
+
+
+
+
+
+/** Returns the offsets, relative to the area's minimum corner, of the blocks of the specified type. */
+static std::vector<Vector3i> CollectBlocks(const cBlockArea & a_Area, BLOCKTYPE a_Type)
+{
+	std::vector<Vector3i> Positions;
+	for (int y = 0; y < a_Area.GetSizeY(); y++)
+	{
+		for (int z = 0; z < a_Area.GetSizeZ(); z++)
+		{
+			for (int x = 0; x < a_Area.GetSizeX(); x++)
+			{
+				if (a_Area.GetRelBlockType(x, y, z) == a_Type)
+				{
+					Positions.push_back(Vector3i(x, y, z));
+				}
+			}
+		}
+	}
+	return Positions;
 }
 
 
@@ -174,7 +269,15 @@ static bool ResolveBlock(const AString & a_Name, BLOCKTYPE & a_Type, NIBBLETYPE 
 	a_Type = E_BLOCK_AIR;
 	a_Meta = 0;
 
-	// Entity sprites and the wool reference markers are not blocks:
+	// The ship's item frame becomes a placeholder block so that the prefab builders can pass its
+	// position and facing through the crop, rotation and orientation:
+	if (a_Name == "EntitySprite:Item Frame")
+	{
+		a_Type = E_BLOCK_BEDROCK;
+		return true;
+	}
+
+	// Other entity sprites and the wool reference markers are not blocks:
 	if (
 		(a_Name.compare(0, 13, "EntitySprite:") == 0) ||
 		(a_Name.find("Wool") != AString::npos)
@@ -261,11 +364,13 @@ static bool ResolveBlock(const AString & a_Name, BLOCKTYPE & a_Type, NIBBLETYPE 
 	if (Name == "Chest")
 	{
 		a_Type = E_BLOCK_CHEST;
+		a_Meta = E_META_CHEST_FACING_ZM;
 		return true;
 	}
 	if (Name == "Ender Chest")
 	{
 		a_Type = E_BLOCK_ENDER_CHEST;
+		a_Meta = E_META_CHEST_FACING_ZM;
 		return true;
 	}
 	if (Name == "Brewing Stand")
@@ -449,6 +554,41 @@ static std::unique_ptr<cBlockArea> MakeBlueprintArea(const sEndCityBlueprint & a
 		}
 	}
 
+	// Chests need a valid facing meta (2 to 5); the blueprints do not store one, so face the chest
+	// away from an adjacent solid block, defaulting to north:
+	for (int y = 0; y < a_Blueprint.m_Height; y++)
+	{
+		for (int z = 0; z < a_Blueprint.m_SizeZ; z++)
+		{
+			for (int x = 0; x < a_Blueprint.m_SizeX; x++)
+			{
+				const BLOCKTYPE Type = Area->GetRelBlockType(x, y, z);
+				if ((Type != E_BLOCK_CHEST) && (Type != E_BLOCK_ENDER_CHEST))
+				{
+					continue;
+				}
+				NIBBLETYPE Facing = E_META_CHEST_FACING_ZM;
+				if ((x > 0) && (Area->GetRelBlockType(x - 1, y, z) != E_BLOCK_AIR))
+				{
+					Facing = E_META_CHEST_FACING_XP;
+				}
+				else if ((x < a_Blueprint.m_SizeX - 1) && (Area->GetRelBlockType(x + 1, y, z) != E_BLOCK_AIR))
+				{
+					Facing = E_META_CHEST_FACING_XM;
+				}
+				else if ((z < a_Blueprint.m_SizeZ - 1) && (Area->GetRelBlockType(x, y, z + 1) != E_BLOCK_AIR))
+				{
+					Facing = E_META_CHEST_FACING_ZM;
+				}
+				else if ((z > 0) && (Area->GetRelBlockType(x, y, z - 1) != E_BLOCK_AIR))
+				{
+					Facing = E_META_CHEST_FACING_ZP;
+				}
+				Area->SetRelBlockTypeMeta(x, y, z, Type, Facing);
+			}
+		}
+	}
+
 	if (!CropToContent(*Area))
 	{
 		return nullptr;
@@ -502,9 +642,67 @@ static sOrientedPrefab OrientAreaZ(const cBlockArea & a_Area, int a_DirX, int a_
 	{
 		Out.RotateCCW();
 	}
+
+	// The ship's item frame marker is a placeholder block; record it and remove the placeholder:
+	std::vector<sEntityMarker> ItemFrames;
+	for (int y = 0; y < Out.GetSizeY(); y++)
+	{
+		for (int z = 0; z < Out.GetSizeZ(); z++)
+		{
+			for (int x = 0; x < Out.GetSizeX(); x++)
+			{
+				if (Out.GetRelBlockType(x, y, z) != E_BLOCK_BEDROCK)
+				{
+					continue;
+				}
+				// The frame hangs on an adjacent solid block, so face away from it:
+				eBlockFace Face = BLOCK_FACE_ZP;
+				if ((x > 0) && (Out.GetRelBlockType(x - 1, y, z) != E_BLOCK_AIR))
+				{
+					Face = BLOCK_FACE_XP;
+				}
+				else if ((x < Out.GetSizeX() - 1) && (Out.GetRelBlockType(x + 1, y, z) != E_BLOCK_AIR))
+				{
+					Face = BLOCK_FACE_XM;
+				}
+				else if ((z > 0) && (Out.GetRelBlockType(x, y, z - 1) != E_BLOCK_AIR))
+				{
+					Face = BLOCK_FACE_ZP;
+				}
+				else if ((z < Out.GetSizeZ() - 1) && (Out.GetRelBlockType(x, y, z + 1) != E_BLOCK_AIR))
+				{
+					Face = BLOCK_FACE_ZM;
+				}
+				ItemFrames.push_back({Vector3i(x, y, z), Face});
+				Out.SetRelBlockType(x, y, z, E_BLOCK_AIR);
+			}
+		}
+	}
+
+	// The ship's dragon head points away from the ship; the base blueprint has it facing -Z, so
+	// rotate its facing with the ship:
+	eMobHeadRotation HeadRotation = SKULL_ROTATION_NORTH;
+	if (a_DirX > 0)
+	{
+		HeadRotation = SKULL_ROTATION_WEST;
+	}
+	else if (a_DirX < 0)
+	{
+		HeadRotation = SKULL_ROTATION_EAST;
+	}
+	else if (a_DirZ < 0)
+	{
+		HeadRotation = SKULL_ROTATION_SOUTH;
+	}
+	std::vector<sMobHeadMarker> MobHeads;
+	for (const auto & HeadPos: CollectBlocks(Out, E_BLOCK_HEAD))
+	{
+		MobHeads.push_back({HeadPos, HeadRotation});
+	}
+
 	auto Prefab = std::make_unique<cPrefab>(Out);
 	Prefab->SetMergeStrategy(cBlockArea::msImprint);
-	return { std::move(Prefab), Vector3i(-NearX, 0, -NearZ) };
+	return { std::move(Prefab), Vector3i(-NearX, 0, -NearZ), CollectBlocks(Out, E_BLOCK_CHEST), ItemFrames, CollectBlocks(Out, E_BLOCK_BREWING_STAND), MobHeads };
 }
 
 
@@ -523,6 +721,9 @@ struct sRotatedPrefab
 	/** The doorway centre in the prefab's local X and Z coordinates. */
 	int m_DoorX = 0;
 	int m_DoorZ = 0;
+
+	/** Offsets of the loot chests, relative to the prefab's minimum corner. */
+	std::vector<Vector3i> m_Chests;
 } ;
 
 
@@ -686,6 +887,7 @@ public:
 		m_TowerTop = MakePrefab("TowerTop");
 		m_FatTower = MakePrefab("FatTower");
 		m_FatTowerTop = MakePrefab("FatTowerTop");
+		m_FatTowerTopChests = ChestsOf("FatTowerTop");
 		MakeRotatedPrefabs("EmptyRoom", m_EmptyRoom);
 		MakeRotatedPrefabs("LootRoom1", m_LootRoom1);
 		MakeRotatedPrefabs("LootRoom2", m_LootRoom2);
@@ -715,6 +917,7 @@ public:
 	std::unique_ptr<cPrefab> m_TowerTop;
 	std::unique_ptr<cPrefab> m_FatTower;
 	std::unique_ptr<cPrefab> m_FatTowerTop;
+	std::vector<Vector3i> m_FatTowerTopChests;
 	sRotatedPrefab m_EmptyRoom[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_LootRoom1[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_LootRoom2[END_CITY_DIR_COUNT];
@@ -758,6 +961,26 @@ protected:
 		{
 			a_Out[i] = OrientAreaZ(*Area, END_CITY_DIR_X[i], END_CITY_DIR_Z[i]);
 		}
+	}
+
+
+
+
+
+	/** Returns the loot-chest offsets of the named blueprint, relative to its minimum corner. */
+	static std::vector<Vector3i> ChestsOf(const AString & a_Name)
+	{
+		const sEndCityBlueprint * Blueprint = FindBlueprint(a_Name);
+		if (Blueprint == nullptr)
+		{
+			return {};
+		}
+		auto Area = MakeBlueprintArea(*Blueprint);
+		if (Area == nullptr)
+		{
+			return {};
+		}
+		return CollectBlocks(*Area, E_BLOCK_CHEST);
 	}
 
 
@@ -809,6 +1032,7 @@ protected:
 				Rotated->RotateCCW();
 			}
 			a_Out[r].m_DoorwaySide = DoorwaySide(*Rotated, a_Out[r].m_DoorX, a_Out[r].m_DoorZ);
+			a_Out[r].m_Chests = CollectBlocks(*Rotated, E_BLOCK_CHEST);
 			auto Prefab = std::make_unique<cPrefab>(*Rotated);
 			Prefab->SetMergeStrategy(cBlockArea::msImprint);
 			a_Out[r].m_Prefab = std::move(Prefab);
@@ -869,10 +1093,52 @@ public:
 				{
 					for (int x = MinX; x <= MaxX; x++)
 					{
-						a_Chunk.SetBlockTypeMeta(x - ChunkMinX, y, z - ChunkMinZ, E_BLOCK_AIR, 0);
+					a_Chunk.SetBlockTypeMeta(x - ChunkMinX, y, z - ChunkMinZ, E_BLOCK_AIR, 0);
 					}
 				}
 			}
+		}
+
+		// Hand this chunk's special contents (chests, brewing stands, item frames) to the filler:
+		if (g_EndCityContentsFiller != nullptr)
+		{
+			std::vector<sEndCityContent> Contents;
+			for (const auto & Piece: m_Pieces)
+			{
+				for (const auto & Chest: Piece.m_Chests)
+				{
+					const Vector3i World = Piece.m_Pos + Chest;
+					if (IsInChunk(World, ChunkMinX, ChunkMinZ))
+					{
+						Contents.push_back({ecctChest, World, BLOCK_FACE_NONE, 0});
+					}
+				}
+				for (const auto & Stand: Piece.m_BrewingStands)
+				{
+					const Vector3i World = Piece.m_Pos + Stand;
+					if (IsInChunk(World, ChunkMinX, ChunkMinZ))
+					{
+						Contents.push_back({ecctBrewingStand, World, BLOCK_FACE_NONE, 0});
+					}
+				}
+				for (const auto & Frame: Piece.m_ItemFrames)
+				{
+					const Vector3i World = Piece.m_Pos + Frame.m_Pos;
+					if (IsInChunk(World, ChunkMinX, ChunkMinZ))
+					{
+						Contents.push_back({ecctItemFrame, World, Frame.m_Face, 0});
+					}
+				}
+				for (const auto & Head: Piece.m_MobHeads)
+				{
+					const Vector3i World = Piece.m_Pos + Head.m_Pos;
+					if (IsInChunk(World, ChunkMinX, ChunkMinZ))
+					{
+						Contents.push_back({ecctMobHead, World, BLOCK_FACE_NONE, static_cast<int>(Head.m_Rotation)});
+					}
+				}
+			}
+			g_EndCityContentsFiller(a_Chunk, Contents);
 		}
 	}
 
@@ -883,6 +1149,10 @@ protected:
 	{
 		const cPrefab * m_Prefab;
 		Vector3i m_Pos;
+		std::vector<Vector3i> m_Chests;
+		std::vector<Vector3i> m_BrewingStands;
+		std::vector<sEntityMarker> m_ItemFrames;
+		std::vector<sMobHeadMarker> m_MobHeads;
 	} ;
 
 	/** An axis-aligned box that is cleared to air after the pieces are drawn, to open doorways. */
@@ -910,17 +1180,17 @@ protected:
 	}
 
 
-	/** Adds a piece at the specified minimum-corner coordinates. */
-	void Add(const cPrefab * a_Prefab, const Vector3i & a_Pos)
+	/** Adds a piece at the specified minimum-corner coordinates, tracking its loot chests and entity markers. */
+	void Add(const cPrefab * a_Prefab, const Vector3i & a_Pos, const std::vector<Vector3i> & a_Chests = {}, const std::vector<Vector3i> & a_BrewingStands = {}, const std::vector<sEntityMarker> & a_ItemFrames = {}, const std::vector<sMobHeadMarker> & a_MobHeads = {})
 	{
-		m_Pieces.push_back({a_Prefab, a_Pos});
+		m_Pieces.push_back({a_Prefab, a_Pos, a_Chests, a_BrewingStands, a_ItemFrames, a_MobHeads});
 	}
 
-	/** Adds a piece centered horizontally on the specified coordinates. */
-	void AddCentered(const cPrefab * a_Prefab, int a_CenterX, int a_Y, int a_CenterZ)
+	/** Adds a piece centered horizontally, tracking its loot chests and entity markers. */
+	void AddCentered(const cPrefab * a_Prefab, int a_CenterX, int a_Y, int a_CenterZ, const std::vector<Vector3i> & a_Chests = {}, const std::vector<Vector3i> & a_BrewingStands = {}, const std::vector<sEntityMarker> & a_ItemFrames = {}, const std::vector<sMobHeadMarker> & a_MobHeads = {})
 	{
 		const Vector3i Size = PrefabSize(*a_Prefab);
-		Add(a_Prefab, Vector3i(a_CenterX - (Size.x / 2), a_Y, a_CenterZ - (Size.z / 2)));
+		Add(a_Prefab, Vector3i(a_CenterX - (Size.x / 2), a_Y, a_CenterZ - (Size.z / 2)), a_Chests, a_BrewingStands, a_ItemFrames, a_MobHeads);
 	}
 
 	/** Builds the whole city layout, or leaves it empty if the location is not suitable. */
@@ -989,7 +1259,7 @@ protected:
 			// Cap the fat tower with its loot room:
 			if (P.m_FatTowerTop != nullptr)
 			{
-				AddCentered(P.m_FatTowerTop.get(), m_OriginX, Y, m_OriginZ);
+				AddCentered(P.m_FatTowerTop.get(), m_OriginX, Y, m_OriginZ, P.m_FatTowerTopChests);
 				Y += StackHeightForName("FatTowerTop");
 			}
 		}
@@ -1103,7 +1373,7 @@ protected:
 			const sOrientedPrefab & Ship = P.m_Ship[a_Dir];
 			if (!ShipPlaced && (Ship.m_Prefab != nullptr) && ((Rng() % END_CITY_SHIP_DENOMINATOR) == 0))
 			{
-				Add(Ship.m_Prefab.get(), Vector3i(Edge.x + Ship.m_MinOffset.x, Edge.y, Edge.z + Ship.m_MinOffset.z));
+				Add(Ship.m_Prefab.get(), Vector3i(Edge.x + Ship.m_MinOffset.x, Edge.y, Edge.z + Ship.m_MinOffset.z), Ship.m_Chests, Ship.m_BrewingStands, Ship.m_ItemFrames, Ship.m_MobHeads);
 				ShipPlaced = true;
 				return;
 			}
@@ -1161,7 +1431,7 @@ protected:
 				// the roof edge instead of at the opening:
 				const int PosX = Edge.x - DirX - Room->m_DoorX;
 				const int PosZ = Edge.z - DirZ - Room->m_DoorZ;
-				Add(Room->m_Prefab.get(), Vector3i(PosX, Edge.y, PosZ));
+				Add(Room->m_Prefab.get(), Vector3i(PosX, Edge.y, PosZ), Room->m_Chests);
 
 				// The room's centre, for a tower that may sit on its roof:
 				const Vector3i RoomSize = PrefabSize(*Room->m_Prefab);

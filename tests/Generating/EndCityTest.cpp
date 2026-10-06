@@ -128,6 +128,51 @@ static int countCityBlocks(cEndCityGen & a_Gen, int a_FromChunkX, int a_ToChunkX
 
 
 
+/** Verifies that every chest the city places has a valid facing meta (2 to 5); an invalid meta makes
+the chest invisible and removes its collision box on the client. */
+static void testChestMeta(void)
+{
+	LOG("Testing the End City chest facing...");
+
+	cTestHeightGen HeightGen(TEST_SURFACE_Y, 0);
+	int ChestCount = 0;
+	for (int seed = 1; seed <= 2; seed++)
+	{
+		cEndCityGen Gen(seed, HeightGen);
+		for (int chunkX = 55; chunkX <= 70; chunkX++)
+		{
+			for (int chunkZ = 55; chunkZ <= 70; chunkZ++)
+			{
+				cChunkDesc Chunk({chunkX, chunkZ});
+				Gen.GenFinish(Chunk);
+				for (int y = 0; y <= TEST_MAX_SCAN_Y; y++)
+				{
+					for (int z = 0; z < cChunkDef::Width; z++)
+					{
+						for (int x = 0; x < cChunkDef::Width; x++)
+						{
+							const BLOCKTYPE Type = Chunk.GetBlockType(x, y, z);
+							if ((Type != E_BLOCK_CHEST) && (Type != E_BLOCK_ENDER_CHEST))
+							{
+								continue;
+							}
+							const NIBBLETYPE Meta = Chunk.GetBlockMeta(x, y, z);
+							TEST_GREATER_THAN_OR_EQUAL(Meta, 2);
+							TEST_LESS_THAN_OR_EQUAL(Meta, 5);
+							ChestCount++;
+						}
+					}
+				}
+			}
+		}
+	}
+	TEST_GREATER_THAN_OR_EQUAL(ChestCount, 1);
+}
+
+
+
+
+
 /** Verifies the 20-chunk grid rule: every origin chunk lies in the [0 .. 8] range within its cell. */
 static void testGridOrigin(void)
 {
@@ -231,6 +276,7 @@ static void testDeterminism(void)
 IMPLEMENT_TEST_MAIN("EndCityTest",
 	testGridOrigin();
 	testGeneration();
+	testChestMeta();
 	testRejectedLocations();
 	testDeterminism();
 )
