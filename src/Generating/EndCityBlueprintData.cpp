@@ -8,8 +8,9 @@ The block layout of each piece comes from the Minecraft Wiki's layered blueprint
 stories (BaseFloor / SecondFloor / ThirdFloor / ThirdRoof) and TowerFloor is derived by solidifying
 the lowest layer of TowerPiece, following the piece names and roles listed at
 https://minecraft.wiki/w/End_City#Structure_details (tower_floor: "similar to tower_base, but the
-ladder entrance is replaced with a solid floor"). The wiki does not publish block layouts for the
-individual named pieces, so these are the closest allowed-source geometry.
+ladder entrance is replaced with a solid floor"). The bridge-end loot rooms use the wiki's one, two
+and three storey room blueprints. The wiki does not publish block layouts for the individual named
+pieces, so these are the closest allowed-source geometry.
 */
 
 #include "Globals.h"
@@ -147,7 +148,35 @@ static const sEndCityBlueprintLayer Layers_FatTowerTop[] =
 
 
 
-static const sEndCityBlueprintLayer Layers_LargeRoom[] =
+static const sEndCityBlueprintLayer Layers_EmptyRoom[] =
+{
+	{0, "            |            |  PPPPPPPP  | SPPPPPPPP  | PPPPPPPPP  | PPPPPPPPP  | PPPPPPPPP  | PPPPPPPPP  | SPPPPPPPP  |  PPPPPPPP  |            |            "},
+	{1, "            |            |  UEEEEEEU  |  E      E  |  E      E  |         E  |         E  |  E      E  |  E      E  |  UEEEEEEU  |            |            "},
+	{2, "            |            |  UEGEEGEU  |  E      E  | KE      G  |         E  |         E  | KE      G  |  E      E  |  UEGEEGEU  |            |            "},
+	{3, "            |            |  UEGEEGEU  |  E      E  |  E      G  |         E  |         E  |  E      G  |  E      E  |  UEGEEGEU  |            |            "},
+	{4, "SSSSSSSSSSSS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SSSSSSSSSSSS"},
+	{5, "            | D        D |            |            |            |            |            |            |            |            | D        D |            "},
+};
+
+
+
+
+
+static const sEndCityBlueprintLayer Layers_LootRoom1[] =
+{
+	{0, "   YYNNYYNNNYYNNYY  |   SSSSSSSSSSSSSSS  |  YSPPPPPPPPPPPPPSY |  NSPPPPPPPPPPPPPSN |  NSPPPPPL PPPPPPSN |  YSPPP    PPPPPPSY |  YSPPP    PPPPPPSY |  NSPP     PPPPPPSN |  NSPP         PPSN |  NSPPPPPP     PPSN |  YSPPPPPP    PPPSY |  YSPPPPPP    PPPSY |  NSPPPPPP LPPPPPSN |  NSPPPPPPPPPPPPPSN |  YSPPPPPPPPPPPPPSY |   SSSSSSSSSSSSSSS  |   YYNNYYNNNYYNNYY  |                    |                    "},
+	{1, "                    |   D             D  |    UEEEEEEEEEEEU   |    E    LPL    E   |    E           E   |    E           E   |    E           E   |    E      U    E   |    E           E   |    E    U      E   |    E           E   |    EC          E   |    E           E   |    E  C        E   |    UEEEEEEEEEEEU   |   D             D  |                    |                    |                    "},
+	{2, "                    |                    |    UEGEEGEEEEEEU   |    E      LPL  E   |    G           E   |    E           E   |    E           E   |    G      U    G   |    E           E   |    G    U      G   |    E           E   |    E           E   |    G           G   |    E           E   |    UEGEEGEGEEGEU   |                    |                    |                    |                    "},
+	{3, "                    |                    |    UEGEEGEEEEEEU   |    E        LPLE   |    G           E   |    E           E   |    E           E   |    G      U    G   |    E           E   |    G    U      G   |    E           E   |    E           E   |    G           G   |    E           E   |    UEGEEGEGEEGEU   |                    |                    |                    |                    "},
+	{4, "  YYNNYYNNYNNYYNNYY |  SSSSSSSSSSSSSSSSS | YSPPPPPPPPPPPPPPPSY| NSPPPPPPPPPPPPPPPSN| NSPPPPPPP     LPPSN| YSPPPPPPPPPPPPPPPSY| YSPPPPPPPPPPPPPPPSY| NSPPPPPPPPPPPPPPPSN| NSPPPPPPPPPPPPPPPSN| YSPPPPPPPPPPPPPPPSY| NSPPPPPPPPPPPPPPPSN| NSPPPPPPPPPPPPPPPSN| YSPPPPPPPPPPPPPPPSY| YSPPPPPPPPPPPPPPPSY| NSPPPPPPPPPPPPPPPSN| NSPPPPPPPPPPPPPPPSN| YSPPPPPPPPPPPPPPPSY|  SSSSSSSSSSSSSSSSS |  YYNNYYNNYNNYYNNYY "},
+	{5, "                    |                    |                    |         SSSSS      |         S          |         SSSSS      |                    |                    |                    |                    |                    |                    |                    |                    |                    |                    |                    |                    |                    "},
+};
+
+
+
+
+
+static const sEndCityBlueprintLayer Layers_LootRoom2[] =
 {
 	{0, "                              |                              |      SPPPPS                  |     PPPPPPPP                 |     PPPPPPPP                 |     PPPPPPPP                 |     PPPPPPPP                 |     PPPPPPPP                 |     PPPPPPPP                 |     PPPPPPPP                 |     PPPPPPPP                 |                              |                              |                              |                              |                              |                              |                              "},
 	{1, "                              |                              |                              |     UEE  EEU                 |     E      E                 |     E  L   E                 |     E  SP  E                 |     E  PP  E                 |     E      E                 |     E      E                 |     UEEEEEEU                 |                              |                              |                              |                              |                              |                              |                              "},
@@ -159,6 +188,28 @@ static const sEndCityBlueprintLayer Layers_LargeRoom[] =
 	{7, "                              |                              |    UEEEEEEEEU                |    E        E                |    ES   U   G                |    ES   A   E                |    E        E                |    E        E                |    E        E                |    G        G                |    E        E                |    UEGEEEEGEU                |                              |                              |                              |                              |                              |                              "},
 	{8, "  SSSSSSSSSSSSSS              |  SPPPPPPPPPPPPS              |  SPPPPPPPPPPPPS              |  SPPPPPPPPPPPPS              |  SPPPPPPPPPPPPS              |  SPPPPP   PPPPS              |  SPPPPP  LPPPPS              |  SPPPPP   PPPPS              |  SPPPPPPPPPPPPS              |  SPPPPPPPPPPPPS              |  SPPPPPPPPPPPPS              |  SPPPPPPPPPPPPS              |  SPPPPPPPPPPPPS              |  SSSSSSSSSSSSSS              |                              |                              |                              |                              "},
 	{9, "                              |   D          D               |                              |                              |                              |                              |                              |                              |                              |                              |                              |                              |   D          D               |                              |                              |                              |                              |                              "},
+};
+
+
+
+
+
+static const sEndCityBlueprintLayer Layers_LootRoom3[] =
+{
+	{0, "                               |                               |                               |      SPPPPS                   |     PPPPPPPP                  |     PPPPPPPP                  |     PPPPPPPP                  |     PPPPPPPP                  |     PPPPPPPP                  |     PPPPPPPP                  |     PPPPPPPP                  |     PPPPPPPP                  |                               |                               |                               |                               "},
+	{1, "                               |                               |                               |                               |     UEE  EEU                  |     E      E                  |     E  L   E                  |     E  SP  E                  |     E  PP  E                  |     E      E                  |     E      E                  |     UEEEEEEU                  |                               |                               |                               |                               "},
+	{2, "                               |                               |                               |                               |     UEE  EEU                  |     E      E                  |     G      G                  |     E   P  E                  |     E LSP  E                  |     G      G                  |     E      E                  |     UEGEEGEU                  |                               |                               |                               |                               "},
+	{3, "                               |                               |                               |                               |     UEE  EEU                  |     E      E                  |     G      G                  |     E   PL E                  |     E   S  E                  |     G   L  G                  |     E      E                  |     UEGEEGEU                  |                               |                               |                               |                               "},
+	{4, "                               |                               |   SSSS     SSS                |   SPPPPPPPPPPS                |   SPPPPPPPPPPS                |   SPP   PPPPPS                |   SPP      PPS                |   SPPLLLS  PPS                |   SPP      PPS                |   SPP      PPS                |   SPP      PPS                |   SPPPPPPPPPPS                |   SPPPPPPPPPPS                |   SSSSSSSSSSSS                |                               |                               "},
+	{5, "                               |                               |   D          D                |    UEEEEEEEEU                 |    E PPPP   E                 |    ES   PPS E                 |    ES       E                 |    E        E                 |    E        E                 |    E        E                 |    E        E                 |    E        E                 |    UEEEEEEEEU                 |   D          D                |                               |                               "},
+	{6, "                               |                               |                               |    UEEEEEEGEU                 |    E PPPP   E                 |    ES   PS  G                 |    ES       E                 |    E        E                 |    E        E                 |    E        E                 |    G        G                 |    E        E                 |    UEGEEEEGEU                 |                               |                               |                               "},
+	{7, "                               |                               |                               |    UEEEEEEGEU                 |    E PS     E                 |    ESL      G                 |    ESL      E                 |    E        E                 |    E        E                 |    E        E                 |    G        G                 |    E        E                 |    UEGEEEEGEU                 |                               |                               |                               "},
+	{8, "                               |  SSSSSSSSSSSSSS               |  SPPPPPPPPPPPPS               |  SPPPPPPPPPPPPS               |  SPPPS      PPS               |  SPP        PPS               |  SPP  PPPP  PPS               |  SPP        PPS               |  SPP        PPS               |  SPP        PPS               |  SPP   DD   PPS               |  SPP   PP   PPS               |  SPPPPPPPPPPPPS               |  SPPPPPPPPPPPPS               |  SSSSSSSSSSSSSS               |                               "},
+	{9, "                               |  D            D               |   UEEEEEEEEEEU                |   E          E                |   EP        PE                |   E          E                |   EP         E                |   E      U   E                |   EP     A   E                |   E          E                |   E          E                |   E          E                |   E    eC    E                |   UEEEEEEEEEEU                |  D            D               |                               "},
+	{10, "                               |                               |   UEGEGEEGEGEU                |   E          E                |   EP        PE                |   E          E                |   EPPP       E                |   E      U   E                |   EP     A   E                |   G          G                |   E          E                |   G          G                |   E          E                |   UEGEGEEGEGEU                |                               |                               "},
+	{11, "                               |                               |   UEGEGEEGEGEU                |   E          E                |   EP        PE                |   E          E                |   EP         E                |   E      U   E                |   EP     A   E                |   G          G                |   E          E                |   G          G                |   E          E                |   UEGEGEEGEGEU                |                               |                               "},
+	{12, " SSSSSSSSSSSSSSSS              | SPPPPPPPPPPPPPPS              | SPPPPPPPPPPPPPPS              | SPPPPPPPPPPPPPPS              | SPPPPPPPPPPPPPPS              | SPPPPPPPPPPPPPPS              | SPPPPPPPPPPPPPPS              | SPPPPPPPPPPPPPPS              | SPPPPPPP   PPPPS              | SPPPPPPP  LPPPPS              | SPPPPPPP   PPPPS              | SPPPPPPPPPPPPPPS              | SPPPPPPPPPPPPPPS              | SPPPPPPPPPPPPPPS              | SPPPPPPPPPPPPPPS              | SSSSSSSSSSSSSSSS              "},
+	{13, "                               |  D            D               |                               |                               |                               |                               |                               |                               |                               |                               |                               |                               |                               |                               |  D            D               |                               "},
 };
 
 
@@ -264,7 +315,10 @@ const sEndCityBlueprint g_EndCityBlueprints[] =
 	{"TowerTop", "P=Purpur Block|S=Purpur Stairs-rot180|s=Purpur Stairs|L=Purpur Slab|B=Magenta Wall Banner|D=End Rod|E=End Stone Bricks|U=Purpur Pillar@top|G=Magenta Stained Glass|H=EntitySprite:Shulker-rot180", 9, 9, 5, Layers_TowerTop},
 	{"FatTower", "P=Purpur Block|S=Purpur Stairs|L=Purpur Slab|D=End Rod|E=End Rod-rot90|d=End Rod-rot180|e=End Rod-rot270|U=Purpur Pillar@top|u=Purpur Pillar|p=Purpur Pillar@horizontal|H=EntitySprite:Shulker|K=EntitySprite:Shulker-rot90|h=EntitySprite:Shulker-rot180|k=EntitySprite:Shulker-rot270", 14, 13, 12, Layers_FatTower},
 	{"FatTowerTop", "P=Purpur Block|S=Purpur Stairs|L=Purpur Slab|Y=Green Wool|N=Red Wool|C=Chest|U=Purpur Pillar@top|G=Purple Stained Glass|E=End Stone Bricks|D=End Rod", 20, 19, 6, Layers_FatTowerTop},
-	{"LargeRoom", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|D=End Rod|A=Ladder", 30, 18, 10, Layers_LargeRoom},
+	{"EmptyRoom", "P=Purpur Block|U=Purpur Pillar@top|S=Purpur Stairs|E=End Stone Bricks|D=End Rod|G=Magenta Stained Glass|K=EntitySprite:Shulker-rot270", 12, 12, 6, Layers_EmptyRoom},
+	{"LootRoom1", "P=Purpur Block|S=Purpur Stairs|L=Purpur Slab|Y=Green Wool|N=Red Wool|C=Chest|U=Purpur Pillar@top|G=Purple Stained Glass|E=End Stone Bricks|D=End Rod", 20, 19, 6, Layers_LootRoom1},
+	{"LootRoom2", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|D=End Rod|A=Ladder", 30, 18, 10, Layers_LootRoom2},
+	{"LootRoom3", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|D=End Rod|A=Ladder|C=Chest|e=Ender Chest", 31, 16, 14, Layers_LootRoom3},
 	{"BridgePiece", "B=Purpur Block|P=Purpur Pillar|S=Purpur Stairs", 5, 4, 3, Layers_BridgePiece},
 	{"BridgeGentleStairs", "B=Purpur Block|H=Purpur Slab|P=Purpur Pillar|S=Purpur Stairs", 5, 8, 7, Layers_BridgeGentleStairs},
 	{"BridgeSteepStairs", "B=Purpur Block|P=Purpur Pillar|S=Purpur Stairs", 5, 4, 7, Layers_BridgeSteepStairs},

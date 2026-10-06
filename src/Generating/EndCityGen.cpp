@@ -52,8 +52,8 @@ static constexpr int END_CITY_BRIDGE_DENOMINATOR = 2;
 /** The chance (1 in N) that a bridge ends in an End ship. */
 static constexpr int END_CITY_SHIP_DENOMINATOR = 8;
 
-/** The number of rolls over which a bridge may end in a room instead of a tower. */
-static constexpr int END_CITY_ROOM_DENOMINATOR = 6;
+/** The chance (1 in N) that a two or three storey loot room carries a small tower on its roof. */
+static constexpr int END_CITY_ROOM_TOWER_DENOMINATOR = 2;
 
 /** The number of straight bridge segments, and the extra random range. */
 static constexpr int END_CITY_BRIDGE_MIN_SEGMENTS = 2;
@@ -542,7 +542,10 @@ public:
 		m_TowerTop = MakePrefab("TowerTop");
 		m_FatTower = MakePrefab("FatTower");
 		m_FatTowerTop = MakePrefab("FatTowerTop");
-		m_LargeRoom = MakePrefab("LargeRoom");
+		m_EmptyRoom = MakePrefab("EmptyRoom");
+		m_LootRoom1 = MakePrefab("LootRoom1");
+		m_LootRoom2 = MakePrefab("LootRoom2");
+		m_LootRoom3 = MakePrefab("LootRoom3");
 
 		// Extend the bottom piece down to the terrain so that slopes do not leave a gap:
 		if (m_BaseFloor != nullptr)
@@ -568,7 +571,10 @@ public:
 	std::unique_ptr<cPrefab> m_TowerTop;
 	std::unique_ptr<cPrefab> m_FatTower;
 	std::unique_ptr<cPrefab> m_FatTowerTop;
-	std::unique_ptr<cPrefab> m_LargeRoom;
+	std::unique_ptr<cPrefab> m_EmptyRoom;
+	std::unique_ptr<cPrefab> m_LootRoom1;
+	std::unique_ptr<cPrefab> m_LootRoom2;
+	std::unique_ptr<cPrefab> m_LootRoom3;
 
 	sOrientedPrefab m_Bridge[END_CITY_DIR_COUNT];
 	sOrientedPrefab m_BridgeGentle[END_CITY_DIR_COUNT];
@@ -927,21 +933,52 @@ protected:
 				return;
 			}
 
-			// A room may end the bridge instead of a tower:
+			// A loot room may end the bridge. The wiki gives one, two and three storey variants; the
+			// two and three storey ones may carry a small tower on their roof:
+			int RoomStoreys = 1;
 			const cPrefab * Room = nullptr;
-			const int RoomRoll = static_cast<int>(Rng() % END_CITY_ROOM_DENOMINATOR);
-			if ((RoomRoll == 0) && (P.m_LargeRoom != nullptr))
+			if ((Rng() % 2) == 0)
 			{
-				Room = P.m_LargeRoom.get();
-			}
-			else if ((RoomRoll == 1) && (P.m_FatTowerTop != nullptr))
-			{
-				Room = P.m_FatTowerTop.get();
+				RoomStoreys = 1 + static_cast<int>(Rng() % 3);
+				if (RoomStoreys == 1)
+				{
+					Room = P.m_LootRoom1.get();
+				}
+				else if (RoomStoreys == 2)
+				{
+					Room = P.m_LootRoom2.get();
+				}
+				else
+				{
+					Room = P.m_LootRoom3.get();
+				}
 			}
 			if (Room != nullptr)
 			{
+				// Overlap the last bridge block by one so that the room is not separated by a gap:
 				const int RoomHalf = PrefabSize(*Room).x / 2;
-				AddCentered(Room, Edge.x + (DirX * RoomHalf), Edge.y, Edge.z + (DirZ * RoomHalf));
+				const int RoomX = Edge.x + (DirX * (RoomHalf == 0 ? 0 : RoomHalf - 1));
+				const int RoomZ = Edge.z + (DirZ * (RoomHalf == 0 ? 0 : RoomHalf - 1));
+				AddCentered(Room, RoomX, Edge.y, RoomZ);
+
+				// The taller rooms may carry a small tower on their roof:
+				if ((RoomStoreys >= 2) && (P.m_TowerFloor != nullptr) && (P.m_TowerPiece != nullptr) && ((Rng() % END_CITY_ROOM_TOWER_DENOMINATOR) == 0))
+				{
+					const AString RoomName = (RoomStoreys == 2) ? "LootRoom2" : "LootRoom3";
+					int TowerY = Edge.y + StackHeightForName(RoomName);
+					AddCentered(P.m_TowerFloor.get(), RoomX, TowerY, RoomZ);
+					TowerY += StackHeightForName("TowerFloor");
+					const int TowerStoreys = 3 + static_cast<int>(Rng() % 3);
+					for (int i = 1; i < TowerStoreys; i++)
+					{
+						AddCentered(P.m_TowerPiece.get(), RoomX, TowerY, RoomZ);
+						TowerY += StackHeightForName("TowerPiece");
+					}
+					if (P.m_TowerTop != nullptr)
+					{
+						AddCentered(P.m_TowerTop.get(), RoomX, TowerY, RoomZ);
+					}
+				}
 				AddCarve(Edge.x, Edge.y + 1, Edge.z);
 				return;
 			}
@@ -952,7 +989,9 @@ protected:
 			{
 				return;
 			}
-			const Vector3i SecondaryCenter(Edge.x + (DirX * SecondaryHalf), Edge.y, Edge.z + (DirZ * SecondaryHalf));
+			// Overlap the last bridge block by one so that the tower is not separated by a gap:
+			const int Overlap = (SecondaryHalf == 0) ? 0 : (SecondaryHalf - 1);
+			const Vector3i SecondaryCenter(Edge.x + (DirX * Overlap), Edge.y, Edge.z + (DirZ * Overlap));
 			int SecondaryY = Edge.y;
 			AddCentered(P.m_TowerFloor.get(), SecondaryCenter.x, SecondaryY, SecondaryCenter.z);
 			SecondaryY += StackHeightForName("TowerFloor");
