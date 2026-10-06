@@ -53,8 +53,8 @@ static constexpr int END_CITY_BRIDGE_DENOMINATOR = 2;
 static constexpr int END_CITY_SHIP_DENOMINATOR = 8;
 
 /** The number of straight bridge segments, and the extra random range. */
-static constexpr int END_CITY_BRIDGE_MIN_SEGMENTS = 1;
-static constexpr int END_CITY_BRIDGE_EXTRA_SEGMENTS = 2;
+static constexpr int END_CITY_BRIDGE_MIN_SEGMENTS = 2;
+static constexpr int END_CITY_BRIDGE_EXTRA_SEGMENTS = 3;
 
 /** How far the small tower's ladder shaft descends into the room below. */
 static constexpr int END_CITY_SMALL_TOWER_LADDER_DEPTH = 3;
@@ -528,55 +528,44 @@ public:
 
 	cEndCityPieces()
 	{
-		m_EmptyRoom = MakePrefab("EmptyRoom");
-		m_BaseRoom = MakePrefab("BaseRoom");
-		m_SmallTowerBase = MakePrefab("SmallTowerBase");
-		m_SmallTowerExtension = MakePrefab("SmallTowerExtension");
-		m_LargeTower = MakePrefab("LargeTower");
-		m_SmallRoom = MakePrefab("SmallRoom");
-		m_LootRoom = MakePrefab("LootRoom");
-		m_LargeRoomTwoStorey = MakePrefab("LargeRoomTwoStorey");
-		m_LargeRoomThreeStorey = MakePrefab("LargeRoomThreeStorey");
+		m_BaseFloor = MakePrefab("BaseFloor");
+		m_SecondFloor = MakePrefab("SecondFloor");
+		m_ThirdFloor = MakePrefab("ThirdFloor");
+		m_ThirdRoof = MakePrefab("ThirdRoof");
+		m_TowerBase = MakePrefab("TowerBase");
+		m_TowerPiece = MakePrefab("TowerPiece");
+		m_TowerTop = MakePrefab("TowerTop");
+		m_FatTower = MakePrefab("FatTower");
+		m_FatTowerTop = MakePrefab("FatTowerTop");
 
 		// Extend the bottom piece down to the terrain so that slopes do not leave a gap:
-		if (m_BaseRoom != nullptr)
+		if (m_BaseFloor != nullptr)
 		{
-			m_BaseRoom->SetExtendFloorStrategy(cPrefab::efsRepeatBottomTillSolid);
-		}
-		else if (m_EmptyRoom != nullptr)
-		{
-			m_EmptyRoom->SetExtendFloorStrategy(cPrefab::efsRepeatBottomTillSolid);
+			m_BaseFloor->SetExtendFloorStrategy(cPrefab::efsRepeatBottomTillSolid);
 		}
 
-		// The bridge and the ship are authored along +Z, so build one orientation per direction:
-		const sEndCityBlueprint * BridgeBlueprint = FindBlueprint("Bridge");
-		const sEndCityBlueprint * ShipBlueprint = FindBlueprint("Ship");
-		auto BridgeArea = (BridgeBlueprint != nullptr) ? MakeBlueprintArea(*BridgeBlueprint) : nullptr;
-		auto ShipArea = (ShipBlueprint != nullptr) ? MakeBlueprintArea(*ShipBlueprint) : nullptr;
-		for (int i = 0; i < END_CITY_DIR_COUNT; i++)
-		{
-			if (BridgeArea != nullptr)
-			{
-				m_Bridge[i] = OrientAreaZ(*BridgeArea, END_CITY_DIR_X[i], END_CITY_DIR_Z[i]);
-			}
-			if (ShipArea != nullptr)
-			{
-				m_Ship[i] = OrientAreaZ(*ShipArea, END_CITY_DIR_X[i], END_CITY_DIR_Z[i]);
-			}
-		}
+		// The bridge and ship pieces are authored along +Z, so build one orientation per direction:
+		OrientForAllDirections("BridgePiece", m_Bridge);
+		OrientForAllDirections("BridgeGentleStairs", m_BridgeGentle);
+		OrientForAllDirections("BridgeSteepStairs", m_BridgeSteep);
+		OrientForAllDirections("BridgeEnd", m_BridgeEnd);
+		OrientForAllDirections("Ship", m_Ship);
 	}
 
-	std::unique_ptr<cPrefab> m_EmptyRoom;
-	std::unique_ptr<cPrefab> m_BaseRoom;
-	std::unique_ptr<cPrefab> m_SmallTowerBase;
-	std::unique_ptr<cPrefab> m_SmallTowerExtension;
-	std::unique_ptr<cPrefab> m_LargeTower;
-	std::unique_ptr<cPrefab> m_SmallRoom;
-	std::unique_ptr<cPrefab> m_LootRoom;
-	std::unique_ptr<cPrefab> m_LargeRoomTwoStorey;
-	std::unique_ptr<cPrefab> m_LargeRoomThreeStorey;
+	std::unique_ptr<cPrefab> m_BaseFloor;
+	std::unique_ptr<cPrefab> m_SecondFloor;
+	std::unique_ptr<cPrefab> m_ThirdFloor;
+	std::unique_ptr<cPrefab> m_ThirdRoof;
+	std::unique_ptr<cPrefab> m_TowerBase;
+	std::unique_ptr<cPrefab> m_TowerPiece;
+	std::unique_ptr<cPrefab> m_TowerTop;
+	std::unique_ptr<cPrefab> m_FatTower;
+	std::unique_ptr<cPrefab> m_FatTowerTop;
 
 	sOrientedPrefab m_Bridge[END_CITY_DIR_COUNT];
+	sOrientedPrefab m_BridgeGentle[END_CITY_DIR_COUNT];
+	sOrientedPrefab m_BridgeSteep[END_CITY_DIR_COUNT];
+	sOrientedPrefab m_BridgeEnd[END_CITY_DIR_COUNT];
 	sOrientedPrefab m_Ship[END_CITY_DIR_COUNT];
 
 protected:
@@ -593,6 +582,29 @@ protected:
 		}
 		return nullptr;
 	}
+
+	/** Builds the named blueprint oriented into all four horizontal directions. */
+	static void OrientForAllDirections(const AString & a_Name, sOrientedPrefab (&a_Out)[END_CITY_DIR_COUNT])
+	{
+		const sEndCityBlueprint * Blueprint = FindBlueprint(a_Name);
+		if (Blueprint == nullptr)
+		{
+			return;
+		}
+		auto Area = MakeBlueprintArea(*Blueprint);
+		if (Area == nullptr)
+		{
+			return;
+		}
+		for (int i = 0; i < END_CITY_DIR_COUNT; i++)
+		{
+			a_Out[i] = OrientAreaZ(*Area, END_CITY_DIR_X[i], END_CITY_DIR_Z[i]);
+		}
+	}
+
+
+
+
 
 	/** Builds a prefab from the named blueprint, or nullptr if it is missing or empty. */
 	static std::unique_ptr<cPrefab> MakePrefab(const AString & a_Name)
@@ -746,68 +758,77 @@ protected:
 		const cEndCityPieces & P = GetEndCityPieces();
 		std::minstd_rand Rng(MakeCellSeed(a_Seed, m_GridX + END_CITY_SEED_OFFSET_X, m_GridZ + END_CITY_SEED_OFFSET_Z));
 
-		// The base room already contains the entrance and the widening floors connected by staircases,
-		// so it is used on its own; the empty room is only a fallback:
+		// The base tower: three widening floors connected by staircases, capped by the roof:
 		int Y = BaseY;
-		if (P.m_BaseRoom != nullptr)
+		if (P.m_BaseFloor != nullptr)
 		{
-			AddCentered(P.m_BaseRoom.get(), m_OriginX, Y, m_OriginZ);
-			Y += StackHeightForName("BaseRoom");
+			AddCentered(P.m_BaseFloor.get(), m_OriginX, Y, m_OriginZ);
+			Y += StackHeightForName("BaseFloor");
 		}
-		else if (P.m_EmptyRoom != nullptr)
+		if (P.m_SecondFloor != nullptr)
 		{
-			AddCentered(P.m_EmptyRoom.get(), m_OriginX, Y, m_OriginZ);
-			Y += StackHeightForName("EmptyRoom");
+			AddCentered(P.m_SecondFloor.get(), m_OriginX, Y, m_OriginZ);
+			Y += StackHeightForName("SecondFloor");
+		}
+		if (P.m_ThirdFloor != nullptr)
+		{
+			AddCentered(P.m_ThirdFloor.get(), m_OriginX, Y, m_OriginZ);
+			Y += StackHeightForName("ThirdFloor");
+		}
+		if (P.m_ThirdRoof != nullptr)
+		{
+			AddCentered(P.m_ThirdRoof.get(), m_OriginX, Y, m_OriginZ);
+			Y += StackHeightForName("ThirdRoof");
 		}
 
 		// Choose and stack a tower:
 		const bool Fat = ((Rng() % 2) == 0);
 		const int TowerBaseY = Y;
-		if (Fat && (P.m_LargeTower != nullptr))
+		if (Fat && (P.m_FatTower != nullptr))
 		{
 			const int Repeats = END_CITY_TOWER_MIN_MIDDLE + static_cast<int>(Rng() % END_CITY_TOWER_EXTRA_MIDDLE);
 			for (int i = 0; i < Repeats; i++)
 			{
-				AddCentered(P.m_LargeTower.get(), m_OriginX, Y, m_OriginZ);
-				Y += StackHeightForName("LargeTower");
+				AddCentered(P.m_FatTower.get(), m_OriginX, Y, m_OriginZ);
+				Y += StackHeightForName("FatTower");
 			}
 
 			// Cap the fat tower with its loot room:
-			if (P.m_LootRoom != nullptr)
+			if (P.m_FatTowerTop != nullptr)
 			{
-				AddCentered(P.m_LootRoom.get(), m_OriginX, Y, m_OriginZ);
-				Y += StackHeightForName("LootRoom");
+				AddCentered(P.m_FatTowerTop.get(), m_OriginX, Y, m_OriginZ);
+				Y += StackHeightForName("FatTowerTop");
 			}
 		}
-		else if (!Fat && (P.m_SmallTowerBase != nullptr))
+		else if (!Fat && (P.m_TowerBase != nullptr))
 		{
-			// The small tower base starts with a ladder shaft, let it descend into the room below:
-			AddCentered(P.m_SmallTowerBase.get(), m_OriginX, Y - END_CITY_SMALL_TOWER_LADDER_DEPTH, m_OriginZ);
-			Y = Y - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("SmallTowerBase");
+			// The tower base starts with a ladder shaft, let it descend into the room below:
+			AddCentered(P.m_TowerBase.get(), m_OriginX, Y - END_CITY_SMALL_TOWER_LADDER_DEPTH, m_OriginZ);
+			Y = Y - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
 			const int Repeats = END_CITY_TOWER_MIN_MIDDLE + static_cast<int>(Rng() % END_CITY_TOWER_EXTRA_MIDDLE);
 			for (int i = 0; i < Repeats; i++)
 			{
-				if (P.m_SmallTowerExtension == nullptr)
+				if (P.m_TowerPiece == nullptr)
 				{
 					break;
 				}
-				AddCentered(P.m_SmallTowerExtension.get(), m_OriginX, Y, m_OriginZ);
-				Y += StackHeightForName("SmallTowerExtension");
+				AddCentered(P.m_TowerPiece.get(), m_OriginX, Y, m_OriginZ);
+				Y += StackHeightForName("TowerPiece");
 			}
 
-			// Cap the small tower with a small room:
-			if (P.m_SmallRoom != nullptr)
+			// Cap the small tower with its banner roof:
+			if (P.m_TowerTop != nullptr)
 			{
-				AddCentered(P.m_SmallRoom.get(), m_OriginX, Y, m_OriginZ);
-				Y += StackHeightForName("SmallRoom");
+				AddCentered(P.m_TowerTop.get(), m_OriginX, Y, m_OriginZ);
+				Y += StackHeightForName("TowerTop");
 			}
 		}
 
 		// Branch each tower side into a bridge; the bridge ends in a ship or in another tower:
-		const int TowerSize = (Fat ? PrefabSize(*P.m_LargeTower).x : PrefabSize(*P.m_SmallTowerBase).x);
+		const int TowerSize = Fat ? PrefabSize(*P.m_FatTower).x : PrefabSize(*P.m_TowerBase).x;
 		const int Half = TowerSize / 2;
 		const int BridgeY = TowerBaseY;
-		const int SecondaryTowerHalf = (P.m_LargeTower != nullptr) ? (PrefabSize(*P.m_LargeTower).x / 2) : 0;
+		const int SecondaryHalf = (P.m_FatTower != nullptr) ? (PrefabSize(*P.m_FatTower).x / 2) : 0;
 		bool ShipPlaced = false;
 		for (int Dir = 0; Dir < END_CITY_DIR_COUNT; Dir++)
 		{
@@ -815,26 +836,57 @@ protected:
 			{
 				continue;
 			}
-			const sOrientedPrefab & Bridge = P.m_Bridge[Dir];
-			if (Bridge.m_Prefab == nullptr)
+			const sOrientedPrefab & Straight = P.m_Bridge[Dir];
+			if (Straight.m_Prefab == nullptr)
 			{
 				continue;
 			}
 			const int DirX = END_CITY_DIR_X[Dir];
 			const int DirZ = END_CITY_DIR_Z[Dir];
-			const int SegmentCount = END_CITY_BRIDGE_MIN_SEGMENTS + static_cast<int>(Rng() % END_CITY_BRIDGE_EXTRA_SEGMENTS);
-			const Vector3i BridgeSize = PrefabSize(*Bridge.m_Prefab);
-			const int SegmentLength = (DirX != 0) ? BridgeSize.x : BridgeSize.z;
+
+			// The length of an oriented piece along the branch direction:
+			auto LengthOf = [&](const sOrientedPrefab & a_Piece) -> int
+			{
+				if (a_Piece.m_Prefab == nullptr)
+				{
+					return 0;
+				}
+				const Vector3i Size = PrefabSize(*a_Piece.m_Prefab);
+				return (DirX != 0) ? Size.x : Size.z;
+			};
 
 			// The bridge starts at the main tower's outer wall and extends outwards:
 			const Vector3i TowerEdge(m_OriginX + (DirX * Half), BridgeY, m_OriginZ + (DirZ * Half));
 			Vector3i Edge = TowerEdge;
-			for (int Segment = 0; Segment < SegmentCount; Segment++)
+
+			// Straight bridge pieces:
+			const int StraightCount = END_CITY_BRIDGE_MIN_SEGMENTS + static_cast<int>(Rng() % END_CITY_BRIDGE_EXTRA_SEGMENTS);
+			for (int i = 0; i < StraightCount; i++)
 			{
-				const Vector3i BridgePos(Edge.x + Bridge.m_MinOffset.x, BridgeY, Edge.z + Bridge.m_MinOffset.z);
-				Add(Bridge.m_Prefab.get(), BridgePos);
-				Edge.x += DirX * SegmentLength;
-				Edge.z += DirZ * SegmentLength;
+				Add(Straight.m_Prefab.get(), Vector3i(Edge.x + Straight.m_MinOffset.x, BridgeY, Edge.z + Straight.m_MinOffset.z));
+				const int Step = LengthOf(Straight);
+				Edge.x += DirX * Step;
+				Edge.z += DirZ * Step;
+			}
+
+			// One staircase piece:
+			const sOrientedPrefab & Stairs = ((Rng() % 2) == 0) ? P.m_BridgeGentle[Dir] : P.m_BridgeSteep[Dir];
+			if (Stairs.m_Prefab != nullptr)
+			{
+				Add(Stairs.m_Prefab.get(), Vector3i(Edge.x + Stairs.m_MinOffset.x, BridgeY, Edge.z + Stairs.m_MinOffset.z));
+				const int Step = LengthOf(Stairs);
+				Edge.x += DirX * Step;
+				Edge.z += DirZ * Step;
+			}
+
+			// The arch that ends the bridge:
+			const sOrientedPrefab & End = P.m_BridgeEnd[Dir];
+			if (End.m_Prefab != nullptr)
+			{
+				Add(End.m_Prefab.get(), Vector3i(Edge.x + End.m_MinOffset.x, BridgeY, Edge.z + End.m_MinOffset.z));
+				const int Step = LengthOf(End);
+				Edge.x += DirX * Step;
+				Edge.z += DirZ * Step;
 			}
 
 			// Open a doorway through the main tower wall where the bridge meets it:
@@ -844,22 +896,21 @@ protected:
 			const sOrientedPrefab & Ship = P.m_Ship[Dir];
 			if (!ShipPlaced && (Ship.m_Prefab != nullptr) && ((Rng() % END_CITY_SHIP_DENOMINATOR) == 0))
 			{
-				const Vector3i ShipPos(Edge.x + Ship.m_MinOffset.x, BridgeY, Edge.z + Ship.m_MinOffset.z);
-				Add(Ship.m_Prefab.get(), ShipPos);
+				Add(Ship.m_Prefab.get(), Vector3i(Edge.x + Ship.m_MinOffset.x, BridgeY, Edge.z + Ship.m_MinOffset.z));
 				ShipPlaced = true;
 				continue;
 			}
 
 			// Otherwise grow another tower at the far end, connected through a doorway:
-			if (P.m_LargeTower == nullptr)
+			if (P.m_FatTower == nullptr)
 			{
 				continue;
 			}
-			const Vector3i SecondaryCenter(Edge.x + (DirX * SecondaryTowerHalf), BridgeY, Edge.z + (DirZ * SecondaryTowerHalf));
-			AddCentered(P.m_LargeTower.get(), SecondaryCenter.x, BridgeY, SecondaryCenter.z);
-			if (P.m_LootRoom != nullptr)
+			const Vector3i SecondaryCenter(Edge.x + (DirX * SecondaryHalf), BridgeY, Edge.z + (DirZ * SecondaryHalf));
+			AddCentered(P.m_FatTower.get(), SecondaryCenter.x, BridgeY, SecondaryCenter.z);
+			if (P.m_FatTowerTop != nullptr)
 			{
-				AddCentered(P.m_LootRoom.get(), SecondaryCenter.x, BridgeY + StackHeightForName("LargeTower"), SecondaryCenter.z);
+				AddCentered(P.m_FatTowerTop.get(), SecondaryCenter.x, BridgeY + StackHeightForName("FatTower"), SecondaryCenter.z);
 			}
 			AddCarve(Edge.x, BridgeY + 1, Edge.z);
 		}
