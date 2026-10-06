@@ -650,6 +650,29 @@ public:
 		{
 			Piece.m_Prefab->Draw(a_Chunk, Piece.m_Pos, 0);
 		}
+
+		// Carve the doorways only after all the pieces have been drawn:
+		const int ChunkX = a_Chunk.GetChunkX();
+		const int ChunkZ = a_Chunk.GetChunkZ();
+		const int ChunkMinX = ChunkX * cChunkDef::Width;
+		const int ChunkMinZ = ChunkZ * cChunkDef::Width;
+		for (const auto & Carve: m_Carves)
+		{
+			const int MinX = std::max(Carve.m_MinX, ChunkMinX);
+			const int MaxX = std::min(Carve.m_MaxX, ChunkMinX + cChunkDef::Width - 1);
+			const int MinZ = std::max(Carve.m_MinZ, ChunkMinZ);
+			const int MaxZ = std::min(Carve.m_MaxZ, ChunkMinZ + cChunkDef::Width - 1);
+			for (int y = Carve.m_MinY; y <= Carve.m_MaxY; y++)
+			{
+				for (int z = MinZ; z <= MaxZ; z++)
+				{
+					for (int x = MinX; x <= MaxX; x++)
+					{
+						a_Chunk.SetBlockTypeMeta(x - ChunkMinX, y, z - ChunkMinZ, E_BLOCK_AIR, 0);
+					}
+				}
+			}
+		}
 	}
 
 protected:
@@ -661,8 +684,29 @@ protected:
 		Vector3i m_Pos;
 	} ;
 
+	/** An axis-aligned box that is cleared to air after the pieces are drawn, to open doorways. */
+	struct sCarve
+	{
+		int m_MinX;
+		int m_MaxX;
+		int m_MinY;
+		int m_MaxY;
+		int m_MinZ;
+		int m_MaxZ;
+	} ;
+
 	/** All the pieces of this city. */
 	std::vector<sPlacedPiece> m_Pieces;
+
+	/** The boxes cleared after drawing, to connect the pieces. */
+	std::vector<sCarve> m_Carves;
+
+
+	/** Clears a 3 x 3 x 3 doorway above the specified floor coords. */
+	void AddCarve(int a_X, int a_Y, int a_Z)
+	{
+		m_Carves.push_back({a_X - 1, a_X + 1, a_Y, a_Y + 2, a_Z - 1, a_Z + 1});
+	}
 
 
 	/** Adds a piece at the specified minimum-corner coordinates. */
@@ -759,10 +803,11 @@ protected:
 			}
 		}
 
-		// Branch each tower side into a bridge, at most one of which carries a ship:
+		// Branch each tower side into a bridge; the bridge ends in a ship or in another tower:
 		const int TowerSize = (Fat ? PrefabSize(*P.m_LargeTower).x : PrefabSize(*P.m_SmallTowerBase).x);
 		const int Half = TowerSize / 2;
 		const int BridgeY = TowerBaseY;
+		const int SecondaryTowerHalf = (P.m_LargeTower != nullptr) ? (PrefabSize(*P.m_LargeTower).x / 2) : 0;
 		bool ShipPlaced = false;
 		for (int Dir = 0; Dir < END_CITY_DIR_COUNT; Dir++)
 		{
@@ -781,7 +826,9 @@ protected:
 			const Vector3i BridgeSize = PrefabSize(*Bridge.m_Prefab);
 			const int SegmentLength = (DirX != 0) ? BridgeSize.x : BridgeSize.z;
 
-			Vector3i Edge(m_OriginX + (DirX * Half), BridgeY, m_OriginZ + (DirZ * Half));
+			// The bridge starts at the main tower's outer wall and extends outwards:
+			const Vector3i TowerEdge(m_OriginX + (DirX * Half), BridgeY, m_OriginZ + (DirZ * Half));
+			Vector3i Edge = TowerEdge;
 			for (int Segment = 0; Segment < SegmentCount; Segment++)
 			{
 				const Vector3i BridgePos(Edge.x + Bridge.m_MinOffset.x, BridgeY, Edge.z + Bridge.m_MinOffset.z);
@@ -790,15 +837,31 @@ protected:
 				Edge.z += DirZ * SegmentLength;
 			}
 
-			// Ship at the far end of the bridge:
+			// Open a doorway through the main tower wall where the bridge meets it:
+			AddCarve(TowerEdge.x, BridgeY + 1, TowerEdge.z);
+
+			// An End ship may end the bridge instead of another tower:
 			const sOrientedPrefab & Ship = P.m_Ship[Dir];
-			if (ShipPlaced || (Ship.m_Prefab == nullptr) || ((Rng() % END_CITY_SHIP_DENOMINATOR) != 0))
+			if (!ShipPlaced && (Ship.m_Prefab != nullptr) && ((Rng() % END_CITY_SHIP_DENOMINATOR) == 0))
+			{
+				const Vector3i ShipPos(Edge.x + Ship.m_MinOffset.x, BridgeY, Edge.z + Ship.m_MinOffset.z);
+				Add(Ship.m_Prefab.get(), ShipPos);
+				ShipPlaced = true;
+				continue;
+			}
+
+			// Otherwise grow another tower at the far end, connected through a doorway:
+			if (P.m_LargeTower == nullptr)
 			{
 				continue;
 			}
-			const Vector3i ShipPos(Edge.x + Ship.m_MinOffset.x, BridgeY, Edge.z + Ship.m_MinOffset.z);
-			Add(Ship.m_Prefab.get(), ShipPos);
-			ShipPlaced = true;
+			const Vector3i SecondaryCenter(Edge.x + (DirX * SecondaryTowerHalf), BridgeY, Edge.z + (DirZ * SecondaryTowerHalf));
+			AddCentered(P.m_LargeTower.get(), SecondaryCenter.x, BridgeY, SecondaryCenter.z);
+			if (P.m_LootRoom != nullptr)
+			{
+				AddCentered(P.m_LootRoom.get(), SecondaryCenter.x, BridgeY + StackHeightForName("LargeTower"), SecondaryCenter.z);
+			}
+			AddCarve(Edge.x, BridgeY + 1, Edge.z);
 		}
 	}
 } ;
