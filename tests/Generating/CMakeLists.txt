@@ -36,6 +36,7 @@ set (SHARED_SRCS
 set (GENERATING_SRCS
 	${PROJECT_SOURCE_DIR}/src/Generating/BioGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/Caves.cpp
+	${PROJECT_SOURCE_DIR}/src/Generating/ChorusPlantTree.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/ChunkDesc.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/ChunkGenerator.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/CompoGen.cpp
@@ -43,6 +44,7 @@ set (GENERATING_SRCS
 	${PROJECT_SOURCE_DIR}/src/Generating/ComposableGenerator.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/DistortedHeightmap.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/DungeonRoomsFinisher.cpp
+	${PROJECT_SOURCE_DIR}/src/Generating/EndChorusGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EndGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EnderDragonFightStructuresGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EnderDragonReturnGatewayGen.cpp
@@ -105,6 +107,7 @@ set (SHARED_HDRS
 set (GENERATING_HDRS
 	${PROJECT_SOURCE_DIR}/src/Generating/BioGen.h
 	${PROJECT_SOURCE_DIR}/src/Generating/Caves.h
+	${PROJECT_SOURCE_DIR}/src/Generating/ChorusPlantTree.h
 	${PROJECT_SOURCE_DIR}/src/Generating/ChunkDesc.h
 	${PROJECT_SOURCE_DIR}/src/Generating/ChunkGenerator.h
 	${PROJECT_SOURCE_DIR}/src/Generating/CompoGen.h
@@ -113,6 +116,7 @@ set (GENERATING_HDRS
 	${PROJECT_SOURCE_DIR}/src/Generating/CompositedHeiGen.h
 	${PROJECT_SOURCE_DIR}/src/Generating/DistortedHeightmap.h
 	${PROJECT_SOURCE_DIR}/src/Generating/DungeonRoomsFinisher.h
+	${PROJECT_SOURCE_DIR}/src/Generating/EndChorusGen.h
 	${PROJECT_SOURCE_DIR}/src/Generating/EndGen.h
 	${PROJECT_SOURCE_DIR}/src/Generating/EndGateway.h
 	${PROJECT_SOURCE_DIR}/src/Generating/EnderDragonReturnGatewayGen.h
@@ -203,6 +207,20 @@ add_test(
 
 
 
+# ChorusTreeTest:
+add_executable(ChorusTreeTest
+	ChorusTreeTest.cpp
+)
+target_link_libraries(ChorusTreeTest GeneratorTestingSupport)
+add_test(
+	NAME ChorusTreeTest
+	COMMAND ChorusTreeTest
+)
+
+
+
+
+
 # LoadablePieces test:
 source_group("Data files" FILES Test.cubeset Test1.schematic)
 add_executable(LoadablePieces
@@ -263,6 +281,7 @@ add_test(
 # Put the projects into solution folders (MSVC):
 set_target_properties(
 	BasicGeneratorTest
+	ChorusTreeTest
 	GeneratorTestingSupport
 	LoadablePieces
 	PieceGeneratorBFSTree

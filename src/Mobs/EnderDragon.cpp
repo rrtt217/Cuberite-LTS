@@ -4,6 +4,7 @@
 #include "EnderDragon.h"
 #include "../ClientHandle.h"
 #include "../Entities/DragonFireballEntity.h"
+#include "../Entities/Player.h"
 #include "../CompositeChat.h"
 
 
