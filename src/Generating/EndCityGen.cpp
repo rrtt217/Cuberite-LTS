@@ -539,13 +539,13 @@ public:
 		m_LargeRoomThreeStorey = MakePrefab("LargeRoomThreeStorey");
 
 		// Extend the bottom piece down to the terrain so that slopes do not leave a gap:
-		if (m_EmptyRoom != nullptr)
-		{
-			m_EmptyRoom->SetExtendFloorStrategy(cPrefab::efsRepeatBottomTillSolid);
-		}
-		else if (m_BaseRoom != nullptr)
+		if (m_BaseRoom != nullptr)
 		{
 			m_BaseRoom->SetExtendFloorStrategy(cPrefab::efsRepeatBottomTillSolid);
+		}
+		else if (m_EmptyRoom != nullptr)
+		{
+			m_EmptyRoom->SetExtendFloorStrategy(cPrefab::efsRepeatBottomTillSolid);
 		}
 
 		// The bridge and the ship are authored along +Z, so build one orientation per direction:
@@ -702,17 +702,18 @@ protected:
 		const cEndCityPieces & P = GetEndCityPieces();
 		std::minstd_rand Rng(MakeCellSeed(a_Seed, m_GridX + END_CITY_SEED_OFFSET_X, m_GridZ + END_CITY_SEED_OFFSET_Z));
 
-		// The entrance and the base room:
+		// The base room already contains the entrance and the widening floors connected by staircases,
+		// so it is used on its own; the empty room is only a fallback:
 		int Y = BaseY;
-		if (P.m_EmptyRoom != nullptr)
-		{
-			AddCentered(P.m_EmptyRoom.get(), m_OriginX, Y, m_OriginZ);
-			Y += StackHeightForName("EmptyRoom");
-		}
 		if (P.m_BaseRoom != nullptr)
 		{
 			AddCentered(P.m_BaseRoom.get(), m_OriginX, Y, m_OriginZ);
 			Y += StackHeightForName("BaseRoom");
+		}
+		else if (P.m_EmptyRoom != nullptr)
+		{
+			AddCentered(P.m_EmptyRoom.get(), m_OriginX, Y, m_OriginZ);
+			Y += StackHeightForName("EmptyRoom");
 		}
 
 		// Choose and stack a tower:
