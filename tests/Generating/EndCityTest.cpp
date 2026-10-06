@@ -2,6 +2,7 @@
 #include "Generating/ChunkDesc.h"
 #include "Generating/ComposableGenerator.h"
 #include "Generating/EndCityGen.h"
+#include "Generating/EndCityBlueprintData.h"
 #include "../TestHelpers.h"
 
 #include <cstring>
@@ -344,11 +345,92 @@ static void testDeterminism(void)
 
 
 
+/** Measures the horizontal extent of a blueprint layer's non-air content. */
+static bool layerExtent(const sEndCityBlueprintLayer & a_Layer, int & a_MinX, int & a_MaxX, int & a_MinZ, int & a_MaxZ)
+{
+	a_MinX = a_MaxX = a_MinZ = a_MaxZ = -1;
+	const auto Rows = StringSplit(a_Layer.m_Rows, "|");
+	for (size_t z = 0; z < Rows.size(); z++)
+	{
+		for (size_t x = 0; x < Rows[z].size(); x++)
+		{
+			const char c = Rows[z][x];
+			if ((c == ' ') || (c == '.') || (c == 'Y') || (c == 'N') || (c == 'B'))
+			{
+				continue;
+			}
+			if (a_MinX < 0) { a_MinX = static_cast<int>(x); }
+			a_MaxX = static_cast<int>(x);
+			if (a_MinZ < 0) { a_MinZ = static_cast<int>(z); }
+			a_MaxZ = static_cast<int>(z);
+		}
+	}
+	return (a_MinX >= 0);
+}
+
+
+
+
+
+/** Verifies that a room's roof overhangs its body symmetrically on both axes; the English blueprints
+of the loot room and the fat tower top draw the body one block off centre, which shows in game as a
+roof hanging three blocks over one edge and one over the opposite one. */
+static void testRoomRoofCentered(void)
+{
+	LOG("Testing the End City room roof centring...");
+
+	for (const AString Name: {"LootRoom1", "FatTowerTop"})
+	{
+		const sEndCityBlueprint * Blueprint = nullptr;
+		for (int i = 0; i < g_NumEndCityBlueprints; i++)
+		{
+			if (Name == g_EndCityBlueprints[i].m_Name)
+			{
+				Blueprint = &g_EndCityBlueprints[i];
+				break;
+			}
+		}
+		TEST_TRUE(Blueprint != nullptr);
+
+		// The roof is the layer with the most content; the body is the one just below it:
+		int RoofIndex = 0;
+		int RoofCount = -1;
+		for (int i = 0; i < Blueprint->m_Height; i++)
+		{
+			int mnx, mxx, mnz, mxz;
+			if (!layerExtent(Blueprint->m_Layers[i], mnx, mxx, mnz, mxz))
+			{
+				continue;
+			}
+			const int Count = (mxx - mnx + 1) * (mxz - mnz + 1);
+			if (Count > RoofCount)
+			{
+				RoofCount = Count;
+				RoofIndex = i;
+			}
+		}
+		TEST_GREATER_THAN_OR_EQUAL(RoofIndex, 1);
+
+		int rMnx, rMxx, rMnz, rMxz;
+		TEST_TRUE(layerExtent(Blueprint->m_Layers[RoofIndex], rMnx, rMxx, rMnz, rMxz));
+		int bMnx, bMxx, bMnz, bMxz;
+		TEST_TRUE(layerExtent(Blueprint->m_Layers[RoofIndex - 1], bMnx, bMxx, bMnz, bMxz));
+
+		TEST_EQUAL(bMnx - rMnx, rMxx - bMxx);
+		TEST_EQUAL(bMnz - rMnz, rMxz - bMxz);
+	}
+}
+
+
+
+
+
 IMPLEMENT_TEST_MAIN("EndCityTest",
 	testGridOrigin();
 	testGeneration();
 	testChestMeta();
 	testLadderAttachment();
+	testRoomRoofCentered();
 	testRejectedLocations();
 	testDeterminism();
 )

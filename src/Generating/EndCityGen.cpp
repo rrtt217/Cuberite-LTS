@@ -1062,7 +1062,6 @@ protected:
 		{
 			return nullptr;
 		}
-
 		// Air cells must behave like structure voids: they must not erase blocks placed by other pieces:
 		auto Prefab = std::make_unique<cPrefab>(*Area);
 		Prefab->SetMergeStrategy(cBlockArea::msImprint);
