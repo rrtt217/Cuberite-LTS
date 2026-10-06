@@ -109,8 +109,10 @@ blueprint; the exact piece-to-blueprint mapping should be re-checked while imple
    slot"; otherwise extend it carefully (the current "WithBooks" version always seeds a book, which
    the End City table must not do).
 4. Ender chests stay empty (ender chests never hold loot).
-5. Out of scope for the first pass (tracked separately): ship brewing stand contents, item frame
-   with elytra, dragon head.
+5. Ship contents: the brewing stand is filled with the two Potions of Healing II documented for
+   it, and the item frame is spawned holding an elytra. Both are implemented. The dragon head is a
+   blueprint block and is already placed. The ship's 3 shulkers are not spawned because this server
+   has no shulker mob yet.
 
 ## 4. Verification
 
