@@ -77,7 +77,7 @@ static constexpr int END_CITY_BASE_ROOM_FRAME = 12;
 
 /** The layer of the base blueprint each storey starts on, and the height of the whole base. */
 static constexpr int END_CITY_SECOND_FLOOR_LAYER = 1;
-static constexpr int END_CITY_THIRD_FLOOR_LAYER = 8;
+static constexpr int END_CITY_THIRD_FLOOR_LAYER = 5;
 static constexpr int END_CITY_THIRD_ROOF_LAYER = 12;
 static constexpr int END_CITY_BASE_HEIGHT = 14;
 
@@ -1387,8 +1387,8 @@ protected:
 		std::minstd_rand Rng(MakeCellSeed(a_Seed, m_GridX + END_CITY_SEED_OFFSET_X, m_GridZ + END_CITY_SEED_OFFSET_Z));
 
 		// The base of a city is the vanilla stack of storeys, placed on the layer of the base
-		// blueprint each one occupies. second_floor_1 begins three layers below the first storey's roof,
-		// where its slab staircase runs, and so overlaps the storey below it:
+		// blueprint each one occupies. Each floor begins three layers below the roof above it, where
+		// its slab staircase runs, so a storey overlaps the one below it:
 		int Y = BaseY;
 		if (P.m_BaseFloor != nullptr)
 		{
