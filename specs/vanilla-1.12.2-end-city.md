@@ -172,6 +172,21 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 
 `base_floor` 的包围盒与其地板不同范围（地板 x=1..9，屋顶件 x=0..11），所以与桥拱门对接时一律用**最下层范围**（`m_FloorMinX/MaxX/MinZ/MaxZ`）定位，不用整件包围盒。
 
+### 3.7 大房间是 storey 组合件
+
+`/Large_Room` 的两层 / 三层「大房间」不是单件，而是 storey 组合（维护者实测确认，且材料数逐项吻合）：
+
+| 组合 | 组成 | 核对 |
+|---|---|---|
+| 两层大房间（`LargeRoom2`） | `base_floor` + `second_floor_2` + `second_roof` | `LargeRoom2` 第 8–9 层 = 144 PB / 52 st / 4 rod，与 `second_roof` 表**完全一致** |
+| 三层大房间（`LargeRoom3`） | `base_floor` + `second_floor_2` + `third_floor_2` + `third_roof` | 第 12–13 层 = 196 PB / 60 st / 4 rod，与 `third_roof` 表**完全一致** |
+
+第一层就是 `base_floor`。`second_floor_2` **下部带一段螺旋梯**（画布第 1–3 层的 `L/S/P` 格，落在第一层结构里，`base_floor` 自身没有这些格），与 `second_floor_1` 同一规律。
+
+由此从两个组合件切出：`SecondFloor2`（14×14×7）= 下探楼梯 3 层 + 第二层 4 层，70 PB 与表一致；`ThirdFloor2`（16×16×7）= 下探楼梯 3 层 + 第三层 4 层，56 stairs / 24 glass / 6 rod 与表一致；`SecondRoof` 改用大房间版本（14×14×2，144/52/4 全中）。
+
+> 生成器目前仍以组合件 `LargeRoom2`/`LargeRoom3` 落地（与组合结果逐格相同）；拆出的子件已注册并核对，装配重构不改变输出。
+
 ---
 
 ## 4. 构件目录（源自 End City 的 Structure details）

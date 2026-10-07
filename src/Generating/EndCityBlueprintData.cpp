@@ -35,9 +35,40 @@ static const sEndCityBlueprintLayer Layers_SecondFloor1[] =
 
 
 
+static const sEndCityBlueprintLayer Layers_SecondFloor2[] =
+{
+	{0, "|||           |           |      L    |      SP   |      PP   |           |           |           |||"},
+	{1, "|||           |           |           |       P   |     LSP   |           |           |           |||"},
+	{2, "|||           |           |           |       PL  |       S   |       L   |           |           |||"},
+	{3, "| SSSS     SSS| SPPPPPPPPPPS| SPPPPPPPPPPS| SPP      PPS| SPP      PPS| SPPLLLS  PPS| SPP      PPS| SPP      PPS| SPP      PPS| SPPPPPPPPPPS| SPPPPPPPPPPS| SSSSSSSSSSSS|"},
+	{4, "| D          D|  UEEEEEEEEU|  E        E|  ES   U   E|  ES   A   E|  E        E|  E        E|  E        E|  E        E|  E        E|  UEEEEEEEEU| D          D|"},
+	{5, "||  UEEEEEEEEU|  E        E|  ES   U   G|  ES   A   E|  E        E|  E        E|  E        E|  G        G|  E        E|  UEGEEEEGEU||"},
+	{6, "||  UEEEEEEEEU|  E        E|  ES   U   G|  ES   A   E|  E        E|  E        E|  E        E|  G        G|  E        E|  UEGEEEEGEU||"},
+};
+
+
+
+
+
+static const sEndCityBlueprintLayer Layers_ThirdFloor2[] =
+{
+	{0, "||||            |            |       L    |       SP   |       PP   |            |            |            ||||"},
+	{1, "||||            |            |            |        P   |      LSP   |            |            |            ||||"},
+	{2, "||||            |            |            |        PL  |        S   |        L   |            |            ||||"},
+	{3, "| SSSSSSSSSSSSSS| SPPPPPPPPPPPPS| SPPPPPPPPPPPPS| SPPPS      PPS| SPP        PPS| SPP  PPPP  PPS| SPP        PPS| SPP        PPS| SPP        PPS| SPP   DD   PPS| SPP   PP   PPS| SPPPPPPPPPPPPS| SPPPPPPPPPPPPS| SSSSSSSSSSSSSS|"},
+	{4, "| D            D|  UEEEEEEEEEEU|  E          E|  EP        PE|  E          E|  EP         E|  E      U   E|  EP     A   E|  E          E|  E          E|  E          E|  E    eC    E|  UEEEEEEEEEEU| D            D|"},
+	{5, "||  UEGEGEEGEGEU|  E          E|  EP        PE|  E          E|  EPPP       E|  E      U   E|  EP     A   E|  G          G|  E          E|  G          G|  E          E|  UEGEGEEGEGEU||"},
+	{6, "||  UEGEGEEGEGEU|  E          E|  EP        PE|  E          E|  EP         E|  E      U   E|  EP     A   E|  G          G|  E          E|  G          G|  E          E|  UEGEGEEGEGEU||"},
+};
+
+
+
+
+
 static const sEndCityBlueprintLayer Layers_SecondRoof[] =
 {
-	{0, "B                 |   YNNYYNNYYNNY   | YSSSSSSSSSSSSSSY | YSPPPPPPPPPPPPSY | NSPPPPPPPPPPPPSN | NSPPPL      PPSN | YSPPPPPPPPPPPPSY | YSPPPPPPPPPPPPSY | NSPPPPPPPPPPPPSN | NSPPPPPPPPPPPPSN | YSPPPPPPPPPPPPSY | YSPPPPPPPPPPPPSY | NSPPPPPPPPPPPPSN | NSPPPPPPPPPPPPSN | YSPPPPPPPPPPPPSY | YSSSSSSSSSSSSSSY |   YNNYYNNYYNNY   |                  "},
+	{0, "SSSSSSSSSSSSSS|SPPPPPPPPPPPPS|SPPPPPPPPPPPPS|SPPPPPPPPPPPPS|SPPPPPPPPPPPPS|SPPPPPPPPPPPPS|SPPPPPPPPPPPPS|SPPPPPPPPPPPPS|SPPPPPPPPPPPPS|SPPPPPPPPPPPPS|SPPPPPPPPPPPPS|SPPPPPPPPPPPPS|SPPPPPPPPPPPPS|SSSSSSSSSSSSSS"},
+	{1, "| D          D||||||||||| D          D|"},
 };
 
 
@@ -327,8 +358,10 @@ static const sEndCityBlueprintLayer Layers_Ship[] =
 
 const sEndCityBlueprint g_EndCityBlueprints[] =
 {
+	{"SecondFloor2", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|Y=Green Wool|N=Red Wool|D=End Rod|A=Ladder|O=EntitySprite:Shulker|B=Black Wool", 14, 14, 7, Layers_SecondFloor2},
 	{"SecondFloor1", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|Y=Green Wool|N=Red Wool|D=End Rod|A=Ladder|O=EntitySprite:Shulker|B=Black Wool", 18, 18, 7, Layers_SecondFloor1, true},
-	{"SecondRoof", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|Y=Green Wool|N=Red Wool|D=End Rod|A=Ladder|O=EntitySprite:Shulker|B=Black Wool", 18, 18, 1, Layers_SecondRoof, true},
+	{"SecondRoof", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|Y=Green Wool|N=Red Wool|D=End Rod|A=Ladder|O=EntitySprite:Shulker|B=Black Wool", 14, 14, 2, Layers_SecondRoof, true},
+	{"ThirdFloor2", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|Y=Green Wool|N=Red Wool|D=End Rod|A=Ladder|O=EntitySprite:Shulker|B=Black Wool", 16, 16, 7, Layers_ThirdFloor2},
 	{"ThirdFloor1", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|Y=Green Wool|N=Red Wool|D=End Rod|A=Ladder|O=EntitySprite:Shulker|B=Black Wool", 18, 18, 7, Layers_ThirdFloor1, true},
 	{"ThirdRoof", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|Y=Green Wool|N=Red Wool|D=End Rod|A=Ladder|O=EntitySprite:Shulker|B=Black Wool", 18, 18, 2, Layers_ThirdRoof, true},
 	{"TowerBase", "P=Purpur Block|U=Purpur Pillar@top|u=Purpur Pillar@horizontal|p=Purpur Pillar|L=Purpur Slab|S=Purpur Stairs|l=Ladder", 7, 7, 7, Layers_TowerBase},
