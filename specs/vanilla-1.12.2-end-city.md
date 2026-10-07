@@ -181,7 +181,9 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 | 两层大房间（`LargeRoom2`） | `base_floor` + `second_floor_2` + `second_roof` | `LargeRoom2` 第 8–9 层 = 144 PB / 52 st / 4 rod，与 `second_roof` 表**完全一致** |
 | 三层大房间（`LargeRoom3`） | `base_floor` + `second_floor_2` + `third_floor_2` + `third_roof` | 第 12–13 层 = 196 PB / 60 st / 4 rod，与 `third_roof` 表**完全一致** |
 
-第一层就是 `base_floor`。`second_floor_2` **下部带一段螺旋梯**（画布第 1–3 层的 `L/S/P` 格，落在第一层结构里，`base_floor` 自身没有这些格），与 `second_floor_1` 同一规律。
+第一层就是 `base_floor`。
+
+**空房间（empty room）** = 单层的这一族：`base_floor` + `base_roof`，内部空无一物，**顶部不接小塔楼**（只有两层 / 三层大房间才可能在屋顶接塔）。`second_floor_2` **下部带一段螺旋梯**（画布第 1–3 层的 `L/S/P` 格，落在第一层结构里，`base_floor` 自身没有这些格），与 `second_floor_1` 同一规律。
 
 由此从两个组合件切出：`SecondFloor2`（14×14×7）= 下探楼梯 3 层 + 第二层 4 层，70 PB 与表一致；`ThirdFloor2`（16×16×7）= 下探楼梯 3 层 + 第三层 4 层，56 stairs / 24 glass / 6 rod 与表一致；`SecondRoof` 改用大房间版本（14×14×2，144/52/4 全中）。
 
