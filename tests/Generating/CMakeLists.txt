@@ -284,6 +284,21 @@ add_test(
 
 
 
+# Stronghold test:
+add_executable(StrongholdTest
+	StrongholdTest.cpp
+)
+target_link_libraries(StrongholdTest GeneratorTestingSupport)
+add_test(
+	NAME StrongholdTest
+	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/Server
+	COMMAND StrongholdTest
+)
+
+
+
+
+
 # Put the projects into solution folders (MSVC):
 set_target_properties(
 	BasicGeneratorTest
@@ -293,6 +308,7 @@ set_target_properties(
 	PieceGeneratorBFSTree
 	PieceRotation
 	ReturnGatewayTest
+	StrongholdTest
 	PROPERTIES FOLDER Tests/Generating
 )
 
