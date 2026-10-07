@@ -1339,6 +1339,23 @@ protected:
 		std::vector<sMobHeadMarker> m_MobHeads;
 	} ;
 
+	/** Clears an exact box to air after the pieces are drawn. Air inside a piece does not erase blocks
+	another piece placed, so a shaft that a later piece filled has to be carved out cell by cell. */
+	void AddCarveBox(int a_MinX, int a_MaxX, int a_MinY, int a_MaxY, int a_MinZ, int a_MaxZ)
+	{
+		sCarve Carve;
+		Carve.m_MinX = a_MinX;
+		Carve.m_MaxX = a_MaxX;
+		Carve.m_MinY = a_MinY;
+		Carve.m_MaxY = a_MaxY;
+		Carve.m_MinZ = a_MinZ;
+		Carve.m_MaxZ = a_MaxZ;
+		m_Carves.push_back(Carve);
+	}
+
+
+
+
 	/** An axis-aligned box that is cleared to air after the pieces are drawn, to open doorways. */
 	struct sCarve
 	{
@@ -1456,11 +1473,7 @@ protected:
 			StoreyYs.push_back(TowerBaseY);
 			Add(P.m_TowerBase.get(), Vector3i(SmallTowerX, TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH, SmallTowerZ));
 			// See the room tower: air cannot erase the roof's blocks, so clear the ladder's shaft:
-			AddCarve(
-				SmallTowerX + (PrefabSize(*P.m_TowerBase).x / 2),
-				TowerBaseY,
-				SmallTowerZ + (PrefabSize(*P.m_TowerBase).z / 2)
-			);
+			AddCarveBox(SmallTowerX + END_CITY_TOWER_LADDER_X, SmallTowerX + END_CITY_TOWER_LADDER_X, TowerBaseY, TowerBaseY + 2, SmallTowerZ + END_CITY_TOWER_LADDER_Z, SmallTowerZ + END_CITY_TOWER_LADDER_Z);
 			Y = TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
 			for (int i = 1; i < StoreyCount; i++)
 			{
@@ -1723,11 +1736,7 @@ protected:
 					Add(P.m_TowerBase.get(), Vector3i(TowerX, RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH, TowerZ));
 					// The tower's inside is air, and air does not erase the blocks under it, so clear
 					// the shaft the ladder drops through the roof into the room:
-					AddCarve(
-						TowerX + (PrefabSize(*P.m_TowerBase).x / 2),
-						RoomTopY,
-						TowerZ + (PrefabSize(*P.m_TowerBase).z / 2)
-					);
+					AddCarveBox(TowerX + END_CITY_TOWER_LADDER_X, TowerX + END_CITY_TOWER_LADDER_X, RoomTopY, RoomTopY + 2, TowerZ + END_CITY_TOWER_LADDER_Z, TowerZ + END_CITY_TOWER_LADDER_Z);
 					int TowerY = RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
 					const int TowerStoreys = 3 + static_cast<int>(Rng() % 3);
 					for (int i = 1; i < TowerStoreys; i++)
