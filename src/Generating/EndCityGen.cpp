@@ -1594,14 +1594,20 @@ protected:
 				return (DirX != 0) ? Size.x : Size.z;
 			};
 
-			// The bridge leaves the tower through an arch of its own: the arch's far row lands in the
-			// tower's outer wall cell, so the archway is flush with the wall and embedded in it:
+			// The bridge leaves the tower through an arch of its own: the arch's far row sits one cell
+			// inside the tower's outer wall, so the archway is embedded in the wall rather than only
+			// flush with it. The wall cell itself is left open by the carve below, which is what the
+			// bridge walks through:
 			const sOrientedPrefab & StartArch = P.m_BridgeEnd[a_Dir];
-			const Vector3i StartEdge(TowerCenterX + (DirX * (Half - 1)), a_BranchY - 1, TowerCenterZ + (DirZ * (Half - 1)));
+			const Vector3i StartEdge(TowerCenterX + (DirX * (Half - 2)), a_BranchY - 1, TowerCenterZ + (DirZ * (Half - 2)));
 			if (StartArch.m_Prefab != nullptr)
 			{
 				Add(StartArch.m_Prefab.get(), Vector3i(StartEdge.x + StartArch.m_MinOffset.x, StartEdge.y, StartEdge.z + StartArch.m_MinOffset.z));
 			}
+			// Embedding the arch in the wall leaves the wall's own cell solid across the archway, and
+			// the arch's inside is air, which cannot erase it: open the wall where the bridge walks
+			// through, from the walking surface up:
+			AddCarve(TowerCenterX + (DirX * Half), a_BranchY + 2, TowerCenterZ + (DirZ * Half));
 
 			// The bridge itself starts just outside that wall. A bridge piece carries its walking deck in
 			// its second layer, while the floor of a tower storey or of a room sits in its own bottom
