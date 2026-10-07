@@ -112,20 +112,28 @@ static const sEndCityBlueprintLayer Layers_TowerTop[] =
 
 
 
-static const sEndCityBlueprintLayer Layers_FatTower[] =
+static const sEndCityBlueprintLayer Layers_FatTowerBase[] =
 {
 	{0, "              |      PPP     |    PPPPPPP   |   PPPPPPPPP  |   PPPPPPPPP  |  PPPP   PPPP |  PPPP   PPPP |  PPPP L PPPP |   PPPPPPPPP  |   PPPPPPPPP  |    PPPPPPP   |      PPP     |              "},
 	{1, "              |      UUU     |    UU   UU   |   U       U  |   U       U  |  UL        U |  U         U |  U        LU |   U       U  |   U       U  |    UU   UU   |      UUU     |              "},
 	{2, "       S      |      UuU     |    UU   UU   |   U       U  |   UE      U  |  U         U | Sp         pS|  U         U |   U      eU  |   U       U  |    UU   UU   |      UuU     |       S      "},
 	{3, "              |      UUU     |    UU   UU   |   U d     U  |   U       U  |  U         U |  U         U |  U         U |   U       U  |   U     D U  |    UU   UU   |      UUU     |              "},
-	{4, "              |      PPP     |    PPL  PP   |   P       P  |   P       P  |  P         P |  P         P |  P         P |   P       P  |   P       P  |    PP  LPP   |      PPP     |              "},
-	{5, "              |      UUU     |    UU  LUU   |   U       U  |   U       U  |  U         U |  U         U |  U         U |   U       U  |   U       U  |    UUL  UU   |      UUU     |              "},
-	{6, "       S      |      UuU     |    UU   UU   |   U     d U  |   U       U  |  U         U | SpK       kpS|  U         U |   U       U  |   U D     U  |    UU   UU   |      UuU     |       S      "},
-	{7, "              |      UUU     |    UU   UU   |   U       U  |   U      eU  |  U         U |  U         U |  U         U |   UE      U  |   U       U  |    UU   UU   |      UUU     |              "},
-	{8, "              |      PPP     |    PP   PP   |   P       P  |   P       P  |  P        LP |  P         P |  PL        P |   P       P  |   P       P  |    PP   PP   |      PPP     |              "},
-	{9, "              |      UUU     |    UU   UU   |   U       U  |   U       U  |  UL        U |  U         U |  U        LU |   U       U  |   U       U  |    UU   UU   |      UUU     |              "},
-	{10, "       S      |      UuU     |    UU h UU   |   U       U  |   UE      U  |  U         U | Sp         pS|  U         U |   U      eU  |   U       U  |    UU H UU   |      UuU     |       S      "},
-	{11, "       U      |      UUU     |    UU   UU   |   U d     U  |   U       U  |  U         U | UU         UU|  U         U |   U       U  |   U     D U  |    UU   UU   |      UUU     |       U      "},
+};
+
+
+
+
+
+static const sEndCityBlueprintLayer Layers_FatTowerMiddle[] =
+{
+	{0, "              |      PPP     |    PPL  PP   |   P       P  |   P       P  |  P         P |  P         P |  P         P |   P       P  |   P       P  |    PP  LPP   |      PPP     |              "},
+	{1, "              |      UUU     |    UU  LUU   |   U       U  |   U       U  |  U         U |  U         U |  U         U |   U       U  |   U       U  |    UUL  UU   |      UUU     |              "},
+	{2, "       S      |      UuU     |    UU   UU   |   U     d U  |   U       U  |  U         U | SpK       kpS|  U         U |   U       U  |   U D     U  |    UU   UU   |      UuU     |       S      "},
+	{3, "              |      UUU     |    UU   UU   |   U       U  |   U      eU  |  U         U |  U         U |  U         U |   UE      U  |   U       U  |    UU   UU   |      UUU     |              "},
+	{4, "              |      PPP     |    PP   PP   |   P       P  |   P       P  |  P        LP |  P         P |  PL        P |   P       P  |   P       P  |    PP   PP   |      PPP     |              "},
+	{5, "              |      UUU     |    UU   UU   |   U       U  |   U       U  |  UL        U |  U         U |  U        LU |   U       U  |   U       U  |    UU   UU   |      UUU     |              "},
+	{6, "       S      |      UuU     |    UU h UU   |   U       U  |   UE      U  |  U         U | Sp         pS|  U         U |   U      eU  |   U       U  |    UU H UU   |      UuU     |       S      "},
+	{7, "       U      |      UUU     |    UU   UU   |   U d     U  |   U       U  |  U         U | UU         UU|  U         U |   U       U  |   U     D U  |    UU   UU   |      UUU     |       U      "},
 };
 
 
@@ -319,7 +327,8 @@ const sEndCityBlueprint g_EndCityBlueprints[] =
 	{"TowerPiece", "P=Purpur Block|U=Purpur Pillar@top|u=Purpur Pillar@horizontal|p=Purpur Pillar|L=Purpur Slab|S=Purpur Stairs", 7, 7, 4, Layers_TowerPiece},
 	{"TowerFloor", "P=Purpur Block|U=Purpur Pillar@top|u=Purpur Pillar@horizontal|p=Purpur Pillar|L=Purpur Slab|S=Purpur Stairs", 7, 7, 4, Layers_TowerFloor},
 	{"TowerTop", "P=Purpur Block|S=Purpur Stairs-rot180|s=Purpur Stairs|L=Purpur Slab|B=Magenta Wall Banner|D=End Rod|E=End Stone Bricks|U=Purpur Pillar@top|G=Magenta Stained Glass|H=EntitySprite:Shulker-rot180", 9, 9, 5, Layers_TowerTop},
-	{"FatTower", "P=Purpur Block|S=Purpur Stairs|L=Purpur Slab|D=End Rod|E=End Rod-rot90|d=End Rod-rot180|e=End Rod-rot270|U=Purpur Pillar@top|u=Purpur Pillar|p=Purpur Pillar@horizontal|H=EntitySprite:Shulker|K=EntitySprite:Shulker-rot90|h=EntitySprite:Shulker-rot180|k=EntitySprite:Shulker-rot270", 14, 13, 12, Layers_FatTower},
+	{"FatTowerBase", "P=Purpur Block|S=Purpur Stairs|L=Purpur Slab|D=End Rod|E=End Rod-rot90|d=End Rod-rot180|e=End Rod-rot270|U=Purpur Pillar@top|u=Purpur Pillar|p=Purpur Pillar@horizontal|H=EntitySprite:Shulker|K=EntitySprite:Shulker-rot90|h=EntitySprite:Shulker-rot180|k=EntitySprite:Shulker-rot270", 14, 13, 4, Layers_FatTowerBase},
+	{"FatTowerMiddle", "P=Purpur Block|S=Purpur Stairs|L=Purpur Slab|D=End Rod|E=End Rod-rot90|d=End Rod-rot180|e=End Rod-rot270|U=Purpur Pillar@top|u=Purpur Pillar|p=Purpur Pillar@horizontal|H=EntitySprite:Shulker|K=EntitySprite:Shulker-rot90|h=EntitySprite:Shulker-rot180|k=EntitySprite:Shulker-rot270", 14, 13, 8, Layers_FatTowerMiddle},
 	{"FatTowerTop", "P=Purpur Block|S=Purpur Stairs|L=Purpur Slab|Y=Green Wool|N=Red Wool|C=Chest|U=Purpur Pillar@top|G=Magenta Stained Glass|E=End Stone Bricks|D=End Rod", 20, 19, 6, Layers_FatTowerTop},
 	{"BaseFloor", "P=Purpur Block|U=Purpur Pillar@top|S=Purpur Stairs|E=End Stone Bricks|D=End Rod|G=Magenta Stained Glass|K=EntitySprite:Shulker-rot270", 12, 12, 4, Layers_BaseFloor, true},
 	{"BaseRoof", "P=Purpur Block|S=Purpur Stairs|D=End Rod", 12, 12, 2, Layers_BaseRoof, true},

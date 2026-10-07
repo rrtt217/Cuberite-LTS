@@ -977,7 +977,8 @@ public:
 		m_TowerPiece = MakePrefab("TowerPiece");
 		m_TowerFloor = MakePrefab("TowerFloor");
 		m_TowerTop = MakePrefab("TowerTop");
-		m_FatTower = MakePrefab("FatTower");
+		m_FatTowerBase = MakePrefab("FatTowerBase");
+		m_FatTowerMiddle = MakePrefab("FatTowerMiddle");
 		m_FatTowerTop = MakePrefab("FatTowerTop");
 		m_FatTowerTopChests = ChestsOf("FatTowerTop");
 		MakeRotatedPrefabs("BaseFloor", m_BaseFloorRoom);
@@ -1009,7 +1010,8 @@ public:
 	std::unique_ptr<cPrefab> m_TowerPiece;
 	std::unique_ptr<cPrefab> m_TowerFloor;
 	std::unique_ptr<cPrefab> m_TowerTop;
-	std::unique_ptr<cPrefab> m_FatTower;
+	std::unique_ptr<cPrefab> m_FatTowerBase;
+	std::unique_ptr<cPrefab> m_FatTowerMiddle;
 	std::unique_ptr<cPrefab> m_FatTowerTop;
 	std::vector<Vector3i> m_FatTowerTopChests;
 	sRotatedPrefab m_BaseFloorRoom[END_CITY_DIR_COUNT];
@@ -1451,15 +1453,22 @@ protected:
 		}
 
 		// A large tower, when rolled, sits on top of the small tower:
-		if (Fat && (P.m_FatTower != nullptr))
+		if (Fat && (P.m_FatTowerMiddle != nullptr))
 		{
 			StoreyCount = 3 + (2 * static_cast<int>(Rng() % 3));  // 3, 5 or 7
 			StoreyYs.clear();
+
+			// The entrance storey comes first, then the repeating middle:
+			if (P.m_FatTowerBase != nullptr)
+			{
+				AddCentered(P.m_FatTowerBase.get(), TowerCenterX, Y, TowerCenterZ);
+				Y += StackHeightForName("FatTowerBase");
+			}
 			for (int i = 0; i < StoreyCount; i++)
 			{
 				StoreyYs.push_back(Y);
-				AddCentered(P.m_FatTower.get(), TowerCenterX, Y, TowerCenterZ);
-				Y += StackHeightForName("FatTower");
+				AddCentered(P.m_FatTowerMiddle.get(), TowerCenterX, Y, TowerCenterZ);
+				Y += StackHeightForName("FatTowerMiddle");
 			}
 
 			// Cap the fat tower with its loot room:
@@ -1491,7 +1500,7 @@ protected:
 		}
 
 		// Grow a bridge from the tower's wall in one direction; it ends in a ship or another tower:
-		const int TowerSize = Fat ? PrefabSize(*P.m_FatTower).x : PrefabSize(*P.m_TowerBase).x;
+		const int TowerSize = Fat ? PrefabSize(*P.m_FatTowerMiddle).x : PrefabSize(*P.m_TowerBase).x;
 		const int Half = TowerSize / 2;
 		const int SecondaryHalf = (P.m_TowerBase != nullptr) ? (PrefabSize(*P.m_TowerBase).x / 2) : 0;
 		bool ShipPlaced = false;
