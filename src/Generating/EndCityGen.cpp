@@ -85,13 +85,13 @@ static constexpr int END_CITY_ROOM_SECOND_ROOF_LAYER = 8;
 static constexpr int END_CITY_ROOM_THIRD_LAYER = 5;
 static constexpr int END_CITY_ROOM_THIRD_ROOF_LAYER = 12;
 
-/** The layer of the base blueprint each storey starts on, and the layer a tower stands on. The third
-roof's blocks are on layer 12 and its last End Rods on layer 13, so the roof's walking surface - where
-the small tower's floor goes - is layer 13. */
+/** The layer of the base blueprint each storey starts on, and the layer a tower stands on. A tower
+stands on the roof's own layer, whose middle is open for the tower's ladder to drop through into the
+room below - the same layer the roof's blocks are on, not one above them. */
 static constexpr int END_CITY_SECOND_FLOOR_LAYER = 1;
 static constexpr int END_CITY_THIRD_FLOOR_LAYER = 5;
 static constexpr int END_CITY_THIRD_ROOF_LAYER = 12;
-static constexpr int END_CITY_BASE_TOP_LAYER = 13;
+static constexpr int END_CITY_BASE_TOP_LAYER = 12;
 
 /** The base room's topmost ladder cell within that frame, and the small tower's ladder cell within its
 own frame. Placing the tower so the two coincide continues the room's spiral ladder into the tower. */
