@@ -150,6 +150,16 @@ EMCSBiome cChunkGeneratorThread::GetBiomeAt(int a_BlockX, int a_BlockZ)
 
 
 
+bool cChunkGeneratorThread::GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target)
+{
+	ASSERT(m_Generator != nullptr);
+	return m_Generator->GetNearestStructureTarget(a_Structure, a_Position, a_Target);
+}
+
+
+
+
+
 void cChunkGeneratorThread::Execute(void)
 {
 	// To be able to display performance information, the generator counts the chunks generated.

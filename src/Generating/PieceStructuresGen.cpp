@@ -59,6 +59,13 @@ public:
 
 
 
+	/** Returns the name of this generator's prefab set. */
+	AString GetName(void) const { return m_Name; }
+
+
+
+
+
 	// cGridStructGen overrides:
 	virtual cStructurePtr CreateStructure(int a_GridX, int a_GridZ, int a_OriginX, int a_OriginZ) override
 	{
@@ -66,6 +73,29 @@ public:
 		cPieceGeneratorBFSTree PieceTree(m_PiecePool, m_Seed);
 		PieceTree.PlacePieces(a_OriginX, a_OriginZ, m_MaxDepth, OutPieces);
 		return std::make_shared<cPrefabStructure>(a_GridX, a_GridZ, a_OriginX, a_OriginZ, std::move(OutPieces), m_HeightGen);
+	}
+
+
+
+
+
+	virtual bool GetNearestStructureTarget(Vector3i a_Position, Vector3i & a_Target) override
+	{
+		// The base class knows the structure's origin in the XZ plane; the Y comes from the starting piece,
+		// which the piece generator chooses the same way as when it actually places the structure:
+		if (!Super::GetNearestStructureTarget(a_Position, a_Target))
+		{
+			return false;
+		}
+		const cPieceGeneratorBFSTree PieceTree(m_PiecePool, m_Seed);
+		const int TargetY = PieceTree.GetStartingPieceHeight(a_Target.x, a_Target.z);
+		if (TargetY < 0)
+		{
+			// The piecepool has no starting piece, the structure cannot be placed at all:
+			return false;
+		}
+		a_Target.y = TargetY;
+		return true;
 	}
 
 
@@ -171,4 +201,20 @@ void cPieceStructuresGen::GenFinish(cChunkDesc & a_Chunk)
 	{
 		Gen->GenFinish(a_Chunk);
 	}
+}
+
+
+
+
+
+bool cPieceStructuresGen::GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target)
+{
+	for (auto & Gen : m_Gens)
+	{
+		if (Gen->GetName() == a_Structure)
+		{
+			return Gen->GetNearestStructureTarget(a_Position, a_Target);
+		}
+	}
+	return false;
 }

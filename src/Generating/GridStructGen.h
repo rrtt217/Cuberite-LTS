@@ -94,6 +94,16 @@ public:
 	Note that this must not be called anymore after generating a chunk. */
 	void SetGeneratorParams(const AStringMap & a_GeneratorParams);
 
+	/** Finds the structure whose grid cell is nearest to a_Position (in the XZ plane) and returns its
+	target position in a_Target. The base implementation knows the structure's origin coords and leaves the
+	Y coord at 0; descendants that know the vertical placement fill it in. Returns false if the generator
+	cannot place the structure at all.
+	This is a read-only query: it computes the placement from the grid parameters and the grid noise,
+	without creating structures or touching the structure cache. The params and the noise are set at load
+	time and the piece pool's Reset() is a no-op, so it is safe to call it from the tick thread while the
+	generator thread is generating chunks. */
+	virtual bool GetNearestStructureTarget(Vector3i a_Position, Vector3i & a_Target);
+
 	// cFinishGen override:
 	virtual void GenFinish(cChunkDesc & a_ChunkDesc) override;
 

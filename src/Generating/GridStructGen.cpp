@@ -130,6 +130,45 @@ void cGridStructGen::SetGeneratorParams(const AStringMap & a_GeneratorParams)
 
 
 
+bool cGridStructGen::GetNearestStructureTarget(Vector3i a_Position, Vector3i & a_Target)
+{
+	// The origin of a cell's structure is offset from the cell's grid point by the grid noise; because the
+	// noise term is divided and moduloed, the offset can be as low as -3 * MaxOffset (C++ truncates the
+	// division towards zero), so the nearest origin is never farther than GridSize / 2 + 3 * MaxOffset:
+	const int OffsetBoundX = 3 * m_MaxOffsetX;
+	const int OffsetBoundZ = 3 * m_MaxOffsetZ;
+	const int CellMinX = FAST_FLOOR_DIV(a_Position.x - (m_GridSizeX / 2) - (2 * OffsetBoundX), m_GridSizeX);
+	const int CellMaxX = FAST_FLOOR_DIV(a_Position.x + (m_GridSizeX / 2) + (2 * OffsetBoundX), m_GridSizeX);
+	const int CellMinZ = FAST_FLOOR_DIV(a_Position.z - (m_GridSizeZ / 2) - (2 * OffsetBoundZ), m_GridSizeZ);
+	const int CellMaxZ = FAST_FLOOR_DIV(a_Position.z + (m_GridSizeZ / 2) + (2 * OffsetBoundZ), m_GridSizeZ);
+
+	// Walk the candidate cells and keep the nearest origin; the formula must match GetStructuresForChunk():
+	Int64 BestDistanceSq = -1;
+	for (int CellX = CellMinX; CellX <= CellMaxX; CellX++)
+	{
+		const int GridX = CellX * m_GridSizeX;
+		for (int CellZ = CellMinZ; CellZ <= CellMaxZ; CellZ++)
+		{
+			const int GridZ = CellZ * m_GridSizeZ;
+			const int OriginX = GridX + ((m_Noise.IntNoise2DInt(GridX + 3, GridZ + 5) / 7) % (m_MaxOffsetX * 2)) - m_MaxOffsetX;
+			const int OriginZ = GridZ + ((m_Noise.IntNoise2DInt(GridX + 5, GridZ + 3) / 7) % (m_MaxOffsetZ * 2)) - m_MaxOffsetZ;
+			const Int64 DistanceX = static_cast<Int64>(OriginX) - a_Position.x;
+			const Int64 DistanceZ = static_cast<Int64>(OriginZ) - a_Position.z;
+			const Int64 DistanceSq = (DistanceX * DistanceX) + (DistanceZ * DistanceZ);
+			if ((BestDistanceSq < 0) || (DistanceSq < BestDistanceSq))
+			{
+				BestDistanceSq = DistanceSq;
+				a_Target.Set(OriginX, 0, OriginZ);
+			}
+		}
+	}
+	return (BestDistanceSq >= 0);
+}
+
+
+
+
+
 void cGridStructGen::GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructurePtrs & a_Structures)
 {
 	// Calculate the min and max grid coords of the structures to be returned:

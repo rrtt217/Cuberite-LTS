@@ -27,6 +27,7 @@ target_sources(
 	SplashPotionEntity.cpp
 	TNTEntity.cpp
 	ThrownEggEntity.cpp
+	ThrownEnderEyeEntity.cpp
 	ThrownEnderPearlEntity.cpp
 	ThrownSnowballEntity.cpp
 	WitherSkullEntity.cpp
@@ -57,6 +58,7 @@ target_sources(
 	SplashPotionEntity.h
 	TNTEntity.h
 	ThrownEggEntity.h
+	ThrownEnderEyeEntity.h
 	ThrownEnderPearlEntity.h
 	ThrownSnowballEntity.h
 	WitherSkullEntity.h

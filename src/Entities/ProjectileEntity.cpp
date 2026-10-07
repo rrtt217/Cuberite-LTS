@@ -17,6 +17,7 @@
 
 #include "ArrowEntity.h"
 #include "ThrownEggEntity.h"
+#include "ThrownEnderEyeEntity.h"
 #include "ThrownEnderPearlEntity.h"
 #include "ExpBottleEntity.h"
 #include "ThrownSnowballEntity.h"
@@ -278,6 +279,10 @@ std::unique_ptr<cProjectileEntity> cProjectileEntity::Create(
 		case pkSplashPotion:  return std::make_unique<cSplashPotionEntity>    (a_Creator, a_Pos, Speed, *a_Item);
 		case pkWitherSkull:   return std::make_unique<cWitherSkullEntity>     (a_Creator, a_Pos, Speed);
 		case pkDragonFireball: return std::make_unique<cDragonFireballEntity>(a_Creator, a_Pos, Speed);
+
+		// The eye of ender computes its own flight, so for this kind the Speed parameter carries the
+		// position of the structure the eye should fly towards, rather than an initial velocity:
+		case pkEnderEye:      return std::make_unique<cThrownEnderEyeEntity>  (a_Creator, a_Pos, Speed);
 		case pkFirework:
 		{
 			ASSERT(a_Item != nullptr);
@@ -419,6 +424,7 @@ AString cProjectileEntity::GetMCAClassName(void) const
 		case pkWitherSkull:   return "WitherSkull";
 		case pkDragonFireball: return "DragonFireball";
 		case pkFirework:      return "Firework";
+		case pkEnderEye:      return "EyeOfEnderSignal";
 	}
 	UNREACHABLE("Unsupported projectile kind");
 }

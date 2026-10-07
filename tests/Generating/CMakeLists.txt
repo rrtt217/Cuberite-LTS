@@ -299,6 +299,21 @@ add_test(
 
 
 
+# Structure locator test:
+add_executable(StructureLocatorTest
+	StructureLocatorTest.cpp
+)
+target_link_libraries(StructureLocatorTest GeneratorTestingSupport)
+add_test(
+	NAME StructureLocatorTest
+	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/Server
+	COMMAND StructureLocatorTest
+)
+
+
+
+
+
 # Put the projects into solution folders (MSVC):
 set_target_properties(
 	BasicGeneratorTest
@@ -309,6 +324,7 @@ set_target_properties(
 	PieceRotation
 	ReturnGatewayTest
 	StrongholdTest
+	StructureLocatorTest
 	PROPERTIES FOLDER Tests/Generating
 )
 

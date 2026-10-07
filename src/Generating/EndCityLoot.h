@@ -6,6 +6,8 @@
 
 #include <vector>
 
+#include "../Defines.h"  // eBlockFace
+
 class cChunkDesc;
 
 /** The kind of a generated End City special content. */
