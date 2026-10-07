@@ -167,7 +167,8 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 | `FatTowerBase`（14×13×4） | ✓ 84 pillar / 80 PB / 4 stairs / 4 rod / 3 slab，与 `fat_tower_base` **完全一致**；由 `FatTower` 第 0–3 层切出 |
 | `FatTowerMiddle`（14×13×8） | 由 `FatTower` 第 4–11 层切出；Wiki 表写 164 pillar / 62 PB，我们转录出 172 / 56，差 8 / 6 格（以 /Large_Tower 的 ASCII 图为准） |
 | `TowerFloor` | 由 `TowerPiece` 底面固化推导（Wiki 未给该件蓝图），材料数与 Wiki 表不符，待重做 |
-| `LootRoom2` / `LootRoom3` | 实为 Wiki `/Large_Room` 的两层 / 三层变体；帧被补齐到 30×18 / 31×16（内容只占其中一段），**待按内容重框** |
+| `LargeRoom2` / `LargeRoom3`（原名 `LootRoom2/3`） | Wiki `/Large_Room` 的两层 / 三层变体（复杂楼梯房间）。两层变体 282 PB / 140 ESB / 103 stairs / 27 pillar / 22 glass / 8 rod / 7 slab / 3 ladder，与 /Large_Room 材料表（275/136/103/27/26/8/8/3）吻合 |
+| `FatTowerTop` | 同时就是 Wiki 的**战利品房**：`/Loot_Room` 页面蓝图解析出 352 PB / 131 stairs / 106 ESB / 26 glass / 18 pillar / 9 slab / 4 rod / 2 chest，与本件**逐格一致**（该页的材料表只有 3 行、本身是坏的） |
 
 `base_floor` 的包围盒与其地板不同范围（地板 x=1..9，屋顶件 x=0..11），所以与桥拱门对接时一律用**最下层范围**（`m_FloorMinX/MaxX/MinZ/MaxZ`）定位，不用整件包围盒。
 
@@ -269,8 +270,8 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 
 本分支已落地：
 
-- src/Generating/EndCityGen.{h,cpp}：cEndCityGen : cGridStructGen（格点 320 块 / 原点区块 0..8 / 外岛距离门 / 平坦度门），骨架 = 入口（EmptyRoom）-> 基础层（BaseRoom）-> 小塔（SmallTowerBase + N x SmallTowerExtension + SmallRoom）或胖塔（N x LargeTower + LootRoom）-> 每方向 50% 桥（Bridge）-> 每桥 1/8 船（Ship，全城至多一艘）。
-- src/Generating/EndCityBlueprintData.{h,cpp}：从 wiki layered blueprint **逐方块转录**的 14 个蓝图（BaseRoom、SmallTowerBase/Extension、LargeTower、SmallRoom、LargeRoomTwoStorey/ThreeStorey、LootRoom、EmptyRoom、Bridge/GentleStairs/SteepStairs/Dock、Ship）；运行时由 char map + 层串构建 cBlockArea，裁剪到非空气包围盒后包成 cPrefab。
+- src/Generating/EndCityGen.{h,cpp}：cEndCityGen : cGridStructGen（格点 320 块 / 原点区块 0..8 / 外岛距离门 / 平坦度门），骨架 = 入口（base_floor 12×12）-> 基座 storey（second_floor_1 / third_floor_1 / third_roof）-> 小塔（tower_base + N × tower_piece + tower_top）或胖塔（fat_tower_base + N × fat_tower_middle + fat_tower_top）-> 每方向 50% 桥（bridge_piece/stairs/bridge_end）-> 每桥 1/8 船（ship，全城至多一艘）。
+- src/Generating/EndCityBlueprintData.{h,cpp}：从 wiki layered blueprint **逐方块转录**的蓝图（base_floor/base_roof、second_floor_1、third_floor_1/third_roof、tower_base/piece/top、fat_tower_base/middle/top、large_room 两层/三层、bridge_piece/gentle/steep/end、ship）；运行时由 char map + 层串构建 cBlockArea，裁剪到非空气包围盒后包成 cPrefab。
 - finisher token EndCity，已加入 End 默认 Finishers（EnderDragonFightStructures, EndCity）。
 - tests/Generating/EndCityTest.cpp：格点规则、正常生成、三道拒绝门（虚空 / 内岛 / 不平坦）、确定性。
 

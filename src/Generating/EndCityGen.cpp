@@ -989,8 +989,8 @@ public:
 		m_FatTowerTopChests = ChestsOf("FatTowerTop");
 		MakeRotatedPrefabs("BaseFloor", m_BaseFloorRoom);
 		MakeRotatedPrefabs("EmptyRoom", m_EmptyRoom);
-		MakeRotatedPrefabs("LootRoom2", m_LootRoom2);
-		MakeRotatedPrefabs("LootRoom3", m_LootRoom3);
+		MakeRotatedPrefabs("LargeRoom2", m_LargeRoom2);
+		MakeRotatedPrefabs("LargeRoom3", m_LargeRoom3);
 
 		// Extend the bottom piece down to the terrain so that slopes do not leave a gap:
 		if (m_BaseFloor != nullptr)
@@ -1020,8 +1020,8 @@ public:
 	std::vector<Vector3i> m_FatTowerTopChests;
 	sRotatedPrefab m_BaseFloorRoom[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_EmptyRoom[END_CITY_DIR_COUNT];
-	sRotatedPrefab m_LootRoom2[END_CITY_DIR_COUNT];
-	sRotatedPrefab m_LootRoom3[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_LargeRoom2[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_LargeRoom3[END_CITY_DIR_COUNT];
 
 	sOrientedPrefab m_Bridge[END_CITY_DIR_COUNT];
 	sOrientedPrefab m_BridgeGentle[END_CITY_DIR_COUNT];
@@ -1605,11 +1605,11 @@ protected:
 			}
 			else if (RoomStoreys == 2)
 			{
-				RoomSet = P.m_LootRoom2;
+				RoomSet = P.m_LargeRoom2;
 			}
 			else
 			{
-				RoomSet = P.m_LootRoom3;
+				RoomSet = P.m_LargeRoom3;
 			}
 
 			// Rotate the room so that its doorway faces back toward the bridge:
@@ -1663,7 +1663,7 @@ protected:
 				// centring the tower on the room:
 				if (RoomTower)
 				{
-					const AString RoomName = (RoomStoreys == 2) ? "LootRoom2" : "LootRoom3";
+					const AString RoomName = (RoomStoreys == 2) ? "LargeRoom2" : "LargeRoom3";
 					const int TowerX = PosX + Room->m_LadderX - END_CITY_TOWER_LADDER_X;
 					const int TowerZ = PosZ + Room->m_LadderZ - END_CITY_TOWER_LADDER_Z;
 					// The tower's base carries the ladder entrance, so let it descend into the room below:

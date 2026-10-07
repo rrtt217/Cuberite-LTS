@@ -198,7 +198,7 @@ static const sEndCityBlueprintLayer Layers_EmptyRoom[] =
 
 
 
-static const sEndCityBlueprintLayer Layers_LootRoom2[] =
+static const sEndCityBlueprintLayer Layers_LargeRoom2[] =
 {
 	{0, "||    SPPPPS|   PPPPPPPP|   PPPPPPPP|   PPPPPPPP|   PPPPPPPP|   PPPPPPPP|   PPPPPPPP|   PPPPPPPP|   PPPPPPPP|||"},
 	{1, "|||   UEE  EEU|   E      E|   E  L   E|   E  SP  E|   E  PP  E|   E      E|   E      E|   UEEEEEEU|||"},
@@ -216,7 +216,7 @@ static const sEndCityBlueprintLayer Layers_LootRoom2[] =
 
 
 
-static const sEndCityBlueprintLayer Layers_LootRoom3[] =
+static const sEndCityBlueprintLayer Layers_LargeRoom3[] =
 {
 	{0, "|||     SPPPPS|    PPPPPPPP|    PPPPPPPP|    PPPPPPPP|    PPPPPPPP|    PPPPPPPP|    PPPPPPPP|    PPPPPPPP|    PPPPPPPP||||"},
 	{1, "||||    UEE  EEU|    E      E|    E  L   E|    E  SP  E|    E  PP  E|    E      E|    E      E|    UEEEEEEU||||"},
@@ -341,8 +341,8 @@ const sEndCityBlueprint g_EndCityBlueprints[] =
 	{"BaseFloor", "P=Purpur Block|U=Purpur Pillar@top|S=Purpur Stairs|E=End Stone Bricks|D=End Rod|G=Magenta Stained Glass|K=EntitySprite:Shulker-rot270", 12, 12, 4, Layers_BaseFloor, true},
 	{"BaseRoof", "P=Purpur Block|S=Purpur Stairs|D=End Rod", 12, 12, 2, Layers_BaseRoof, true},
 	{"EmptyRoom", "P=Purpur Block|U=Purpur Pillar@top|S=Purpur Stairs|E=End Stone Bricks|D=End Rod|G=Magenta Stained Glass|K=EntitySprite:Shulker-rot270", 12, 12, 6, Layers_EmptyRoom, true},
-	{"LootRoom2", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|D=End Rod|A=Ladder", 14, 14, 10, Layers_LootRoom2, true},
-	{"LootRoom3", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|D=End Rod|A=Ladder|C=Chest|e=Ender Chest", 16, 16, 14, Layers_LootRoom3, true},
+	{"LargeRoom2", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|D=End Rod|A=Ladder", 14, 14, 10, Layers_LargeRoom2, true},
+	{"LargeRoom3", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|D=End Rod|A=Ladder|C=Chest|e=Ender Chest", 16, 16, 14, Layers_LargeRoom3, true},
 	{"BridgePiece", "B=Purpur Block|P=Purpur Pillar|S=Purpur Stairs", 5, 4, 3, Layers_BridgePiece},
 	{"BridgeGentleStairs", "B=Purpur Block|H=Purpur Slab|P=Purpur Pillar|S=Purpur Stairs", 5, 8, 7, Layers_BridgeGentleStairs},
 	{"BridgeSteepStairs", "B=Purpur Block|P=Purpur Pillar|S=Purpur Stairs", 5, 4, 7, Layers_BridgeSteepStairs},
