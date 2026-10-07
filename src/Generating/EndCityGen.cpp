@@ -1455,6 +1455,12 @@ protected:
 			TowerCenterZ = SmallTowerZ + (PrefabSize(*P.m_TowerBase).z / 2);
 			StoreyYs.push_back(TowerBaseY);
 			Add(P.m_TowerBase.get(), Vector3i(SmallTowerX, TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH, SmallTowerZ));
+			// See the room tower: air cannot erase the roof's blocks, so clear the ladder's shaft:
+			AddCarve(
+				SmallTowerX + (PrefabSize(*P.m_TowerBase).x / 2),
+				TowerBaseY,
+				SmallTowerZ + (PrefabSize(*P.m_TowerBase).z / 2)
+			);
 			Y = TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
 			for (int i = 1; i < StoreyCount; i++)
 			{
@@ -1715,6 +1721,13 @@ protected:
 					const int TowerZ = LadderZ + Ladder.m_LadderZ - END_CITY_TOWER_LADDER_Z;
 					// The tower's base carries the ladder entrance, so let it descend into the room below:
 					Add(P.m_TowerBase.get(), Vector3i(TowerX, RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH, TowerZ));
+					// The tower's inside is air, and air does not erase the blocks under it, so clear
+					// the shaft the ladder drops through the roof into the room:
+					AddCarve(
+						TowerX + (PrefabSize(*P.m_TowerBase).x / 2),
+						RoomTopY,
+						TowerZ + (PrefabSize(*P.m_TowerBase).z / 2)
+					);
 					int TowerY = RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
 					const int TowerStoreys = 3 + static_cast<int>(Rng() % 3);
 					for (int i = 1; i < TowerStoreys; i++)
