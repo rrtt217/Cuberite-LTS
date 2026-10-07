@@ -1614,7 +1614,7 @@ protected:
 			// layer, so the bridge is placed one block lower: the deck block then lands in the floor's
 			// layer and the two walking surfaces stay flush instead of off by one. The staircase piece
 			// raises the far end cumulatively, so bridges can reach towers at other heights:
-			Vector3i Edge(TowerCenterX + (DirX * (Half + 1)), a_BranchY - 1, TowerCenterZ + (DirZ * (Half + 1)));
+			Vector3i Edge(TowerCenterX + (DirX * Half), a_BranchY - 1, TowerCenterZ + (DirZ * Half));
 
 			const int StraightCount = END_CITY_BRIDGE_MIN_SEGMENTS + static_cast<int>(Rng() % END_CITY_BRIDGE_EXTRA_SEGMENTS);
 			for (int i = 0; i < StraightCount; i++)
