@@ -100,6 +100,12 @@ public:
 	/** Returns the biome at the specified coords. Used by ChunkMap if an invalid chunk is queried for biome */
 	EMCSBiome GetBiomeAt(int a_BlockX, int a_BlockZ);
 
+	/** If the generator knows the structure with the specified name, finds the structure nearest to
+	a_Position and returns its target position in a_Target. Returns false if the structure is unknown here.
+	Calling this is read-only (no chunks are generated, no structures are created), so it is safe to call it
+	from the tick thread; the generator's configuration must not be reloaded while it runs. */
+	bool GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target);
+
 
 private:
 

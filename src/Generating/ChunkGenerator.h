@@ -39,6 +39,13 @@ public:
 	Descendants need to override this and generate into a_ChunkDesc. */
 	virtual void Generate(cChunkDesc & a_ChunkDesc) = 0;
 
+	/** If this generator knows the structure with the specified name, finds the structure nearest to
+	a_Position and returns its target position in a_Target. Returns false if the structure is unknown here
+	(the default implementation knows no structures at all).
+	Implementations must keep this query read-only - no structures may be created and no generation state
+	may be touched - so that it can be called from the tick thread while chunks are being generated. */
+	virtual bool GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target);
+
 	/** Returns the seed that was read from the INI file. */
 	int GetSeed(void) const { return m_Seed; }
 

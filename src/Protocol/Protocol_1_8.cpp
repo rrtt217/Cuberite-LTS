@@ -3944,6 +3944,7 @@ UInt8 cProtocol_1_8_0::GetProtocolEntityType(const cEntity & a_Entity) const
 				case PType::pkSplashPotion: return 73;
 				case PType::pkFirework: return 76;
 				case PType::pkWitherSkull: return 66;
+				case PType::pkEnderEye: return 72;
 				case PType::pkDragonFireball: return 93;
 			}
 

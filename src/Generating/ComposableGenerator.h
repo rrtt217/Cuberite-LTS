@@ -187,6 +187,18 @@ public:
 	virtual ~cFinishGen() {}  // Force a virtual destructor in descendants
 
 	virtual void GenFinish(cChunkDesc & a_ChunkDesc) = 0;
+
+	/** If this finisher generates the structure with the specified name, finds the structure nearest to
+	a_Position and returns its target position in a_Target. Returns false if the structure is unknown here.
+	The query must be read-only - it must not create structures nor touch any generation state, so that it
+	can be called from the tick thread while chunks are being generated (see cGridStructGen). */
+	virtual bool GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target)
+	{
+		UNUSED(a_Structure);
+		UNUSED(a_Position);
+		UNUSED(a_Target);
+		return false;
+	}
 } ;
 
 
@@ -206,6 +218,7 @@ public:
 	virtual void Initialize(cIniFile & a_IniFile) override;
 	virtual void GenerateBiomes(cChunkCoords a_ChunkCoords, cChunkDef::BiomeMap & a_BiomeMap) override;
 	virtual void Generate(cChunkDesc & a_ChunkDesc) override;
+	virtual bool GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target) override;
 
 	/** If there's no particular sub-generator set in the INI file,
 	adds the default one, based on the dimension. */

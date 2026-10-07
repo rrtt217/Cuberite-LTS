@@ -16,7 +16,7 @@ class cItemEyeOfEnderHandler final:
 public:
 
 	constexpr cItemEyeOfEnderHandler(int a_ItemType):
-		Super(a_ItemType, cProjectileEntity::pkSnowball, 30)
+		Super(a_ItemType, cProjectileEntity::pkEnderEye, 0)
 	{
 	}
 
@@ -51,16 +51,50 @@ public:
 
 					// Try to spawn portal:
 					FindAndSetPortal(a_ClickedBlockPos, FacingMeta & 3, ChunkInterface, *a_World);
+
+					a_World->BroadcastSoundEffect(
+						"block.end_portal_frame.fill",
+						Vector3d(a_ClickedBlockPos) + Vector3d(0.5, 0.5, 0.5),
+						1.0f, 1.0f
+					);
 					return true;
 				}
+
+				// The frame already holds an eye, so there is nothing to do:
+				return true;
 			}
+		}
+
+		// The eye can only locate structures in the Overworld (Minecraft Wiki: Eye of Ender):
+		if (a_World->GetDimension() != dimOverworld)
+		{
 			return false;
 		}
 
-		// TODO: Create projectile for Eye Of Ender
-		// return Super::OnItemUse(a_World, a_Player, a_PluginInterface, a_Item, a_ClickedBlockPos, a_ClickedBlockFace);
+		// Ask the generator where the nearest stronghold is; without a stronghold generator configured
+		// for this world (see the Finishers setting in world.ini) there is nothing to fly towards:
+		Vector3i Target;
+		if (!a_World->GetGenerator().GetNearestStructureTarget("Stronghold", Vector3i(a_Player->GetPosition()), Target))
+		{
+			return false;
+		}
 
-		return false;
+		// Create the projectile; the eye computes its flight towards the target on its own:
+		const Vector3d StartPos = a_Player->GetThrowStartPos();
+		const Vector3d TargetPos(Target);
+		if (a_World->CreateProjectile(StartPos, m_ProjectileKind, a_Player, &a_Player->GetEquippedItem(), &TargetPos) == cEntity::INVALID_ID)
+		{
+			return false;
+		}
+
+		// The launch sound (Minecraft Wiki: entity.ender_eye.launch, volume 0.5, pitch one third to one half):
+		a_World->BroadcastSoundEffect("entity.ender_eye.launch", StartPos, 0.5f, GetRandomProvider().RandReal(0.33f, 0.5f));
+
+		if (!a_Player->IsGameModeCreative())
+		{
+			a_Player->GetInventory().RemoveOneEquippedItem();
+		}
+		return true;
 	}
 
 

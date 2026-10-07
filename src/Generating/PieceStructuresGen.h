@@ -36,8 +36,9 @@ public:
 	Returns true if at least one prefab set is valid (the generator should be kept). */
 	bool Initialize(const AString & a_Prefabs, int a_SeaLevel, cBiomeGen & a_BiomeGen, cTerrainHeightGen & a_HeightGen);
 
-	// cFinishGen override:
+	// cFinishGen overrides:
 	virtual void GenFinish(cChunkDesc & a_ChunkDesc) override;
+	virtual bool GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target) override;
 
 protected:
 	/** The generator doing the work for a single prefab set.
