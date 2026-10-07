@@ -150,6 +150,10 @@
     [Dragon's Breath](https://minecraft.wiki/w/Dragon%27s_Breath)）：
     - `cDragonFireballEntity`（`pkDragonFireball`，Spawn Object ID 93）直线飞行、无重力；命中方块 **0.5 s（10 tick）后**炸出
       紫色区域效果云（半径 3→5 / 30 s、Instant Damage II、`RadiusOnUse = 0` 不因生效而缩小）；**命中实体不造成伤害/击退**，直接穿过。
+    - 飞行速度为 **1 格/tick（20 格/s）**，与其它火球同类；注意 `cEntity::SetSpeed` 及投射物速度的单位是
+      **格/秒**，把“格/tick”的常量直接当格/秒传入会让实际速度只有 1 格/s、看起来停在空中
+      （与 `vanilla-1.12.2-eye-of-ender.md` §4.2 是同一类单位错误）。该取值沿用本分支既有实现意图，
+      **未经 wiki 数值佐证，标注为推测/待实机微调**。
     - Strafing 阶段目标进入 **64 格**时发射一颗火球（每次 strafe 一发），自龙头前方射出。
     - 该云标记 `CanBeCollected`，玩家手持玻璃瓶右键获得龙息，同时云半径 -0.5，半径归零则消散。
 
