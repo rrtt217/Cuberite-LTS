@@ -961,7 +961,6 @@ public:
 		m_FatTowerTop = MakePrefab("FatTowerTop");
 		m_FatTowerTopChests = ChestsOf("FatTowerTop");
 		MakeRotatedPrefabs("EmptyRoom", m_EmptyRoom);
-		MakeRotatedPrefabs("LootRoom1", m_LootRoom1);
 		MakeRotatedPrefabs("LootRoom2", m_LootRoom2);
 		MakeRotatedPrefabs("LootRoom3", m_LootRoom3);
 
@@ -988,7 +987,6 @@ public:
 	std::unique_ptr<cPrefab> m_FatTowerTop;
 	std::vector<Vector3i> m_FatTowerTopChests;
 	sRotatedPrefab m_EmptyRoom[END_CITY_DIR_COUNT];
-	sRotatedPrefab m_LootRoom1[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_LootRoom2[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_LootRoom3[END_CITY_DIR_COUNT];
 
@@ -1127,6 +1125,22 @@ protected:
 				if (Found)
 				{
 					break;
+				}
+			}
+
+			// A room's ladders are the footprint of the small tower stacked on its roof, not part
+			// of the room; the recorded column is only used to line that tower up:
+			for (int y = 0; y < Rotated->GetSizeY(); y++)
+			{
+				for (int z = 0; z < Rotated->GetSizeZ(); z++)
+				{
+					for (int x = 0; x < Rotated->GetSizeX(); x++)
+					{
+						if (Rotated->GetRelBlockType(x, y, z) == E_BLOCK_LADDER)
+						{
+							Rotated->SetRelBlockType(x, y, z, E_BLOCK_AIR);
+						}
+					}
 				}
 			}
 			auto Prefab = std::make_unique<cPrefab>(*Rotated);
@@ -1490,34 +1504,23 @@ protected:
 			}
 
 			// A loot room may end the bridge. The wiki gives one, two and three storey variants; the
-			// two and three storey ones may carry a small tower on their roof:
-			int RoomStoreys = 1;
-			bool RoomTower = false;
+			// two and three storey ones are the large rooms and may carry a small tower on their roof:
+			const int RoomStoreys = 1 + static_cast<int>(Rng() % 3);
+			bool RoomTower = (RoomStoreys >= 2) &&
+				(P.m_TowerBase != nullptr) && (P.m_TowerPiece != nullptr) &&
+				((Rng() % END_CITY_ROOM_TOWER_DENOMINATOR) == 0);
 			const sRotatedPrefab * RoomSet = nullptr;
-			if ((Rng() % 4) == 0)
+			if (RoomStoreys == 1)
 			{
-				// The wiki notes that base_floor also forms the "empty rooms" found higher up:
 				RoomSet = P.m_EmptyRoom;
+			}
+			else if (RoomStoreys == 2)
+			{
+				RoomSet = P.m_LootRoom2;
 			}
 			else
 			{
-				RoomStoreys = 1 + static_cast<int>(Rng() % 3);
-				RoomTower = (RoomStoreys >= 2) &&
-					(P.m_TowerBase != nullptr) && (P.m_TowerPiece != nullptr) &&
-					((Rng() % END_CITY_ROOM_TOWER_DENOMINATOR) == 0);
-
-				if (RoomStoreys == 1)
-				{
-					RoomSet = P.m_LootRoom1;
-				}
-				else if (RoomStoreys == 2)
-				{
-					RoomSet = P.m_LootRoom2;
-				}
-				else
-				{
-					RoomSet = P.m_LootRoom3;
-				}
+				RoomSet = P.m_LootRoom3;
 			}
 
 			// Rotate the room so that its doorway faces back toward the bridge:

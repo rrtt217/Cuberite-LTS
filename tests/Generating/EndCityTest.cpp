@@ -380,7 +380,7 @@ static void testRoomRoofCentered(void)
 {
 	LOG("Testing the End City room roof centring...");
 
-	for (const AString Name: {"LootRoom1", "FatTowerTop"})
+	for (const AString Name: {"FatTowerTop"})
 	{
 		const sEndCityBlueprint * Blueprint = nullptr;
 		for (int i = 0; i < g_NumEndCityBlueprints; i++)
