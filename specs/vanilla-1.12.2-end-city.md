@@ -146,7 +146,27 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 
 `base_floor` 的投影图（`File:End city base_floor.png`）确认它是**敞口无顶**的小房间：地面 + 3 层墙，墙顶一圈就是最高处。
 
-因此桥端房间必须用 `base_floor`（无顶）而不是 `EmptyRoom`/`BaseRoom` 的合并件 —— 否则屋顶悬挑正好落在拱门顶冠 `HBBBH` 那一层，把它整排盖掉。
+因此桥端房间必须用 `base_floor`（无顶）而不是合并件 —— 否则屋顶悬挑正好落在拱门顶冠 `HBBBH` 那一层，把它整排盖掉。
+
+### 3.6 本仓库已落地的件与残留偏差
+
+已按上面的拆分实现（材料数与 Wiki 表逐项核对）：
+
+| 件名 | 状态 |
+|---|---|
+| `BaseFloor`（12×12×4） | ✓ 68 PB / 54 ESB / 12 glass / 12 pillar / 2 stairs，与 `base_floor` 完全一致 |
+| `BaseRoof`（12×12×2） | ✓ 100 PB / 44 stairs / 4 rod，与 `base_roof` 完全一致 |
+| `SecondFloor1` / `SecondRoof` / `ThirdFloor1` / `ThirdRoof` | 由 /Base 画布按 storey 边界切出；件名与边界按 Wiki，逐件材料数因 Wiki 未单独给出这些件的蓝图而只能近似 |
+| `TowerBase` / `TowerPiece` / `TowerTop` | ✓ 与 `tower_base` / `tower_piece` / `tower_top` 完全一致 |
+| `BridgePiece` / `BridgeGentleStairs` / `BridgeEnd` | ✓ 完全一致 |
+| `BridgeSteepStairs` | 按 /Bridge 的 ASCII 图逐格转录（16 PB / 1 pillar）；Wiki 材料表写 15 PB / 2 pillar，两者自相矛盾，以图为准 |
+| `FatTowerTop` | ✓ 完全一致（玻璃原误用紫色，已改回品红） |
+| `Ship` | ✓ 完全一致 |
+| `FatTower` | 目前是 `fat_tower_base` + `fat_tower_middle` 的合并件，尚未拆 |
+| `TowerFloor` | 由 `TowerPiece` 底面固化推导（Wiki 未给该件蓝图），材料数与 Wiki 表不符，待重做 |
+| `LootRoom2` / `LootRoom3` | 实为 Wiki `/Large_Room` 的两层 / 三层变体；帧被补齐到 30×18 / 31×16（内容只占其中一段），**待按内容重框** |
+
+`base_floor` 的包围盒与其地板不同范围（地板 x=1..9，屋顶件 x=0..11），所以与桥拱门对接时一律用**最下层范围**（`m_FloorMinX/MaxX/MinZ/MaxZ`）定位，不用整件包围盒。
 
 ---
 
