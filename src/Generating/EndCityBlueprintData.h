@@ -49,6 +49,10 @@ struct sEndCityBlueprint
 
 	/** The layers. */
 	const sEndCityBlueprintLayer * m_Layers;
+
+	/** Keep the declared X and Z frame when building the piece, instead of cropping to the content.
+	Needed when the content does not fill the frame and its frame coordinates matter. */
+	bool m_KeepFrame = false;
 } ;
 
 /** All blueprints. */

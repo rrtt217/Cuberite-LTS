@@ -14,6 +14,8 @@ target_sources(
 	EndChorusGen.cpp
 	EndCityBlueprintData.cpp
 	EndCityGen.cpp
+	EndCityLoot.cpp
+	EndCityLootTable.cpp
 	EndGen.cpp
 	EndPlatform.cpp
 	EnderDragonFightStructuresGen.cpp
@@ -54,6 +56,8 @@ target_sources(
 	EndChorusGen.h
 	EndCityBlueprintData.h
 	EndCityGen.h
+	EndCityLoot.h
+	EndCityLootTable.h
 	EndGen.h
 	EndGateway.h
 	EnderDragonFightStructuresGen.h

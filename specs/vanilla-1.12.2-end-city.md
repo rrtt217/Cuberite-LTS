@@ -111,6 +111,84 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 
 每页蓝图均声明了半砖 Bottom/Top、楼梯朝向、柱头方向等；cPrefab 的 char-map 可编码 type + meta，足够表达。
 
+### 3.4 桥端（bridge_end）与两端的接缝
+
+来源：wiki 的 [/Bridge](https://minecraft.wiki/w/End_City/Structure/Bridge) 把这块叫 **Dock**（材料 21 Purpur Block / 4 Purpur Slab / 3 Purpur Stairs / 2 End Rod / 1 Purpur Pillar，与本仓库 `BridgeEnd` 蓝图一致），[/Empty_Room](https://minecraft.wiki/w/End_City/Structure/Empty_Room) 给出房间几何；接缝形状另有 1.12.2 客户端实测观察。
+
+- **桥的两端各有 bridge_end**：塔端（桥的起点）和远端（接房间 / 末地船 / 另一座塔）。
+- Dock 蓝图的**近端那排**是 `BSSSB` 甲板 + End Rod（层 2 的 `E   E`），**远端那排**是 ` BBB `/`BBBBB` 加层 3/4 的 `BH HB` / `HBBBH` 顶冠。远端朝目的构件，近端朝桥。
+- 接**大塔 / 小塔**（桥的起点）：拱门远端那排就落在塔外墙那一格里 —— 与墙面齐平并嵌入墙内，塔墙上因此出现 3 格宽的拱门洞。
+- 接**房间**：拱门下沿（层 0 的 `BBBBB`/`BSSSB`）与房间第一层的地面同层；沿桥轴向上，拱门远端那排紧邻房间地板的第一格，**不重叠也不留空隙**；横向房门洞的格子与拱门洞的 3 格对齐。
+
+实现约束（本仓库蓝图坐标体系，local y = wiki 层号 + 1）：
+
+- 桥构件（BridgePiece / 两种楼梯 / BridgeEnd）的甲板在 **local y=1**，而塔层与房间的地板在 **local y=0**。桥必须放在 `a_BranchY - 1`，甲板块才落在塔层地板块那一层。
+- 楼梯最上一级踏面在 **local y=5**（wiki 层 4），其上方 local y6 只是栏杆。因此楼梯之后 Y 前进量是 `5 - 1 = 4`；旧代码用「结构顶（local y6）+ 1 = 6」，会让后面每一件（包括拱门）比楼梯出口高 2 格 —— 这就是「拱门和桥脱节」。
+- 房间的包围盒比它的地板宽（屋顶 / 上层地板悬挑）；把房间按门洞对齐会把拱门压进房间，拱门顶冠被屋顶盖掉。正确做法是沿桥轴把房间的起点定在拱门远端那排，横向再按门洞列对齐。
+- 门洞 carve 盒是 3×3×3（沿桥轴 ±1），会向后吃掉一格拱门；接房间时应把 carve 中心放到房间一侧。
+
+### 3.5 原版 piece 名单（权威）
+
+来源：[End City](https://minecraft.wiki/w/End_City) 的 “Structure details” 表 —— 它列出 `data/minecraft/structures/end_city` 里的全部 20 个结构名，各附投影图 `File:End city <name>.png`：
+
+`base_floor`、`base_roof`、`second_floor_1`、`second_floor_2`、`second_roof`、`third_floor_1`、`third_floor_2`、`third_roof`、`tower_base`、`tower_piece`、`tower_floor`、`tower_top`、`fat_tower_base`、`fat_tower_middle`、`fat_tower_top`、`bridge_piece`、`bridge_gentle_stairs`、`bridge_steep_stairs`、`bridge_end`、`ship`。
+
+**没有** `loot_room` / `empty_room` / `small_room` / `large_room` 这几个结构名 —— 「战利品房 / 空房间 / 旗帜房 / 大房间」是房间**类型**（见 End City 正文），落到实件上分别是 `third_floor_2`（+ `fat_tower_top`）、`base_floor`、`tower_top`、以及 `/Large_Room` 页那两种带复杂楼梯的房间。
+
+拆件关系（已核对材料数）：
+
+| 实件 | 等于 |
+|---|---|
+| `base_floor` | 本仓库 `EmptyRoom` 的第 0–3 层，**也是** `BaseRoom` 的第一层（同一件，无顶） |
+| `base_roof` | `EmptyRoom` 的第 4–5 层（100 Purpur Block + 44 Stairs + 4 End Rod） |
+| `EmptyRoom`（旧合称） | `base_floor` + `base_roof` |
+| `BaseRoom`（旧合称） | `base_floor` + `base_roof` + `second_floor_*` + `second_roof` + `third_floor_*` + `third_roof` 按 18×18 帧叠起来的整栋 |
+
+`base_floor` 的投影图（`File:End city base_floor.png`）确认它是**敞口无顶**的小房间：地面 + 3 层墙，墙顶一圈就是最高处。
+
+因此桥端房间必须用 `base_floor`（无顶）而不是合并件 —— 否则屋顶悬挑正好落在拱门顶冠 `HBBBH` 那一层，把它整排盖掉。
+
+### 3.6 本仓库已落地的件与残留偏差
+
+已按上面的拆分实现（材料数与 Wiki 表逐项核对）：
+
+| 件名 | 状态 |
+|---|---|
+| `BaseFloor`（12×12×4） | ✓ 68 PB / 54 ESB / 12 glass / 12 pillar / 2 stairs，与 `base_floor` 完全一致 |
+| `BaseRoof`（12×12×2） | ✓ 100 PB / 44 stairs / 4 rod，与 `base_roof` 完全一致 |
+| `SecondFloor1`（18×18×7） | /Base 画布第 **1–7** 层：第 1–3 层只保留第二层的半砖螺旋梯（`L-P-L` 斜列，位于第一层屋顶**下面**、`base_floor` 里没有这些格），第 4–7 层是屋顶 + 二层墙（三层楼梯所占的格已剔除）。装配时从画布第 1 层放下 |
+| `ThirdFloor1`（18×18×7） | /Base 画布第 **5–11** 层：第 5–7 层只保留第三层的半砖螺旋梯（画布 y=5/6/7 的 `L-P-L`，位于第二层屋顶下面），第 8–11 层是第二层屋顶 + 三层墙。140 PB / 64 stairs / 32 glass / 7 slab 与 `third_floor_1` 表吻合 |
+| `SecondRoof` / `ThirdRoof` | 对应画布第 8 层 / 第 12–13 层；`second_roof` 只在基座提前封顶时用 |
+| `TowerBase` / `TowerPiece` / `TowerTop` | ✓ 与 `tower_base` / `tower_piece` / `tower_top` 完全一致 |
+| `BridgePiece` / `BridgeGentleStairs` / `BridgeEnd` | ✓ 完全一致 |
+| `BridgeSteepStairs` | 按 /Bridge 的 ASCII 图逐格转录（16 PB / 1 pillar）；Wiki 材料表写 15 PB / 2 pillar，两者自相矛盾，以图为准 |
+| `FatTowerTop` | ✓ 完全一致（玻璃原误用紫色，已改回品红） |
+| `Ship` | ✓ 完全一致 |
+| `FatTowerBase`（14×13×4） | ✓ 84 pillar / 80 PB / 4 stairs / 4 rod / 3 slab，与 `fat_tower_base` **完全一致**；由 `FatTower` 第 0–3 层切出 |
+| `FatTowerMiddle`（14×13×8） | 由 `FatTower` 第 4–11 层切出；Wiki 表写 164 pillar / 62 PB，我们转录出 172 / 56，差 8 / 6 格（以 /Large_Tower 的 ASCII 图为准） |
+| `TowerFloor` | 由 `TowerPiece` 底面固化推导（Wiki 未给该件蓝图），材料数与 Wiki 表不符，待重做 |
+| `LargeRoom2` / `LargeRoom3`（原名 `LootRoom2/3`） | Wiki `/Large_Room` 的两层 / 三层变体（复杂楼梯房间）。两层变体 282 PB / 140 ESB / 103 stairs / 27 pillar / 22 glass / 8 rod / 7 slab / 3 ladder，与 /Large_Room 材料表（275/136/103/27/26/8/8/3）吻合 |
+| `FatTowerTop` | 同时就是 Wiki 的**战利品房**：`/Loot_Room` 页面蓝图解析出 352 PB / 131 stairs / 106 ESB / 26 glass / 18 pillar / 9 slab / 4 rod / 2 chest，与本件**逐格一致**（该页的材料表只有 3 行、本身是坏的） |
+
+`base_floor` 的包围盒与其地板不同范围（地板 x=1..9，屋顶件 x=0..11），所以与桥拱门对接时一律用**最下层范围**（`m_FloorMinX/MaxX/MinZ/MaxZ`）定位，不用整件包围盒。
+
+### 3.7 大房间是 storey 组合件
+
+`/Large_Room` 的两层 / 三层「大房间」不是单件，而是 storey 组合（维护者实测确认，且材料数逐项吻合）：
+
+| 组合 | 组成 | 核对 |
+|---|---|---|
+| 两层大房间（`LargeRoom2`） | `base_floor` + `second_floor_2` + `second_roof` | `LargeRoom2` 第 8–9 层 = 144 PB / 52 st / 4 rod，与 `second_roof` 表**完全一致** |
+| 三层大房间（`LargeRoom3`） | `base_floor` + `second_floor_2` + `third_floor_2` + `third_roof` | 第 12–13 层 = 196 PB / 60 st / 4 rod，与 `third_roof` 表**完全一致** |
+
+第一层就是 `base_floor`。
+
+**空房间（empty room）** = 单层的这一族：`base_floor` + `base_roof`，内部空无一物，**顶部不接小塔楼**（只有两层 / 三层大房间才可能在屋顶接塔）。`second_floor_2` **下部带一段螺旋梯**（画布第 1–3 层的 `L/S/P` 格，落在第一层结构里，`base_floor` 自身没有这些格），与 `second_floor_1` 同一规律。
+
+由此从两个组合件切出：`SecondFloor2`（14×14×7）= 下探楼梯 3 层 + 第二层 4 层，70 PB 与表一致；`ThirdFloor2`（16×16×7）= 下探楼梯 3 层 + 第三层 4 层，56 stairs / 24 glass / 6 rod 与表一致；`SecondRoof` 改用大房间版本（14×14×2，144/52/4 全中）。
+
+> 生成器已改成逐件装配：房间 = `base_floor`（第 0 层起）+ `second_floor_2`（第 1 层起，楼梯下探覆盖第一层）+ 屋顶（`second_roof` 第 8 层起 / 三层房再加 `third_floor_2` 第 5 层起 + `third_roof` 第 12 层起）。每件按自己的 frame 居中在房间中心，`base_floor` 仍以最下层范围与桥拱门对接。组合件 `LargeRoom2`/`LargeRoom3` 只用于挑选朝向，不再落地。
+
 ---
 
 ## 4. 构件目录（源自 End City 的 Structure details）
@@ -209,8 +287,8 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 
 本分支已落地：
 
-- src/Generating/EndCityGen.{h,cpp}：cEndCityGen : cGridStructGen（格点 320 块 / 原点区块 0..8 / 外岛距离门 / 平坦度门），骨架 = 入口（EmptyRoom）-> 基础层（BaseRoom）-> 小塔（SmallTowerBase + N x SmallTowerExtension + SmallRoom）或胖塔（N x LargeTower + LootRoom）-> 每方向 50% 桥（Bridge）-> 每桥 1/8 船（Ship，全城至多一艘）。
-- src/Generating/EndCityBlueprintData.{h,cpp}：从 wiki layered blueprint **逐方块转录**的 14 个蓝图（BaseRoom、SmallTowerBase/Extension、LargeTower、SmallRoom、LargeRoomTwoStorey/ThreeStorey、LootRoom、EmptyRoom、Bridge/GentleStairs/SteepStairs/Dock、Ship）；运行时由 char map + 层串构建 cBlockArea，裁剪到非空气包围盒后包成 cPrefab。
+- src/Generating/EndCityGen.{h,cpp}：cEndCityGen : cGridStructGen（格点 320 块 / 原点区块 0..8 / 外岛距离门 / 平坦度门），骨架 = 入口（base_floor 12×12）-> 基座 storey（second_floor_1 / third_floor_1 / third_roof）-> 小塔（tower_base + N × tower_piece + tower_top）或胖塔（fat_tower_base + N × fat_tower_middle + fat_tower_top）-> 每方向 50% 桥（bridge_piece/stairs/bridge_end）-> 每桥 1/8 船（ship，全城至多一艘）。
+- src/Generating/EndCityBlueprintData.{h,cpp}：从 wiki layered blueprint **逐方块转录**的蓝图（base_floor/base_roof、second_floor_1、third_floor_1/third_roof、tower_base/piece/top、fat_tower_base/middle/top、large_room 两层/三层、bridge_piece/gentle/steep/end、ship）；运行时由 char map + 层串构建 cBlockArea，裁剪到非空气包围盒后包成 cPrefab。
 - finisher token EndCity，已加入 End 默认 Finishers（EnderDragonFightStructures, EndCity）。
 - tests/Generating/EndCityTest.cpp：格点规则、正常生成、三道拒绝门（虚空 / 内岛 / 不平坦）、确定性。
 

@@ -47,6 +47,7 @@ set (GENERATING_SRCS
 	${PROJECT_SOURCE_DIR}/src/Generating/EndChorusGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EndCityBlueprintData.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EndCityGen.cpp
+	${PROJECT_SOURCE_DIR}/src/Generating/EndCityLootTable.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EndGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EnderDragonFightStructuresGen.cpp
 	${PROJECT_SOURCE_DIR}/src/Generating/EnderDragonReturnGatewayGen.cpp
@@ -121,6 +122,7 @@ set (GENERATING_HDRS
 	${PROJECT_SOURCE_DIR}/src/Generating/EndChorusGen.h
 	${PROJECT_SOURCE_DIR}/src/Generating/EndCityBlueprintData.h
 	${PROJECT_SOURCE_DIR}/src/Generating/EndCityGen.h
+	${PROJECT_SOURCE_DIR}/src/Generating/EndCityLootTable.h
 	${PROJECT_SOURCE_DIR}/src/Generating/EndGen.h
 	${PROJECT_SOURCE_DIR}/src/Generating/EndGateway.h
 	${PROJECT_SOURCE_DIR}/src/Generating/EnderDragonReturnGatewayGen.h
@@ -311,6 +313,25 @@ add_test(
 
 
 
+
+# End City loot table test:
+add_executable(EndCityLootTest
+	EndCityLootTest.cpp
+)
+target_link_libraries(EndCityLootTest GeneratorTestingSupport)
+add_test(
+	NAME EndCityLootTest
+	COMMAND EndCityLootTest
+)
+
+
+
+
+
+set_target_properties(
+	EndCityLootTest
+	PROPERTIES FOLDER Tests/Generating
+)
 
 set_target_properties(
 	EndCityTest
