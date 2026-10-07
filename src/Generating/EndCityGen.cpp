@@ -1356,6 +1356,29 @@ protected:
 
 
 
+	/** Clears the three by three hole in a tower's floor out of the layer the tower stands on, keeping
+	the slab that sits in it. A tower's inside is air, and air does not erase blocks another piece has
+	placed, so the hole its ladder drops through must be carved; per the tower base blueprint that hole
+	is the tower's centre three by three (x=2..4, z=2..4 of its seven by seven floor) and its slab is
+	one block along -X from the hole's centre, at (2, 3). */
+	void CarveTowerFloor(int a_CenterX, int a_Y, int a_CenterZ)
+	{
+		for (int dz = -1; dz <= 1; dz++)
+		{
+			for (int dx = -1; dx <= 1; dx++)
+			{
+				if ((dx == -1) && (dz == 0))
+				{
+					continue;
+				}
+				AddCarveBox(a_CenterX + dx, a_CenterX + dx, a_Y, a_Y, a_CenterZ + dz, a_CenterZ + dz);
+			}
+		}
+	}
+
+
+
+
 	/** An axis-aligned box that is cleared to air after the pieces are drawn, to open doorways. */
 	struct sCarve
 	{
@@ -1473,7 +1496,7 @@ protected:
 			StoreyYs.push_back(TowerBaseY);
 			Add(P.m_TowerBase.get(), Vector3i(SmallTowerX, TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH, SmallTowerZ));
 			// See the room tower: air cannot erase the roof's blocks, so clear the ladder's shaft:
-			AddCarveBox(SmallTowerX + END_CITY_TOWER_LADDER_X, SmallTowerX + END_CITY_TOWER_LADDER_X, TowerBaseY, TowerBaseY + 2, SmallTowerZ + END_CITY_TOWER_LADDER_Z, SmallTowerZ + END_CITY_TOWER_LADDER_Z);
+			CarveTowerFloor(SmallTowerX + (PrefabSize(*P.m_TowerBase).x / 2), TowerBaseY, SmallTowerZ + (PrefabSize(*P.m_TowerBase).z / 2));
 			Y = TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
 			for (int i = 1; i < StoreyCount; i++)
 			{
@@ -1736,7 +1759,7 @@ protected:
 					Add(P.m_TowerBase.get(), Vector3i(TowerX, RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH, TowerZ));
 					// The tower's inside is air, and air does not erase the blocks under it, so clear
 					// the shaft the ladder drops through the roof into the room:
-					AddCarveBox(TowerX + END_CITY_TOWER_LADDER_X, TowerX + END_CITY_TOWER_LADDER_X, RoomTopY, RoomTopY + 2, TowerZ + END_CITY_TOWER_LADDER_Z, TowerZ + END_CITY_TOWER_LADDER_Z);
+					CarveTowerFloor(TowerX + (PrefabSize(*P.m_TowerBase).x / 2), RoomTopY, TowerZ + (PrefabSize(*P.m_TowerBase).z / 2));
 					int TowerY = RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
 					const int TowerStoreys = 3 + static_cast<int>(Rng() % 3);
 					for (int i = 1; i < TowerStoreys; i++)
