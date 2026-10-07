@@ -1329,30 +1329,15 @@ protected:
 			Y += StackHeightForName("BaseRoom");
 		}
 
-		// Choose and stack a tower. The wiki gives the small tower 3, 4 or 5 storeys and the fat
-		// tower 3, 5 or 7 storeys; bridges leave only from specific storeys:
+		// The wiki: the base room always carries a small tower (three, four or five storeys), and a
+		// large tower only ever generates on top of a small tower, never directly on the base room:
 		const bool Fat = ((Rng() % 2) == 0);
 		const int TowerBaseY = Y;
 		std::vector<int> StoreyYs;
 		int StoreyCount = 0;
-		if (Fat && (P.m_FatTower != nullptr))
-		{
-			StoreyCount = 3 + (2 * static_cast<int>(Rng() % 3));  // 3, 5 or 7
-			for (int i = 0; i < StoreyCount; i++)
-			{
-				StoreyYs.push_back(Y);
-				AddCentered(P.m_FatTower.get(), m_OriginX, Y, m_OriginZ);
-				Y += StackHeightForName("FatTower");
-			}
 
-			// Cap the fat tower with its loot room:
-			if (P.m_FatTowerTop != nullptr)
-			{
-				AddCentered(P.m_FatTowerTop.get(), m_OriginX, Y, m_OriginZ, P.m_FatTowerTopChests);
-				Y += StackHeightForName("FatTowerTop");
-			}
-		}
-		else if (!Fat && (P.m_TowerBase != nullptr) && (P.m_TowerPiece != nullptr))
+		// The small tower always goes on the base room, its ladder shaft descending through the roof:
+		if ((P.m_TowerBase != nullptr) && (P.m_TowerPiece != nullptr))
 		{
 			StoreyCount = 3 + static_cast<int>(Rng() % 3);  // 3, 4 or 5
 
@@ -1370,12 +1355,38 @@ protected:
 				Y += StackHeightForName("TowerPiece");
 			}
 
-			// Cap the small tower with its banner roof:
-			if (P.m_TowerTop != nullptr)
+			if (Fat)
 			{
+				// The large tower replaces the small tower's roof, so it carries the bridges instead:
+				StoreyCount = 0;
+				StoreyYs.clear();
+			}
+			else if (P.m_TowerTop != nullptr)
+			{
+				// Cap the small tower with its banner roof:
 				const int TopOffset = (PrefabSize(*P.m_TowerTop).x - PrefabSize(*P.m_TowerPiece).x) / 2;
 				Add(P.m_TowerTop.get(), Vector3i(SmallTowerX - TopOffset, Y, SmallTowerZ - TopOffset));
 				Y += StackHeightForName("TowerTop");
+			}
+		}
+
+		// A large tower, when rolled, sits on top of the small tower:
+		if (Fat && (P.m_FatTower != nullptr))
+		{
+			StoreyCount = 3 + (2 * static_cast<int>(Rng() % 3));  // 3, 5 or 7
+			StoreyYs.clear();
+			for (int i = 0; i < StoreyCount; i++)
+			{
+				StoreyYs.push_back(Y);
+				AddCentered(P.m_FatTower.get(), m_OriginX, Y, m_OriginZ);
+				Y += StackHeightForName("FatTower");
+			}
+
+			// Cap the fat tower with its loot room:
+			if (P.m_FatTowerTop != nullptr)
+			{
+				AddCentered(P.m_FatTowerTop.get(), m_OriginX, Y, m_OriginZ, P.m_FatTowerTopChests);
+				Y += StackHeightForName("FatTowerTop");
 			}
 		}
 
