@@ -218,6 +218,12 @@
   `cd src/Bindings && lua CheckBindingsDependencies.lua` 无输出。崩溃来自 tolua 未注册类型，现有测试框架不链接实体引擎、
   无法做有意义的单测，故以「未导出类型回退」的代码路径 + 规格核对为准，实机复测（末影龙战斗：火球飞行速度、
   被爆炸波及不再崩服）待维护者。
+- 龙火球的区域效果云伤害：**维护者实机确认有伤害**；另用无头探针（临时插件 `World:CreateProjectile(pkDragonFireball)`
+  + `World:SetChunkAlwaysTicked`）复核：云对云内生物每 10 tick 施加一次 `Instant Damage II`，观测到
+  `HOOK_TAKE_DAMAGE` 的 `dtPotionOfHarming`、`raw=12 final=12`，铁傀儡 100 → 88。此前「云似乎不造成伤害」是
+  火球速度单位 Bug 的连带现象（火球悬停在空中、云落不到玩家脚下），随速度修复消失；云本身无需改动。
+  探针注意：**无客户端时 `cChunk::ShouldBeTicked()` 恒假、所有区块都不 tick**，必须先用
+  `cWorld:SetChunkAlwaysTicked()` 强制，否则实体物理、引信与云 tick 全都不会发生。
 
 ### 已知偏差
 
