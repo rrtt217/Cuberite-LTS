@@ -214,6 +214,10 @@
 - **未做自动化单测**：现有测试框架只编译孤立源文件，无法链接实体引擎做有意义的 `cEnderDragon` 测试。
 - 其余 7 个部件的顺序未逐一确认（不影响头部全额伤害；如需可加临时日志或抓包逐部件核对）。
 - 状态机分支：`lua CheckBasicStyle.lua` 0 违规；`cmake --build build` exit 0；`ctest` 26/26。飞行/悬停观感需实机确认。
+- 龙火球速度单位 + 崩服修复：`lua CheckBasicStyle.lua` 0 违规；`cmake --build build` exit 0；`ctest` 33/33（排除两个联网用例）；
+  `cd src/Bindings && lua CheckBindingsDependencies.lua` 无输出。崩溃来自 tolua 未注册类型，现有测试框架不链接实体引擎、
+  无法做有意义的单测，故以「未导出类型回退」的代码路径 + 规格核对为准，实机复测（末影龙战斗：火球飞行速度、
+  被爆炸波及不再崩服）待维护者。
 
 ### 已知偏差
 
@@ -239,3 +243,10 @@
 18. 护甲耐久改为在 `cEntity::DoTakeDamage` 真正落地后结算（原先在 4 参 `TakeDamage` 里、绕过 `m_InvulnerableTicks`，导致龙的每 tick 接触伤害把护甲按约 20/s 磨损）；这是引擎级战斗修复，影响所有伤害来源。
 19. 出口传送门/龙蛋的 Y 硬编码为生成器祭坛 Y=62 加偏移（63 / 67）；若生成器挪动祭坛需同步。未实现“战斗开始时传送门失活”“击败时重新生成 End Stone / 方块复位”和 End gateway（均依赖下次召唤/完整 fight 控制器）。
 14. 致命伤时攻击者会被提前记入 `Killed` 统计（基类 `DoTakeDamage` 在 `KilledBy` 之后无条件调用），此时龙尚未真正死亡。
+20. `cLuaState::Push(cEntity *)` 原先对所有投射物都推送 `GetClass()` 得到的具体类型；`cDragonFireballEntity`、`cThrownEnderEyeEntity`
+    等**未导出到 API** 的投射物一旦作为钩子参数（`HOOK_TAKE_DAMAGE`、`HOOK_PROJECTILE_HIT_BLOCK` / `_ENTITY`）被推送，
+    tolua 的 `tolua_pushusertype` 断言失败会**直接终止整个服务器**（实机崩溃：末影水晶爆炸波及飞行中的龙火球）。
+    现改为具体类型未导出时回退到 `cProjectileEntity`，与 `etMonster` 一律推送 `cMonster` 的既有做法一致。
+    同一函数的 `switch (EntityType)` 还漏了 `etAreaEffectCloud`（未导出）而落到 `UNREACHABLE`：龙火球炸出的区域效果云若被爆炸
+    波及或被箭命中，同样会推送到该分支，故一并按 `cEntity` 推送。仍存在的偏差：插件在这些钩子里拿到的是基类
+    （`cProjectileEntity` / `cEntity`）而非具体类型（这些具体类本就未导出，插件无法 `tolua.cast`）。
