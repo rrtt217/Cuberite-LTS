@@ -190,10 +190,12 @@ Finishers=..., OverworldClumpFlowers, ForestRocks, PieceStructures: Stronghold
   那部分（改动前生成的区块）不会出现；但**传送门房本身完整落在 `r.-1.-1`**，不影响开门。
 - 世界种子由 `<world>/world.ini` 的 `[Seed] Seed` 决定；缺省时服务器会随机生成并写回，因此换世界需重新设定。
 
-### 5.5 未做（本环境无常服 / 无 vanilla 客户端）
+### 5.5 实机验证（维护者已做）
 
-- 实机走查：新世界生成要塞、找齐 12 眼、开门进末地。
-- 与洞穴/矿井的覆盖顺序实机观察。
+- **实测通过**：在 `build/Server` 的本检出世界里（种子 234096503，`world.ini` 按 3.2 加上
+  `PieceStructures: Stronghold` 并重启后），**要塞可生成、末地传送门可被 12 枚末影之眼点亮**。
+  即 5.2 的三条不变量与 3.2 的修复在实机成立。
+- 仍未做：与洞穴/废弃矿井的覆盖顺序长距离观察；旋转后的门房朝向未逐例实机核对（引擎侧循环推导见 5.3）。
 
 ## 6. 变更清单
 
@@ -212,6 +214,6 @@ Finishers=..., OverworldClumpFlowers, ForestRocks, PieceStructures: Stronghold
 3. **框架预填眼 10%**：需要生成器支持按块随机替换（`cPrefab` 目前没有该机制），是否单开分支。
 4. **测试桩**：`tests/Generating` 打桩了 `cBlockHandler::For()`，无法在测试中覆盖"旋转后 meta 仍朝内"。
    若要补，需要把真实方块处理器链接进测试目标（或在测试中直接实例化 `cBlockHandler` 的真实实现）。
-5. **已存在世界的 finisher 迁移**（见 3.2）：现在新结构只对新世界生效，老世界需要手工改 `world.ini`。
-   是否要加一个"世界 ini 缺少当前默认结构 finisher"的启动警告，或做一次性的 finisher 合并/迁移？
-   这属于生成器配置语义，建议单开分支并先确认维护者意图。
+5. **已存在世界的 finisher 迁移**（见 3.2）：**决定不做**。维护者明确要求保留"用户应当可以关闭部分结构生成"的
+   能力，因此不自动合并/迁移 `world.ini` 的 finisher，也不加"缺少默认结构 finisher"的启动警告。
+   老世界需要手工把 `PieceStructures: Stronghold` 加进 `world.ini`。
