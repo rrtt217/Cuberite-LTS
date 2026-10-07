@@ -20,22 +20,41 @@ the individual named pieces, so these are the closest allowed-source geometry.
 
 
 
-static const sEndCityBlueprintLayer Layers_BaseRoom[] =
+static const sEndCityBlueprintLayer Layers_SecondFloor1[] =
 {
-	{0, "B                 |                  |                  |                  |      SPPPPS      |     PPPPPPPP     |     PPPPPPPP     |     PPPPPPPP     |     PPPPPPPP     |     PPPPPPPP     |     PPPPPPPP     |     PPPPPPPP     |     PPPPPPPP     |                  |                  |                  |                  |                  "},
-	{1, "B                 |                  |                  |                  |                  |     UEE  EEU     |     E      E     |     E      E     |     E      E     |     EL     E     |     EP     E     |     EL     E     |     UEEEEEEU     |                  |                  |                  |                  |                  "},
-	{2, "B                 |                  |                  |                  |       O  O       |     UEE  EEU     |     E      E     |     G      G     |     E      E     |     E      E     |     G      G     |     ELPL   E     |     UEEEEEEU     |                  |                  |                  |                  |                  "},
-	{3, "B                 |                  |                  |                  |                  |     UEE  EEU     |     E      E     |     G      G     |     E      E     |     E      E     |     G      G     |     E  LPL E     |     UEEEEEEU     |                  |                  |                  |                  |                  "},
-	{4, "B                 |                  |    YNYYNNYYNY    |  YSSSSSSSSSSSSY  |  YSPPPPPPPPPPSY  |  NSPPPPPPPPPPSN  |  YSPPPPPPPPPPSY  |  YSPPPPPPPPPPSY  |  NSPP PPPPPPPSN  |  NSPP PPPPPPPSN  |  YSPP PPPPPPPSY  |  YSPP    LPPPSY  |  NSPPPPPPPPPPSN  |  YSPPPPPPPPPPSY  |  YSSSSSSSSSSSSY  |    YNYYNNYYNY    |                  |                  "},
-	{5, "B                 |                  |                  |   D          D   |    UEEEEEEEEU    |    E     LPLE    |    E        E    |    E        E    |    E        E    |    E        E    |    E        E    |    E        E    |    E        E    |    UEEEEEEEEU    |   D          D   |                  |                  |                  "},
-	{6, "B                 |                  |                  |                  |    UEEEEEEGEU    |    E   LPL  E    |    G        G    |    E        E    |    E        E    |    E        E    |    E        E    |    G        G    |    E        E    |    UEGEEEEGEU    |                  |                  |                  |                  "},
-	{7, "B                 |                  |                  |                  |    UEEEEEEGEU    |    E LPL    E    |    G        G    |    E        E    |    E        E    |    E        E    |    E        E    |    G        G    |    E        E    |    UEGEEEEGEU    |                  |                  |                  |                  "},
-	{8, "B                 |   YNNYYNNYYNNY   | YSSSSSSSSSSSSSSY | YSPPPPPPPPPPPPSY | NSPPPPPPPPPPPPSN | NSPPPL      PPSN | YSPPPPPPPPPPPPSY | YSPPPPPPPPPPPPSY | NSPPPPPPPPPPPPSN | NSPPPPPPPPPPPPSN | YSPPPPPPPPPPPPSY | YSPPPPPPPPPPPPSY | NSPPPPPPPPPPPPSN | NSPPPPPPPPPPPPSN | YSPPPPPPPPPPPPSY | YSSSSSSSSSSSSSSY |   YNNYYNNYYNNY   |                  "},
-	{9, "B                 |                  |  D            D  |   UEEEEEEEEEEU   |   E          E   |   E          E   |   E          E   |   E    SS    E   |   E    SSU   E   |   E    UU    E   |   E    SS    E   |   E    SS    E   |   E    SS    E   |   E    SS    E   |   UEEEEEEEEEEU   |  D            D  |                  |                  "},
-	{10, "B                 |                  |                  |   UEGEGEEGEGEU   |   E          E   |   G          G   |   E          E   |   G          G   |   E      U   E   |   E    UU    E   |   G          G   |   E          E   |   G          G   |   E          E   |   UEGEGEEGEGEU   |                  |                  |                  "},
-	{11, "B                 |                  |                  |   UEGEGEEGEGEU   |   E          E   |   G          G   |   E          E   |   G          G   |   E      U   E   |   E    UU    E   |   G          G   |   E          E   |   G          G   |   E          E   |   UEGEGEEGEGEU   |                  |                  |                  "},
-	{12, "B YNNYYNYYNYYNNY  |YSSSSSSSSSSSSSSSSY|YSPPPPPPPPPPPPPPSY|NSPPPPPPPPPPPPPPSN|NSPPPPPPPPPPPPPPSN|YSPPPPPPPPPPPPPPSY|YSPPPPPPPPPPPPPPSY|NSPPPPPPPPPPPPPPSN|YSPPPPPPPPPPPPPPSY|YSPPPPPPPPPPPPPPSY|NSPPPPPPPPPPPPPPSN|YSPPPPPPPPPPPPPPSY|YSPPPPPPPPPPPPPPSY|NSPPPPPPPPPPPPPPSN|NSPPPPPPPPPPPPPPSN|YSPPPPPPPPPPPPPPSY|YSSSSSSSSSSSSSSSSY|  YNNYYNYYNYYNNY  "},
-	{13, "B                 |                  |  D            D  |                  |                  |                  |                  |                  |                  |                  |                  |                  |                  |                  |                  |  D            D  |                  |                  "},
+	{0, "B                 |                  |                  |   D          D   |    UEEEEEEEEU    |    E     LPLE    |    E        E    |    E        E    |    E        E    |    E        E    |    E        E    |    E        E    |    E        E    |    UEEEEEEEEU    |   D          D   |                  |                  |                  "},
+	{1, "B                 |                  |                  |                  |    UEEEEEEGEU    |    E   LPL  E    |    G        G    |    E        E    |    E        E    |    E        E    |    E        E    |    G        G    |    E        E    |    UEGEEEEGEU    |                  |                  |                  |                  "},
+	{2, "B                 |                  |                  |                  |    UEEEEEEGEU    |    E LPL    E    |    G        G    |    E        E    |    E        E    |    E        E    |    E        E    |    G        G    |    E        E    |    UEGEEEEGEU    |                  |                  |                  |                  "},
+};
+
+
+
+
+
+static const sEndCityBlueprintLayer Layers_SecondRoof[] =
+{
+	{0, "B                 |   YNNYYNNYYNNY   | YSSSSSSSSSSSSSSY | YSPPPPPPPPPPPPSY | NSPPPPPPPPPPPPSN | NSPPPL      PPSN | YSPPPPPPPPPPPPSY | YSPPPPPPPPPPPPSY | NSPPPPPPPPPPPPSN | NSPPPPPPPPPPPPSN | YSPPPPPPPPPPPPSY | YSPPPPPPPPPPPPSY | NSPPPPPPPPPPPPSN | NSPPPPPPPPPPPPSN | YSPPPPPPPPPPPPSY | YSSSSSSSSSSSSSSY |   YNNYYNNYYNNY   |                  "},
+};
+
+
+
+
+
+static const sEndCityBlueprintLayer Layers_ThirdFloor1[] =
+{
+	{0, "B                 |                  |  D            D  |   UEEEEEEEEEEU   |   E          E   |   E          E   |   E          E   |   E    SS    E   |   E    SSU   E   |   E    UU    E   |   E    SS    E   |   E    SS    E   |   E    SS    E   |   E    SS    E   |   UEEEEEEEEEEU   |  D            D  |                  |                  "},
+	{1, "B                 |                  |                  |   UEGEGEEGEGEU   |   E          E   |   G          G   |   E          E   |   G          G   |   E      U   E   |   E    UU    E   |   G          G   |   E          E   |   G          G   |   E          E   |   UEGEGEEGEGEU   |                  |                  |                  "},
+	{2, "B                 |                  |                  |   UEGEGEEGEGEU   |   E          E   |   G          G   |   E          E   |   G          G   |   E      U   E   |   E    UU    E   |   G          G   |   E          E   |   G          G   |   E          E   |   UEGEGEEGEGEU   |                  |                  |                  "},
+};
+
+
+
+
+
+static const sEndCityBlueprintLayer Layers_ThirdRoof[] =
+{
+	{0, "B YNNYYNYYNYYNNY  |YSSSSSSSSSSSSSSSSY|YSPPPPPPPPPPPPPPSY|NSPPPPPPPPPPPPPPSN|NSPPPPPPPPPPPPPPSN|YSPPPPPPPPPPPPPPSY|YSPPPPPPPPPPPPPPSY|NSPPPPPPPPPPPPPPSN|YSPPPPPPPPPPPPPPSY|YSPPPPPPPPPPPPPPSY|NSPPPPPPPPPPPPPPSN|YSPPPPPPPPPPPPPPSY|YSPPPPPPPPPPPPPPSY|NSPPPPPPPPPPPPPPSN|NSPPPPPPPPPPPPPPSN|YSPPPPPPPPPPPPPPSY|YSSSSSSSSSSSSSSSSY|  YNNYYNYYNYYNNY  "},
+	{1, "B                 |                  |  D            D  |                  |                  |                  |                  |                  |                  |                  |                  |                  |                  |                  |                  |  D            D  |                  |                  "},
 };
 
 
@@ -292,13 +311,16 @@ static const sEndCityBlueprintLayer Layers_Ship[] =
 
 const sEndCityBlueprint g_EndCityBlueprints[] =
 {
-	{"BaseRoom", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|Y=Green Wool|N=Red Wool|D=End Rod|A=Ladder|O=EntitySprite:Shulker|B=Black Wool", 18, 18, 14, Layers_BaseRoom, true},
+	{"SecondFloor1", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|Y=Green Wool|N=Red Wool|D=End Rod|A=Ladder|O=EntitySprite:Shulker|B=Black Wool", 18, 18, 3, Layers_SecondFloor1, true},
+	{"SecondRoof", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|Y=Green Wool|N=Red Wool|D=End Rod|A=Ladder|O=EntitySprite:Shulker|B=Black Wool", 18, 18, 1, Layers_SecondRoof, true},
+	{"ThirdFloor1", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|Y=Green Wool|N=Red Wool|D=End Rod|A=Ladder|O=EntitySprite:Shulker|B=Black Wool", 18, 18, 3, Layers_ThirdFloor1, true},
+	{"ThirdRoof", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|Y=Green Wool|N=Red Wool|D=End Rod|A=Ladder|O=EntitySprite:Shulker|B=Black Wool", 18, 18, 2, Layers_ThirdRoof, true},
 	{"TowerBase", "P=Purpur Block|U=Purpur Pillar@top|u=Purpur Pillar@horizontal|p=Purpur Pillar|L=Purpur Slab|S=Purpur Stairs|l=Ladder", 7, 7, 7, Layers_TowerBase},
 	{"TowerPiece", "P=Purpur Block|U=Purpur Pillar@top|u=Purpur Pillar@horizontal|p=Purpur Pillar|L=Purpur Slab|S=Purpur Stairs", 7, 7, 4, Layers_TowerPiece},
 	{"TowerFloor", "P=Purpur Block|U=Purpur Pillar@top|u=Purpur Pillar@horizontal|p=Purpur Pillar|L=Purpur Slab|S=Purpur Stairs", 7, 7, 4, Layers_TowerFloor},
 	{"TowerTop", "P=Purpur Block|S=Purpur Stairs-rot180|s=Purpur Stairs|L=Purpur Slab|B=Magenta Wall Banner|D=End Rod|E=End Stone Bricks|U=Purpur Pillar@top|G=Magenta Stained Glass|H=EntitySprite:Shulker-rot180", 9, 9, 5, Layers_TowerTop},
 	{"FatTower", "P=Purpur Block|S=Purpur Stairs|L=Purpur Slab|D=End Rod|E=End Rod-rot90|d=End Rod-rot180|e=End Rod-rot270|U=Purpur Pillar@top|u=Purpur Pillar|p=Purpur Pillar@horizontal|H=EntitySprite:Shulker|K=EntitySprite:Shulker-rot90|h=EntitySprite:Shulker-rot180|k=EntitySprite:Shulker-rot270", 14, 13, 12, Layers_FatTower},
-	{"FatTowerTop", "P=Purpur Block|S=Purpur Stairs|L=Purpur Slab|Y=Green Wool|N=Red Wool|C=Chest|U=Purpur Pillar@top|G=Purple Stained Glass|E=End Stone Bricks|D=End Rod", 20, 19, 6, Layers_FatTowerTop},
+	{"FatTowerTop", "P=Purpur Block|S=Purpur Stairs|L=Purpur Slab|Y=Green Wool|N=Red Wool|C=Chest|U=Purpur Pillar@top|G=Magenta Stained Glass|E=End Stone Bricks|D=End Rod", 20, 19, 6, Layers_FatTowerTop},
 	{"BaseFloor", "P=Purpur Block|U=Purpur Pillar@top|S=Purpur Stairs|E=End Stone Bricks|D=End Rod|G=Magenta Stained Glass|K=EntitySprite:Shulker-rot270", 12, 12, 4, Layers_BaseFloor, true},
 	{"BaseRoof", "P=Purpur Block|S=Purpur Stairs|D=End Rod", 12, 12, 2, Layers_BaseRoof, true},
 	{"EmptyRoom", "P=Purpur Block|U=Purpur Pillar@top|S=Purpur Stairs|E=End Stone Bricks|D=End Rod|G=Magenta Stained Glass|K=EntitySprite:Shulker-rot270", 12, 12, 6, Layers_EmptyRoom, true},

@@ -70,9 +70,10 @@ static constexpr int END_CITY_STAIRS_TOP_TREAD_Y = 5;
 /** How far the small tower's ladder shaft descends into the room below. */
 static constexpr int END_CITY_SMALL_TOWER_LADDER_DEPTH = 3;
 
-/** The width and depth of the base room's declared frame. Its content does not fill that frame, so
-centring on the cropped bounding box would shift its internal spiral ladder and floor openings. */
+/** The width and depth of the rooms' declared frames. The base's ground storeys are 12x12 and the
+upper storeys and roofs are 18x18; centring each on its own frame keeps their blueprint coordinates. */
 static constexpr int END_CITY_BASE_FRAME = 18;
+static constexpr int END_CITY_BASE_ROOM_FRAME = 12;
 
 /** The base room's topmost ladder cell within that frame, and the small tower's ladder cell within its
 own frame. Placing the tower so the two coincide continues the room's spiral ladder into the tower. */
@@ -965,7 +966,13 @@ public:
 
 	cEndCityPieces()
 	{
-		m_BaseRoom = MakePrefab("BaseRoom");
+		// The base of a city is the vanilla stack of storeys, each a piece of its own:
+		m_BaseFloor = MakePrefab("BaseFloor");
+		m_BaseRoof = MakePrefab("BaseRoof");
+		m_SecondFloor1 = MakePrefab("SecondFloor1");
+		m_SecondRoof = MakePrefab("SecondRoof");
+		m_ThirdFloor1 = MakePrefab("ThirdFloor1");
+		m_ThirdRoof = MakePrefab("ThirdRoof");
 		m_TowerBase = MakePrefab("TowerBase");
 		m_TowerPiece = MakePrefab("TowerPiece");
 		m_TowerFloor = MakePrefab("TowerFloor");
@@ -973,15 +980,15 @@ public:
 		m_FatTower = MakePrefab("FatTower");
 		m_FatTowerTop = MakePrefab("FatTowerTop");
 		m_FatTowerTopChests = ChestsOf("FatTowerTop");
-		MakeRotatedPrefabs("BaseFloor", m_BaseFloor);
+		MakeRotatedPrefabs("BaseFloor", m_BaseFloorRoom);
 		MakeRotatedPrefabs("EmptyRoom", m_EmptyRoom);
 		MakeRotatedPrefabs("LootRoom2", m_LootRoom2);
 		MakeRotatedPrefabs("LootRoom3", m_LootRoom3);
 
 		// Extend the bottom piece down to the terrain so that slopes do not leave a gap:
-		if (m_BaseRoom != nullptr)
+		if (m_BaseFloor != nullptr)
 		{
-			m_BaseRoom->SetExtendFloorStrategy(cPrefab::efsRepeatBottomTillSolid);
+			m_BaseFloor->SetExtendFloorStrategy(cPrefab::efsRepeatBottomTillSolid);
 		}
 
 		// The bridge and ship pieces are authored along +Z, so build one orientation per direction:
@@ -992,7 +999,12 @@ public:
 		OrientForAllDirections("Ship", m_Ship);
 	}
 
-	std::unique_ptr<cPrefab> m_BaseRoom;
+	std::unique_ptr<cPrefab> m_BaseFloor;
+	std::unique_ptr<cPrefab> m_BaseRoof;
+	std::unique_ptr<cPrefab> m_SecondFloor1;
+	std::unique_ptr<cPrefab> m_SecondRoof;
+	std::unique_ptr<cPrefab> m_ThirdFloor1;
+	std::unique_ptr<cPrefab> m_ThirdRoof;
 	std::unique_ptr<cPrefab> m_TowerBase;
 	std::unique_ptr<cPrefab> m_TowerPiece;
 	std::unique_ptr<cPrefab> m_TowerFloor;
@@ -1000,7 +1012,7 @@ public:
 	std::unique_ptr<cPrefab> m_FatTower;
 	std::unique_ptr<cPrefab> m_FatTowerTop;
 	std::vector<Vector3i> m_FatTowerTopChests;
-	sRotatedPrefab m_BaseFloor[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_BaseFloorRoom[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_EmptyRoom[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_LootRoom2[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_LootRoom3[END_CITY_DIR_COUNT];
@@ -1370,14 +1382,25 @@ protected:
 		const cEndCityPieces & P = GetEndCityPieces();
 		std::minstd_rand Rng(MakeCellSeed(a_Seed, m_GridX + END_CITY_SEED_OFFSET_X, m_GridZ + END_CITY_SEED_OFFSET_Z));
 
-		// The base tower is one combined room whose spiral ladder and floor openings are internally
-		// consistent. Place it on its declared frame so its contents keep their blueprint coordinates:
+		// The base of a city is the vanilla stack of storeys. The 12x12 rooms are centred on the origin,
+		// which places them on the wider 18x18 frame that the upper storeys and the roofs use, so the
+		// whole base keeps one set of blueprint coordinates:
 		int Y = BaseY;
-		if (P.m_BaseRoom != nullptr)
+		auto AddBaseStorey = [&](const std::unique_ptr<cPrefab> & a_Piece, const char * a_Name, int a_Frame)
 		{
-			AddCenteredFrame(P.m_BaseRoom.get(), END_CITY_BASE_FRAME, END_CITY_BASE_FRAME, m_OriginX, Y, m_OriginZ);
-			Y += StackHeightForName("BaseRoom");
-		}
+			if (a_Piece == nullptr)
+			{
+				return;
+			}
+			AddCenteredFrame(a_Piece.get(), a_Frame, a_Frame, m_OriginX, Y, m_OriginZ);
+			Y += StackHeightForName(a_Name);
+		};
+		AddBaseStorey(P.m_BaseFloor, "BaseFloor", END_CITY_BASE_ROOM_FRAME);
+		AddBaseStorey(P.m_BaseRoof, "BaseRoof", END_CITY_BASE_ROOM_FRAME);
+		AddBaseStorey(P.m_SecondFloor1, "SecondFloor1", END_CITY_BASE_FRAME);
+		AddBaseStorey(P.m_SecondRoof, "SecondRoof", END_CITY_BASE_FRAME);
+		AddBaseStorey(P.m_ThirdFloor1, "ThirdFloor1", END_CITY_BASE_FRAME);
+		AddBaseStorey(P.m_ThirdRoof, "ThirdRoof", END_CITY_BASE_FRAME);
 
 		// The wiki: the base room always carries a small tower (three, four or five storeys), and a
 		// large tower only ever generates on top of a small tower, never directly on the base room:
@@ -1563,7 +1586,7 @@ protected:
 			// buried under the roof overhang.
 			if (RoomStoreys == 1)
 			{
-				RoomSet = P.m_BaseFloor;
+				RoomSet = P.m_BaseFloorRoom;
 			}
 			else if (RoomStoreys == 2)
 			{
