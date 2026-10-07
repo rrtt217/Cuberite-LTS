@@ -1711,8 +1711,14 @@ protected:
 				// centring the tower on the room:
 				if (RoomTower)
 				{
-					const int TowerX = PosX + Floor.m_LadderX - END_CITY_TOWER_LADDER_X;
-					const int TowerZ = PosZ + Floor.m_LadderZ - END_CITY_TOWER_LADDER_Z;
+					// The tower continues the ladder column of second_floor_2, the piece that owns the
+					// room's ladder; base_floor has none of its own:
+					const sRotatedPrefab & Ladder = P.m_SecondFloor2[RoomRotation];
+					const Vector3i LadderSize = PrefabSize(*Ladder.m_Prefab);
+					const int LadderX = RoomCenterX - (LadderSize.x / 2);
+					const int LadderZ = RoomCenterZ - (LadderSize.z / 2);
+					const int TowerX = LadderX + Ladder.m_LadderX - END_CITY_TOWER_LADDER_X;
+					const int TowerZ = LadderZ + Ladder.m_LadderZ - END_CITY_TOWER_LADDER_Z;
 					// The tower's base carries the ladder entrance, so let it descend into the room below:
 					Add(P.m_TowerBase.get(), Vector3i(TowerX, RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH, TowerZ));
 					int TowerY = RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
