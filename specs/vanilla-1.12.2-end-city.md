@@ -162,7 +162,8 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 | `BridgeSteepStairs` | 按 /Bridge 的 ASCII 图逐格转录（16 PB / 1 pillar）；Wiki 材料表写 15 PB / 2 pillar，两者自相矛盾，以图为准 |
 | `FatTowerTop` | ✓ 完全一致（玻璃原误用紫色，已改回品红） |
 | `Ship` | ✓ 完全一致 |
-| `FatTower` | 目前是 `fat_tower_base` + `fat_tower_middle` 的合并件，尚未拆 |
+| `FatTowerBase`（14×13×4） | ✓ 84 pillar / 80 PB / 4 stairs / 4 rod / 3 slab，与 `fat_tower_base` **完全一致**；由 `FatTower` 第 0–3 层切出 |
+| `FatTowerMiddle`（14×13×8） | 由 `FatTower` 第 4–11 层切出；Wiki 表写 164 pillar / 62 PB，我们转录出 172 / 56，差 8 / 6 格（以 /Large_Tower 的 ASCII 图为准） |
 | `TowerFloor` | 由 `TowerPiece` 底面固化推导（Wiki 未给该件蓝图），材料数与 Wiki 表不符，待重做 |
 | `LootRoom2` / `LootRoom3` | 实为 Wiki `/Large_Room` 的两层 / 三层变体；帧被补齐到 30×18 / 31×16（内容只占其中一段），**待按内容重框** |
 
