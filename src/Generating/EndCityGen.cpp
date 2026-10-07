@@ -62,8 +62,43 @@ static constexpr int END_CITY_ROOM_TOWER_DENOMINATOR = 2;
 static constexpr int END_CITY_BRIDGE_MIN_SEGMENTS = 2;
 static constexpr int END_CITY_BRIDGE_EXTRA_SEGMENTS = 3;
 
+/** The layer of a staircase's topmost walkable tread, in the piece's own coordinates. The piece after
+a staircase must meet that tread, not the railing layer above it, or every staircase would raise the
+bridge one block more than it climbs. */
+static constexpr int END_CITY_STAIRS_TOP_TREAD_Y = 5;
+
 /** How far the small tower's ladder shaft descends into the room below. */
 static constexpr int END_CITY_SMALL_TOWER_LADDER_DEPTH = 3;
+
+/** The width and depth of the rooms' declared frames. The base's ground storeys are 12x12 and the
+upper storeys and roofs are 18x18; centring each on its own frame keeps their blueprint coordinates. */
+static constexpr int END_CITY_BASE_FRAME = 18;
+static constexpr int END_CITY_BASE_ROOM_FRAME = 12;
+
+/** The layer of a large room's own blueprint each piece starts on: base_floor at 0, second_floor_2
+at 1 (its staircase runs three layers down over base_floor), second_roof at 8, third_floor_2 at 5
+(its staircase runs down over second_floor_2) and third_roof at 12. A tower on the roof stands on the
+roof's own layer, whose middle is open for the tower's ladder to descend through. */
+static constexpr int END_CITY_ROOM_BASE_ROOF_LAYER = 4;
+static constexpr int END_CITY_ROOM_SECOND_LAYER = 1;
+static constexpr int END_CITY_ROOM_SECOND_ROOF_LAYER = 8;
+static constexpr int END_CITY_ROOM_THIRD_LAYER = 5;
+static constexpr int END_CITY_ROOM_THIRD_ROOF_LAYER = 12;
+
+/** The layer of the base blueprint each storey starts on, and the layer a tower stands on. A tower
+stands on the roof's own layer, whose middle is open for the tower's ladder to drop through into the
+room below - the same layer the roof's blocks are on, not one above them. */
+static constexpr int END_CITY_SECOND_FLOOR_LAYER = 1;
+static constexpr int END_CITY_THIRD_FLOOR_LAYER = 5;
+static constexpr int END_CITY_THIRD_ROOF_LAYER = 12;
+static constexpr int END_CITY_BASE_TOP_LAYER = 12;
+
+/** The base room's topmost ladder cell within that frame, and the small tower's ladder cell within its
+own frame. Placing the tower so the two coincide continues the room's spiral ladder into the tower. */
+static constexpr int END_CITY_BASE_LADDER_X = 10;
+static constexpr int END_CITY_BASE_LADDER_Z = 9;
+static constexpr int END_CITY_TOWER_LADDER_X = 3;
+static constexpr int END_CITY_TOWER_LADDER_Z = 4;
 
 /** The minimum fill percentage of a layer for it to count as the structural top when stacking pieces. */
 static constexpr int END_CITY_STACK_MIN_PERCENT = 3;
@@ -89,6 +124,9 @@ static constexpr NIBBLETYPE END_CITY_END_ROD_SOUTH = 3;
 
 /** Ladder and wall banner facing metadata. These use the vanilla facing values. */
 static constexpr NIBBLETYPE END_CITY_FACING_NORTH = 2;
+static constexpr NIBBLETYPE END_CITY_FACING_SOUTH = 3;
+static constexpr NIBBLETYPE END_CITY_FACING_WEST = 4;
+static constexpr NIBBLETYPE END_CITY_FACING_EAST = 5;
 
 /** Purpur pillar axis metadata. */
 static constexpr NIBBLETYPE END_CITY_PILLAR_VERTICAL = 0;
@@ -464,8 +502,10 @@ static int StackHeightForName(const AString & a_Name)
 
 
 
-/** Crops the area to its non-air bounding box. Returns false if the area is empty. */
-static bool CropToContent(cBlockArea & a_Area)
+/** Crops the area to its content. When a_KeepFrame is set the declared X and Z frame is kept and only
+empty top and bottom layers are trimmed, so the piece's frame coordinates stay meaningful. Returns
+false if the area is empty. */
+static bool CropToContent(cBlockArea & a_Area, bool a_KeepFrame = false)
 {
 	int MinX = a_Area.GetSizeX();
 	int MaxX = -1;
@@ -499,11 +539,18 @@ static bool CropToContent(cBlockArea & a_Area)
 	{
 		return false;
 	}
-	a_Area.Crop(
-		MinX, a_Area.GetSizeX() - 1 - MaxX,
-		MinY, a_Area.GetSizeY() - 1 - MaxY,
-		MinZ, a_Area.GetSizeZ() - 1 - MaxZ
-	);
+	if (a_KeepFrame)
+	{
+		a_Area.Crop(0, 0, MinY, a_Area.GetSizeY() - 1 - MaxY, 0, 0);
+	}
+	else
+	{
+		a_Area.Crop(
+			MinX, a_Area.GetSizeX() - 1 - MaxX,
+			MinY, a_Area.GetSizeY() - 1 - MaxY,
+			MinZ, a_Area.GetSizeZ() - 1 - MaxZ
+		);
+	}
 	return true;
 }
 
@@ -513,6 +560,84 @@ static bool CropToContent(cBlockArea & a_Area)
 
 /** Builds a block area from a blueprint, cropped to its non-air bounding box.
 Returns nullptr if the blueprint holds no blocks. */
+/** Chests and ladders need a valid facing meta and the blueprints do not store one. A chest faces
+away from an adjacent solid block; a ladder's meta names the side its support block is on. This is
+idempotent, so it can be re-run after a rotation that may not have rotated the metas. */
+static void FixFacingMetas(cBlockArea & a_Area)
+{
+	const int SizeX = a_Area.GetSizeX();
+	const int SizeZ = a_Area.GetSizeZ();
+	for (int y = 0; y < a_Area.GetSizeY(); y++)
+	{
+		for (int z = 0; z < SizeZ; z++)
+		{
+			for (int x = 0; x < SizeX; x++)
+			{
+				const BLOCKTYPE Type = a_Area.GetRelBlockType(x, y, z);
+				const bool IsChest = (Type == E_BLOCK_CHEST) || (Type == E_BLOCK_ENDER_CHEST);
+				const bool IsLadder = (Type == E_BLOCK_LADDER);
+				if (!IsChest && !IsLadder)
+				{
+					continue;
+				}
+
+				const bool West = (x > 0) && (a_Area.GetRelBlockType(x - 1, y, z) != E_BLOCK_AIR);
+				const bool East = (x < SizeX - 1) && (a_Area.GetRelBlockType(x + 1, y, z) != E_BLOCK_AIR);
+				const bool North = (z > 0) && (a_Area.GetRelBlockType(x, y, z - 1) != E_BLOCK_AIR);
+				const bool South = (z < SizeZ - 1) && (a_Area.GetRelBlockType(x, y, z + 1) != E_BLOCK_AIR);
+
+				NIBBLETYPE Facing = E_META_CHEST_FACING_ZM;
+				if (IsChest)
+				{
+					if (West)
+					{
+						Facing = E_META_CHEST_FACING_XP;
+					}
+					else if (East)
+					{
+						Facing = E_META_CHEST_FACING_XM;
+					}
+					else if (South)
+					{
+						Facing = E_META_CHEST_FACING_ZM;
+					}
+					else if (North)
+					{
+						Facing = E_META_CHEST_FACING_ZP;
+					}
+				}
+				else
+				{
+					// The ladder's meta is the direction it faces, which is away from the block it is
+					// attached to (cBlockLadderHandler::CanBeAt checks the opposite neighbour):
+					Facing = END_CITY_FACING_NORTH;
+					if (West)
+					{
+						Facing = END_CITY_FACING_EAST;
+					}
+					else if (East)
+					{
+						Facing = END_CITY_FACING_WEST;
+					}
+					else if (North)
+					{
+						Facing = END_CITY_FACING_SOUTH;
+					}
+					else if (South)
+					{
+						Facing = END_CITY_FACING_NORTH;
+					}
+				}
+				a_Area.SetRelBlockTypeMeta(x, y, z, Type, Facing);
+			}
+		}
+	}
+}
+
+
+
+
+
 static std::unique_ptr<cBlockArea> MakeBlueprintArea(const sEndCityBlueprint & a_Blueprint)
 {
 	auto Area = std::make_unique<cBlockArea>();
@@ -554,42 +679,9 @@ static std::unique_ptr<cBlockArea> MakeBlueprintArea(const sEndCityBlueprint & a
 		}
 	}
 
-	// Chests need a valid facing meta (2 to 5); the blueprints do not store one, so face the chest
-	// away from an adjacent solid block, defaulting to north:
-	for (int y = 0; y < a_Blueprint.m_Height; y++)
-	{
-		for (int z = 0; z < a_Blueprint.m_SizeZ; z++)
-		{
-			for (int x = 0; x < a_Blueprint.m_SizeX; x++)
-			{
-				const BLOCKTYPE Type = Area->GetRelBlockType(x, y, z);
-				if ((Type != E_BLOCK_CHEST) && (Type != E_BLOCK_ENDER_CHEST))
-				{
-					continue;
-				}
-				NIBBLETYPE Facing = E_META_CHEST_FACING_ZM;
-				if ((x > 0) && (Area->GetRelBlockType(x - 1, y, z) != E_BLOCK_AIR))
-				{
-					Facing = E_META_CHEST_FACING_XP;
-				}
-				else if ((x < a_Blueprint.m_SizeX - 1) && (Area->GetRelBlockType(x + 1, y, z) != E_BLOCK_AIR))
-				{
-					Facing = E_META_CHEST_FACING_XM;
-				}
-				else if ((z < a_Blueprint.m_SizeZ - 1) && (Area->GetRelBlockType(x, y, z + 1) != E_BLOCK_AIR))
-				{
-					Facing = E_META_CHEST_FACING_ZM;
-				}
-				else if ((z > 0) && (Area->GetRelBlockType(x, y, z - 1) != E_BLOCK_AIR))
-				{
-					Facing = E_META_CHEST_FACING_ZP;
-				}
-				Area->SetRelBlockTypeMeta(x, y, z, Type, Facing);
-			}
-		}
-	}
+	FixFacingMetas(*Area);
 
-	if (!CropToContent(*Area))
+	if (!CropToContent(*Area, a_Blueprint.m_KeepFrame))
 	{
 		return nullptr;
 	}
@@ -642,6 +734,7 @@ static sOrientedPrefab OrientAreaZ(const cBlockArea & a_Area, int a_DirX, int a_
 	{
 		Out.RotateCCW();
 	}
+	FixFacingMetas(Out);
 
 	// The ship's item frame marker is a placeholder block; record it and remove the placeholder:
 	std::vector<sEntityMarker> ItemFrames;
@@ -679,20 +772,21 @@ static sOrientedPrefab OrientAreaZ(const cBlockArea & a_Area, int a_DirX, int a_
 		}
 	}
 
-	// The ship's dragon head points away from the ship; the base blueprint has it facing -Z, so
-	// rotate its facing with the ship:
-	eMobHeadRotation HeadRotation = SKULL_ROTATION_NORTH;
+	// The ship's dragon head points away from the ship; the base blueprint has it facing -Z, so face
+	// it along the ship's forward direction. A floor head at rotation 0 renders facing +Z, the opposite
+	// of the value's name, so the local -Z facing is rotation 8 and the other directions follow:
+	eMobHeadRotation HeadRotation = SKULL_ROTATION_SOUTH;
 	if (a_DirX > 0)
-	{
-		HeadRotation = SKULL_ROTATION_WEST;
-	}
-	else if (a_DirX < 0)
 	{
 		HeadRotation = SKULL_ROTATION_EAST;
 	}
+	else if (a_DirX < 0)
+	{
+		HeadRotation = SKULL_ROTATION_WEST;
+	}
 	else if (a_DirZ < 0)
 	{
-		HeadRotation = SKULL_ROTATION_SOUTH;
+		HeadRotation = SKULL_ROTATION_NORTH;
 	}
 	std::vector<sMobHeadMarker> MobHeads;
 	for (const auto & HeadPos: CollectBlocks(Out, E_BLOCK_HEAD))
@@ -722,8 +816,21 @@ struct sRotatedPrefab
 	int m_DoorX = 0;
 	int m_DoorZ = 0;
 
+	/** The extent of the piece's lowest layer in its local X and Z. A bridge arch meets the floor a
+	piece stands on, not the roof overhang or the storeys above it, so the piece is placed by this
+	rather than by the bounding box of the whole prefab. */
+	int m_FloorMinX = 0;
+	int m_FloorMaxX = 0;
+	int m_FloorMinZ = 0;
+	int m_FloorMaxZ = 0;
+
 	/** Offsets of the loot chests, relative to the prefab's minimum corner. */
 	std::vector<Vector3i> m_Chests;
+
+	/** The X and Z of the ladder column, relative to the prefab's minimum corner, or -1 when the
+	piece has no ladder. A tower stacked on the room continues this column. */
+	int m_LadderX = -1;
+	int m_LadderZ = -1;
 } ;
 
 
@@ -877,21 +984,28 @@ public:
 
 	cEndCityPieces()
 	{
+		// The base of a city is the vanilla stack of storeys, each a piece of its own:
 		m_BaseFloor = MakePrefab("BaseFloor");
-		m_SecondFloor = MakePrefab("SecondFloor");
-		m_ThirdFloor = MakePrefab("ThirdFloor");
-		m_ThirdRoof = MakePrefab("ThirdRoof");
+		m_SecondFloor1 = MakePrefab("SecondFloor1");
+		m_ThirdFloor1 = MakePrefab("ThirdFloor1");
+		m_BaseThirdRoof = MakePrefab("ThirdRoof");
 		m_TowerBase = MakePrefab("TowerBase");
 		m_TowerPiece = MakePrefab("TowerPiece");
 		m_TowerFloor = MakePrefab("TowerFloor");
 		m_TowerTop = MakePrefab("TowerTop");
-		m_FatTower = MakePrefab("FatTower");
+		m_FatTowerBase = MakePrefab("FatTowerBase");
+		m_FatTowerMiddle = MakePrefab("FatTowerMiddle");
 		m_FatTowerTop = MakePrefab("FatTowerTop");
 		m_FatTowerTopChests = ChestsOf("FatTowerTop");
+		MakeRotatedPrefabs("BaseFloor", m_BaseFloorRoom);
 		MakeRotatedPrefabs("EmptyRoom", m_EmptyRoom);
-		MakeRotatedPrefabs("LootRoom1", m_LootRoom1);
-		MakeRotatedPrefabs("LootRoom2", m_LootRoom2);
-		MakeRotatedPrefabs("LootRoom3", m_LootRoom3);
+		MakeRotatedPrefabs("BaseRoof", m_BaseRoofRoom);
+		MakeRotatedPrefabs("SecondFloor2", m_SecondFloor2);
+		MakeRotatedPrefabs("SecondRoof", m_SecondRoof);
+		MakeRotatedPrefabs("ThirdFloor2", m_ThirdFloor2);
+		MakeRotatedPrefabs("ThirdRoof", m_ThirdRoof);
+		MakeRotatedPrefabs("LargeRoom2", m_LargeRoom2);
+		MakeRotatedPrefabs("LargeRoom3", m_LargeRoom3);
 
 		// Extend the bottom piece down to the terrain so that slopes do not leave a gap:
 		if (m_BaseFloor != nullptr)
@@ -908,20 +1022,26 @@ public:
 	}
 
 	std::unique_ptr<cPrefab> m_BaseFloor;
-	std::unique_ptr<cPrefab> m_SecondFloor;
-	std::unique_ptr<cPrefab> m_ThirdFloor;
-	std::unique_ptr<cPrefab> m_ThirdRoof;
+	std::unique_ptr<cPrefab> m_SecondFloor1;
+	std::unique_ptr<cPrefab> m_ThirdFloor1;
+	std::unique_ptr<cPrefab> m_BaseThirdRoof;
 	std::unique_ptr<cPrefab> m_TowerBase;
 	std::unique_ptr<cPrefab> m_TowerPiece;
 	std::unique_ptr<cPrefab> m_TowerFloor;
 	std::unique_ptr<cPrefab> m_TowerTop;
-	std::unique_ptr<cPrefab> m_FatTower;
+	std::unique_ptr<cPrefab> m_FatTowerBase;
+	std::unique_ptr<cPrefab> m_FatTowerMiddle;
 	std::unique_ptr<cPrefab> m_FatTowerTop;
 	std::vector<Vector3i> m_FatTowerTopChests;
+	sRotatedPrefab m_BaseFloorRoom[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_EmptyRoom[END_CITY_DIR_COUNT];
-	sRotatedPrefab m_LootRoom1[END_CITY_DIR_COUNT];
-	sRotatedPrefab m_LootRoom2[END_CITY_DIR_COUNT];
-	sRotatedPrefab m_LootRoom3[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_BaseRoofRoom[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_SecondFloor2[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_SecondRoof[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_ThirdFloor2[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_ThirdRoof[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_LargeRoom2[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_LargeRoom3[END_CITY_DIR_COUNT];
 
 	sOrientedPrefab m_Bridge[END_CITY_DIR_COUNT];
 	sOrientedPrefab m_BridgeGentle[END_CITY_DIR_COUNT];
@@ -1000,7 +1120,6 @@ protected:
 		{
 			return nullptr;
 		}
-
 		// Air cells must behave like structure voids: they must not erase blocks placed by other pieces:
 		auto Prefab = std::make_unique<cPrefab>(*Area);
 		Prefab->SetMergeStrategy(cBlockArea::msImprint);
@@ -1031,8 +1150,73 @@ protected:
 			{
 				Rotated->RotateCCW();
 			}
+			FixFacingMetas(*Rotated);
 			a_Out[r].m_DoorwaySide = DoorwaySide(*Rotated, a_Out[r].m_DoorX, a_Out[r].m_DoorZ);
 			a_Out[r].m_Chests = CollectBlocks(*Rotated, E_BLOCK_CHEST);
+
+			// Record the extent of the lowest layer, so a bridge can meet the floor:
+			a_Out[r].m_FloorMinX = Rotated->GetSizeX();
+			a_Out[r].m_FloorMaxX = -1;
+			a_Out[r].m_FloorMinZ = Rotated->GetSizeZ();
+			a_Out[r].m_FloorMaxZ = -1;
+			for (int z = 0; z < Rotated->GetSizeZ(); z++)
+			{
+				for (int x = 0; x < Rotated->GetSizeX(); x++)
+				{
+					if (Rotated->GetRelBlockType(x, 0, z) == E_BLOCK_AIR)
+					{
+						continue;
+					}
+					a_Out[r].m_FloorMinX = std::min(a_Out[r].m_FloorMinX, x);
+					a_Out[r].m_FloorMaxX = std::max(a_Out[r].m_FloorMaxX, x);
+					a_Out[r].m_FloorMinZ = std::min(a_Out[r].m_FloorMinZ, z);
+					a_Out[r].m_FloorMaxZ = std::max(a_Out[r].m_FloorMaxZ, z);
+				}
+			}
+
+			a_Out[r].m_LadderX = -1;
+			a_Out[r].m_LadderZ = -1;
+			for (int y = Rotated->GetSizeY() - 1; y >= 0; y--)
+			{
+				bool Found = false;
+				for (int z = 0; z < Rotated->GetSizeZ(); z++)
+				{
+					for (int x = 0; x < Rotated->GetSizeX(); x++)
+					{
+						if (Rotated->GetRelBlockType(x, y, z) == E_BLOCK_LADDER)
+						{
+							a_Out[r].m_LadderX = x;
+							a_Out[r].m_LadderZ = z;
+							Found = true;
+							break;
+						}
+					}
+					if (Found)
+					{
+						break;
+					}
+				}
+				if (Found)
+				{
+					break;
+				}
+			}
+
+			// A room's ladders are the footprint of the small tower stacked on its roof, not part
+			// of the room; the recorded column is only used to line that tower up:
+			for (int y = 0; y < Rotated->GetSizeY(); y++)
+			{
+				for (int z = 0; z < Rotated->GetSizeZ(); z++)
+				{
+					for (int x = 0; x < Rotated->GetSizeX(); x++)
+					{
+						if (Rotated->GetRelBlockType(x, y, z) == E_BLOCK_LADDER)
+						{
+							Rotated->SetRelBlockType(x, y, z, E_BLOCK_AIR);
+						}
+					}
+				}
+			}
 			auto Prefab = std::make_unique<cPrefab>(*Rotated);
 			Prefab->SetMergeStrategy(cBlockArea::msImprint);
 			a_Out[r].m_Prefab = std::move(Prefab);
@@ -1155,6 +1339,46 @@ protected:
 		std::vector<sMobHeadMarker> m_MobHeads;
 	} ;
 
+	/** Clears an exact box to air after the pieces are drawn. Air inside a piece does not erase blocks
+	another piece placed, so a shaft that a later piece filled has to be carved out cell by cell. */
+	void AddCarveBox(int a_MinX, int a_MaxX, int a_MinY, int a_MaxY, int a_MinZ, int a_MaxZ)
+	{
+		sCarve Carve;
+		Carve.m_MinX = a_MinX;
+		Carve.m_MaxX = a_MaxX;
+		Carve.m_MinY = a_MinY;
+		Carve.m_MaxY = a_MaxY;
+		Carve.m_MinZ = a_MinZ;
+		Carve.m_MaxZ = a_MaxZ;
+		m_Carves.push_back(Carve);
+	}
+
+
+
+
+	/** Clears the three by three hole in a tower's floor out of the layer the tower stands on, keeping
+	the slab that sits in it. A tower's inside is air, and air does not erase blocks another piece has
+	placed, so the hole its ladder drops through must be carved; per the tower base blueprint that hole
+	is the tower's centre three by three (x=2..4, z=2..4 of its seven by seven floor) and its slab is
+	one block along -X from the hole's centre, at (2, 3). */
+	void CarveTowerFloor(int a_CenterX, int a_Y, int a_CenterZ)
+	{
+		for (int dz = -1; dz <= 1; dz++)
+		{
+			for (int dx = -1; dx <= 1; dx++)
+			{
+				if ((dx == -1) && (dz == 0))
+				{
+					continue;
+				}
+				AddCarveBox(a_CenterX + dx, a_CenterX + dx, a_Y, a_Y, a_CenterZ + dz, a_CenterZ + dz);
+			}
+		}
+	}
+
+
+
+
 	/** An axis-aligned box that is cleared to air after the pieces are drawn, to open doorways. */
 	struct sCarve
 	{
@@ -1193,6 +1417,13 @@ protected:
 		Add(a_Prefab, Vector3i(a_CenterX - (Size.x / 2), a_Y, a_CenterZ - (Size.z / 2)), a_Chests, a_BrewingStands, a_ItemFrames, a_MobHeads);
 	}
 
+	/** Adds a piece centered on a shared blueprint frame rather than its own cropped bounding box, so
+	pieces whose content does not fill the frame keep their blueprint coordinates. */
+	void AddCenteredFrame(const cPrefab * a_Prefab, int a_FrameX, int a_FrameZ, int a_CenterX, int a_Y, int a_CenterZ)
+	{
+		Add(a_Prefab, Vector3i(a_CenterX - (a_FrameX / 2), a_Y, a_CenterZ - (a_FrameZ / 2)));
+	}
+
 	/** Builds the whole city layout, or leaves it empty if the location is not suitable. */
 	void Build(int a_Seed, cTerrainHeightGen & a_HeightGen)
 	{
@@ -1217,72 +1448,102 @@ protected:
 		const cEndCityPieces & P = GetEndCityPieces();
 		std::minstd_rand Rng(MakeCellSeed(a_Seed, m_GridX + END_CITY_SEED_OFFSET_X, m_GridZ + END_CITY_SEED_OFFSET_Z));
 
-		// The base tower: three widening floors connected by staircases, capped by the roof:
+		// The base of a city is the vanilla stack of storeys, placed on the layer of the base
+		// blueprint each one occupies. Each floor begins three layers below the roof above it, where
+		// its slab staircase runs, so a storey overlaps the one below it:
 		int Y = BaseY;
 		if (P.m_BaseFloor != nullptr)
 		{
-			AddCentered(P.m_BaseFloor.get(), m_OriginX, Y, m_OriginZ);
-			Y += StackHeightForName("BaseFloor");
+			AddCenteredFrame(P.m_BaseFloor.get(), END_CITY_BASE_ROOM_FRAME, END_CITY_BASE_ROOM_FRAME, m_OriginX, Y, m_OriginZ);
 		}
-		if (P.m_SecondFloor != nullptr)
+		if (P.m_SecondFloor1 != nullptr)
 		{
-			AddCentered(P.m_SecondFloor.get(), m_OriginX, Y, m_OriginZ);
-			Y += StackHeightForName("SecondFloor");
+			AddCenteredFrame(P.m_SecondFloor1.get(), END_CITY_BASE_FRAME, END_CITY_BASE_FRAME, m_OriginX, Y + END_CITY_SECOND_FLOOR_LAYER, m_OriginZ);
 		}
-		if (P.m_ThirdFloor != nullptr)
+		if (P.m_ThirdFloor1 != nullptr)
 		{
-			AddCentered(P.m_ThirdFloor.get(), m_OriginX, Y, m_OriginZ);
-			Y += StackHeightForName("ThirdFloor");
+			AddCenteredFrame(P.m_ThirdFloor1.get(), END_CITY_BASE_FRAME, END_CITY_BASE_FRAME, m_OriginX, Y + END_CITY_THIRD_FLOOR_LAYER, m_OriginZ);
 		}
-		if (P.m_ThirdRoof != nullptr)
+		if (P.m_BaseThirdRoof != nullptr)
 		{
-			AddCentered(P.m_ThirdRoof.get(), m_OriginX, Y, m_OriginZ);
-			Y += StackHeightForName("ThirdRoof");
+			AddCenteredFrame(P.m_BaseThirdRoof.get(), END_CITY_BASE_FRAME, END_CITY_BASE_FRAME, m_OriginX, Y + END_CITY_THIRD_ROOF_LAYER, m_OriginZ);
 		}
+		Y = BaseY + END_CITY_BASE_TOP_LAYER;
 
-		// Choose and stack a tower. The wiki gives the small tower 3, 4 or 5 storeys and the fat
-		// tower 3, 5 or 7 storeys; bridges leave only from specific storeys:
+		// The wiki: the base room always carries a small tower (three, four or five storeys), and a
+		// large tower only ever generates on top of a small tower, never directly on the base room:
 		const bool Fat = ((Rng() % 2) == 0);
 		const int TowerBaseY = Y;
 		std::vector<int> StoreyYs;
 		int StoreyCount = 0;
-		if (Fat && (P.m_FatTower != nullptr))
+
+		// The small tower is shifted so its ladder continues the base room's shaft, so it is not
+		// centred on the city origin. Everything stacked above must follow its centre:
+		int TowerCenterX = m_OriginX;
+		int TowerCenterZ = m_OriginZ;
+
+		// The small tower always goes on the base room, its ladder shaft descending through the roof:
+		if ((P.m_TowerBase != nullptr) && (P.m_TowerPiece != nullptr))
+		{
+			StoreyCount = 3 + static_cast<int>(Rng() % 3);  // 3, 4 or 5
+
+			// The tower base starts with a ladder shaft, let it descend into the room below. Shift the
+			// tower so its shaft continues the room's spiral ladder:
+			const int SmallTowerX = m_OriginX - (END_CITY_BASE_FRAME / 2) + END_CITY_BASE_LADDER_X - END_CITY_TOWER_LADDER_X;
+			const int SmallTowerZ = m_OriginZ - (END_CITY_BASE_FRAME / 2) + END_CITY_BASE_LADDER_Z - END_CITY_TOWER_LADDER_Z;
+			TowerCenterX = SmallTowerX + (PrefabSize(*P.m_TowerBase).x / 2);
+			TowerCenterZ = SmallTowerZ + (PrefabSize(*P.m_TowerBase).z / 2);
+			StoreyYs.push_back(TowerBaseY);
+			Add(P.m_TowerBase.get(), Vector3i(SmallTowerX, TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH, SmallTowerZ));
+			// See the room tower: air cannot erase the roof's blocks, so clear the ladder's shaft:
+			CarveTowerFloor(SmallTowerX + (PrefabSize(*P.m_TowerBase).x / 2), TowerBaseY, SmallTowerZ + (PrefabSize(*P.m_TowerBase).z / 2));
+			Y = TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
+			for (int i = 1; i < StoreyCount; i++)
+			{
+				StoreyYs.push_back(Y);
+				Add(P.m_TowerPiece.get(), Vector3i(SmallTowerX, Y, SmallTowerZ));
+				Y += StackHeightForName("TowerPiece");
+			}
+
+			if (Fat)
+			{
+				// The large tower replaces the small tower's roof, so it carries the bridges instead:
+				StoreyCount = 0;
+				StoreyYs.clear();
+			}
+			else if (P.m_TowerTop != nullptr)
+			{
+				// Cap the small tower with its banner roof:
+				const int TopOffset = (PrefabSize(*P.m_TowerTop).x - PrefabSize(*P.m_TowerPiece).x) / 2;
+				Add(P.m_TowerTop.get(), Vector3i(SmallTowerX - TopOffset, Y, SmallTowerZ - TopOffset));
+				Y += StackHeightForName("TowerTop");
+			}
+		}
+
+		// A large tower, when rolled, sits on top of the small tower:
+		if (Fat && (P.m_FatTowerMiddle != nullptr))
 		{
 			StoreyCount = 3 + (2 * static_cast<int>(Rng() % 3));  // 3, 5 or 7
+			StoreyYs.clear();
+
+			// The entrance storey comes first, then the repeating middle:
+			if (P.m_FatTowerBase != nullptr)
+			{
+				AddCentered(P.m_FatTowerBase.get(), TowerCenterX, Y, TowerCenterZ);
+				Y += StackHeightForName("FatTowerBase");
+			}
 			for (int i = 0; i < StoreyCount; i++)
 			{
 				StoreyYs.push_back(Y);
-				AddCentered(P.m_FatTower.get(), m_OriginX, Y, m_OriginZ);
-				Y += StackHeightForName("FatTower");
+				AddCentered(P.m_FatTowerMiddle.get(), TowerCenterX, Y, TowerCenterZ);
+				Y += StackHeightForName("FatTowerMiddle");
 			}
 
 			// Cap the fat tower with its loot room:
 			if (P.m_FatTowerTop != nullptr)
 			{
-				AddCentered(P.m_FatTowerTop.get(), m_OriginX, Y, m_OriginZ, P.m_FatTowerTopChests);
+				AddCentered(P.m_FatTowerTop.get(), TowerCenterX, Y, TowerCenterZ, P.m_FatTowerTopChests);
 				Y += StackHeightForName("FatTowerTop");
-			}
-		}
-		else if (!Fat && (P.m_TowerBase != nullptr) && (P.m_TowerPiece != nullptr))
-		{
-			StoreyCount = 3 + static_cast<int>(Rng() % 3);  // 3, 4 or 5
-
-			// The tower base starts with a ladder shaft, let it descend into the room below:
-			StoreyYs.push_back(TowerBaseY);
-			AddCentered(P.m_TowerBase.get(), m_OriginX, TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH, m_OriginZ);
-			Y = TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
-			for (int i = 1; i < StoreyCount; i++)
-			{
-				StoreyYs.push_back(Y);
-				AddCentered(P.m_TowerPiece.get(), m_OriginX, Y, m_OriginZ);
-				Y += StackHeightForName("TowerPiece");
-			}
-
-			// Cap the small tower with its banner roof:
-			if (P.m_TowerTop != nullptr)
-			{
-				AddCentered(P.m_TowerTop.get(), m_OriginX, Y, m_OriginZ);
-				Y += StackHeightForName("TowerTop");
 			}
 		}
 
@@ -1307,7 +1568,7 @@ protected:
 		}
 
 		// Grow a bridge from the tower's wall in one direction; it ends in a ship or another tower:
-		const int TowerSize = Fat ? PrefabSize(*P.m_FatTower).x : PrefabSize(*P.m_TowerBase).x;
+		const int TowerSize = Fat ? PrefabSize(*P.m_FatTowerMiddle).x : PrefabSize(*P.m_TowerBase).x;
 		const int Half = TowerSize / 2;
 		const int SecondaryHalf = (P.m_TowerBase != nullptr) ? (PrefabSize(*P.m_TowerBase).x / 2) : 0;
 		bool ShipPlaced = false;
@@ -1333,9 +1594,27 @@ protected:
 				return (DirX != 0) ? Size.x : Size.z;
 			};
 
-			// The bridge starts at the tower's outer wall. The staircase piece raises the far end
-			// cumulatively, so bridges can reach towers at other heights:
-			Vector3i Edge(m_OriginX + (DirX * Half), a_BranchY, m_OriginZ + (DirZ * Half));
+			// The bridge leaves the tower through an arch of its own: the arch's far row sits one cell
+			// inside the tower's outer wall, so the archway is embedded in the wall rather than only
+			// flush with it. The wall cell itself is left open by the carve below, which is what the
+			// bridge walks through:
+			const sOrientedPrefab & StartArch = P.m_BridgeEnd[a_Dir];
+			const Vector3i StartEdge(TowerCenterX + (DirX * (Half - 2)), a_BranchY - 1, TowerCenterZ + (DirZ * (Half - 2)));
+			if (StartArch.m_Prefab != nullptr)
+			{
+				Add(StartArch.m_Prefab.get(), Vector3i(StartEdge.x + StartArch.m_MinOffset.x, StartEdge.y, StartEdge.z + StartArch.m_MinOffset.z));
+			}
+			// Embedding the arch in the wall leaves the wall's own cell solid across the archway, and
+			// the arch's inside is air, which cannot erase it: open the wall where the bridge walks
+			// through, from the walking surface up:
+			AddCarve(TowerCenterX + (DirX * Half), a_BranchY + 2, TowerCenterZ + (DirZ * Half));
+
+			// The bridge itself starts just outside that wall. A bridge piece carries its walking deck in
+			// its second layer, while the floor of a tower storey or of a room sits in its own bottom
+			// layer, so the bridge is placed one block lower: the deck block then lands in the floor's
+			// layer and the two walking surfaces stay flush instead of off by one. The staircase piece
+			// raises the far end cumulatively, so bridges can reach towers at other heights:
+			Vector3i Edge(TowerCenterX + (DirX * Half), a_BranchY - 1, TowerCenterZ + (DirZ * Half));
 
 			const int StraightCount = END_CITY_BRIDGE_MIN_SEGMENTS + static_cast<int>(Rng() % END_CITY_BRIDGE_EXTRA_SEGMENTS);
 			for (int i = 0; i < StraightCount; i++)
@@ -1354,7 +1633,8 @@ protected:
 				const int Step = LengthOf(Stairs);
 				Edge.x += DirX * Step;
 				Edge.z += DirZ * Step;
-				Edge.y += StackHeightForName(Gentle ? "BridgeGentleStairs" : "BridgeSteepStairs") - 1;
+				// Meet the staircase's topmost tread, not its railing layer:
+				Edge.y += END_CITY_STAIRS_TOP_TREAD_Y - 1;
 			}
 
 			const sOrientedPrefab & End = P.m_BridgeEnd[a_Dir];
@@ -1366,8 +1646,7 @@ protected:
 				Edge.z += DirZ * Step;
 			}
 
-			// Open a doorway through the tower wall where the bridge meets it:
-			AddCarve(m_OriginX + (DirX * Half), a_BranchY + 1, m_OriginZ + (DirZ * Half));
+			// The arch at the tower end already opens the wall it is embedded in:
 
 			// An End ship may end the bridge instead of another tower:
 			const sOrientedPrefab & Ship = P.m_Ship[a_Dir];
@@ -1379,84 +1658,130 @@ protected:
 			}
 
 			// A loot room may end the bridge. The wiki gives one, two and three storey variants; the
-			// two and three storey ones may carry a small tower on their roof:
-			int RoomStoreys = 1;
-			bool RoomTower = false;
-			const sRotatedPrefab * RoomSet = nullptr;
-			if ((Rng() % 4) == 0)
-			{
-				// The wiki notes that base_floor also forms the "empty rooms" found higher up:
-				RoomSet = P.m_EmptyRoom;
-			}
-			else
-			{
-				RoomStoreys = 1 + static_cast<int>(Rng() % 3);
-				RoomTower = (RoomStoreys >= 2) &&
-					(P.m_TowerFloor != nullptr) && (P.m_TowerPiece != nullptr) &&
-					((Rng() % END_CITY_ROOM_TOWER_DENOMINATOR) == 0);
-
-				if (RoomStoreys == 1)
-				{
-					RoomSet = P.m_LootRoom1;
-				}
-				else if (RoomStoreys == 2)
-				{
-					RoomSet = P.m_LootRoom2;
-				}
-				else
-				{
-					RoomSet = P.m_LootRoom3;
-				}
-			}
-
-			// Rotate the room so that its doorway faces back toward the bridge:
+			// two and three storey ones are the large rooms and may carry a small tower on their roof:
+			const int RoomStoreys = 1 + static_cast<int>(Rng() % 3);
+			bool RoomTower = (RoomStoreys >= 2) &&
+				(P.m_TowerBase != nullptr) && (P.m_TowerPiece != nullptr) &&
+				((Rng() % END_CITY_ROOM_TOWER_DENOMINATOR) == 0);
+			// Rotate the room so that its doorway faces back toward the bridge. The arch meets the room's
+			// ground storey, so the rotation is the one base_floor's own doorway calls for:
 			const int RequiredSide = (a_Dir + (END_CITY_DIR_COUNT / 2)) % END_CITY_DIR_COUNT;
-			const sRotatedPrefab * Room = nullptr;
+			int RoomRotation = -1;
 			for (int r = 0; r < END_CITY_DIR_COUNT; r++)
 			{
-				if ((RoomSet[r].m_Prefab != nullptr) && (RoomSet[r].m_DoorwaySide == RequiredSide))
+				if ((P.m_BaseFloorRoom[r].m_Prefab != nullptr) && (P.m_BaseFloorRoom[r].m_DoorwaySide == RequiredSide))
 				{
-					Room = &RoomSet[r];
+					RoomRotation = r;
 					break;
 				}
 			}
-			if ((Room == nullptr) && (RoomSet[0].m_Prefab != nullptr))
+			if ((RoomRotation < 0) && (P.m_BaseFloorRoom[0].m_Prefab != nullptr))
 			{
-				Room = &RoomSet[0];
+				RoomRotation = 0;
 			}
-			if (Room != nullptr)
+			if (RoomRotation >= 0)
 			{
-				// Line the room's doorway up with the bridge's last block. A room's roof is wider than
-				// its lower walls, so centring on the bounding box would leave the bridge pointing at
-				// the roof edge instead of at the opening:
-				const int PosX = Edge.x - DirX - Room->m_DoorX;
-				const int PosZ = Edge.z - DirZ - Room->m_DoorZ;
-				Add(Room->m_Prefab.get(), Vector3i(PosX, Edge.y, PosZ), Room->m_Chests);
+				// The ground storey is end_city/base_floor. Meet the arch with its lowest layer, not with
+				// the bounding box of the whole room: the upper storeys and the roofs overhang the floor
+				// by several blocks, so placing the box would leave the arch pointing at air. Across the
+				// bridge the room's doorway column is centred on the archway instead:
+				const sRotatedPrefab & Floor = P.m_BaseFloorRoom[RoomRotation];
+				const int FarX = Edge.x - DirX;
+				const int FarZ = Edge.z - DirZ;
+				int PosX = Edge.x - Floor.m_DoorX;
+				int PosZ = Edge.z - Floor.m_DoorZ;
+				if (DirX > 0)
+				{
+					PosX = FarX + 1 - Floor.m_FloorMinX;
+				}
+				else if (DirX < 0)
+				{
+					PosX = FarX - 1 - Floor.m_FloorMaxX;
+				}
+				if (DirZ > 0)
+				{
+					PosZ = FarZ + 1 - Floor.m_FloorMinZ;
+				}
+				else if (DirZ < 0)
+				{
+					PosZ = FarZ - 1 - Floor.m_FloorMaxZ;
+				}
 
-				// The room's centre, for a tower that may sit on its roof:
-				const Vector3i RoomSize = PrefabSize(*Room->m_Prefab);
-				const int RoomX = PosX + (RoomSize.x / 2);
-				const int RoomZ = PosZ + (RoomSize.z / 2);
+				// The floor sits in its own bottom layer, one above the bridge's lowered frame:
+				const int RoomY = Edge.y + 1;
+				Add(Floor.m_Prefab.get(), Vector3i(PosX, RoomY, PosZ), Floor.m_Chests);
 
-				// The taller rooms may carry a small tower on their roof:
+				// The storeys above share the room's blueprint canvas, so each is centred on the floor's
+				// centre and placed on the layer it occupies:
+				const Vector3i FloorSize = PrefabSize(*Floor.m_Prefab);
+				const int RoomCenterX = PosX + (FloorSize.x / 2);
+				const int RoomCenterZ = PosZ + (FloorSize.z / 2);
+				auto AddRoomPiece = [&](const sRotatedPrefab & a_Piece, int a_Layer)
+				{
+					if (a_Piece.m_Prefab == nullptr)
+					{
+						return;
+					}
+					const Vector3i Size = PrefabSize(*a_Piece.m_Prefab);
+					Add(a_Piece.m_Prefab.get(), Vector3i(RoomCenterX - (Size.x / 2), RoomY + a_Layer, RoomCenterZ - (Size.z / 2)), a_Piece.m_Chests);
+				};
+				int RoomTopY = RoomY + StackHeightForName("BaseFloor");
+				if (RoomStoreys == 1)
+				{
+					// The empty room is base_floor plus base_roof; a room is never left open topped:
+					AddRoomPiece(P.m_BaseRoofRoom[RoomRotation], END_CITY_ROOM_BASE_ROOF_LAYER);
+					RoomTopY = RoomY + END_CITY_ROOM_BASE_ROOF_LAYER + StackHeightForName("BaseRoof");
+				}
+				if (RoomStoreys >= 2)
+				{
+					AddRoomPiece(P.m_SecondFloor2[RoomRotation], END_CITY_ROOM_SECOND_LAYER);
+					if (RoomStoreys == 2)
+					{
+						AddRoomPiece(P.m_SecondRoof[RoomRotation], END_CITY_ROOM_SECOND_ROOF_LAYER);
+						RoomTopY = RoomY + END_CITY_ROOM_SECOND_ROOF_LAYER;
+					}
+				}
+				if (RoomStoreys == 3)
+				{
+					AddRoomPiece(P.m_ThirdFloor2[RoomRotation], END_CITY_ROOM_THIRD_LAYER);
+					AddRoomPiece(P.m_ThirdRoof[RoomRotation], END_CITY_ROOM_THIRD_ROOF_LAYER);
+					RoomTopY = RoomY + END_CITY_ROOM_THIRD_ROOF_LAYER;
+				}
+
+				// The taller rooms may carry a small tower on their roof. The tower continues the room's
+				// own ladder column, so line the tower's ladder up with the room's ladder instead of
+				// centring the tower on the room:
 				if (RoomTower)
 				{
-					const AString RoomName = (RoomStoreys == 2) ? "LootRoom2" : "LootRoom3";
-					int TowerY = Edge.y + StackHeightForName(RoomName);
-					AddCentered(P.m_TowerFloor.get(), RoomX, TowerY, RoomZ);
-					TowerY += StackHeightForName("TowerFloor");
+					// The tower continues the ladder column of second_floor_2, the piece that owns the
+					// room's ladder; base_floor has none of its own:
+					const sRotatedPrefab & Ladder = P.m_SecondFloor2[RoomRotation];
+					const Vector3i LadderSize = PrefabSize(*Ladder.m_Prefab);
+					const int LadderX = RoomCenterX - (LadderSize.x / 2);
+					const int LadderZ = RoomCenterZ - (LadderSize.z / 2);
+					const int TowerX = LadderX + Ladder.m_LadderX - END_CITY_TOWER_LADDER_X;
+					const int TowerZ = LadderZ + Ladder.m_LadderZ - END_CITY_TOWER_LADDER_Z;
+					// The tower's base carries the ladder entrance, so let it descend into the room below:
+					Add(P.m_TowerBase.get(), Vector3i(TowerX, RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH, TowerZ));
+					// The tower's inside is air, and air does not erase the blocks under it, so clear
+					// the shaft the ladder drops through the roof into the room:
+					CarveTowerFloor(TowerX + (PrefabSize(*P.m_TowerBase).x / 2), RoomTopY, TowerZ + (PrefabSize(*P.m_TowerBase).z / 2));
+					int TowerY = RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
 					const int TowerStoreys = 3 + static_cast<int>(Rng() % 3);
 					for (int i = 1; i < TowerStoreys; i++)
 					{
-						AddCentered(P.m_TowerPiece.get(), RoomX, TowerY, RoomZ);
+						Add(P.m_TowerPiece.get(), Vector3i(TowerX, TowerY, TowerZ));
 						TowerY += StackHeightForName("TowerPiece");
 					}
 					if (P.m_TowerTop != nullptr)
 					{
-						AddCentered(P.m_TowerTop.get(), RoomX, TowerY, RoomZ);
+						const int TopOffset = (PrefabSize(*P.m_TowerTop).x - PrefabSize(*P.m_TowerPiece).x) / 2;
+						Add(P.m_TowerTop.get(), Vector3i(TowerX - TopOffset, TowerY, TowerZ - TopOffset));
 					}
 				}
-				AddCarve(Edge.x, Edge.y + 1, Edge.z);
+				// Open the room's doorway from the walking surface up, one block into its box so the
+				// carve cannot reach back over the arch:
+				AddCarve(Edge.x + DirX, Edge.y + 2, Edge.z + DirZ);
 				return;
 			}
 
@@ -1469,7 +1794,7 @@ protected:
 			// Overlap the last bridge block by one so that the tower is not separated by a gap:
 			const int Overlap = (SecondaryHalf == 0) ? 0 : (SecondaryHalf - 1);
 			const Vector3i SecondaryCenter(Edge.x + (DirX * Overlap), Edge.y, Edge.z + (DirZ * Overlap));
-			int SecondaryY = Edge.y;
+			int SecondaryY = Edge.y + 1;
 			AddCentered(P.m_TowerFloor.get(), SecondaryCenter.x, SecondaryY, SecondaryCenter.z);
 			SecondaryY += StackHeightForName("TowerFloor");
 			const int SecondaryStoreys = 3 + static_cast<int>(Rng() % 3);
@@ -1482,7 +1807,7 @@ protected:
 			{
 				AddCentered(P.m_TowerTop.get(), SecondaryCenter.x, SecondaryY, SecondaryCenter.z);
 			}
-			AddCarve(Edge.x, Edge.y + 1, Edge.z);
+			AddCarve(Edge.x + DirX, Edge.y + 2, Edge.z + DirZ);
 		};
 
 		// Bridges leave only from the storeys the wiki documents:
