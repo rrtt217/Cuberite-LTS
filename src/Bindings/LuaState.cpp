@@ -953,6 +953,21 @@ void cLuaState::Push(bool a_Value)
 
 
 
+/** Returns whether the class of the specified name has been exported to the API and can therefore be
+pushed to Lua. Pushing a class that tolua doesn't know aborts the whole server, so this must be queried
+before pushing an entity whose concrete class need not be exported (such as some projectiles). */
+static bool IsClassExportedToLua(lua_State * a_LuaState, const char * a_ClassName)
+{
+	luaL_getmetatable(a_LuaState, a_ClassName);  // Stack: [metatable]
+	const bool res = !lua_isnil(a_LuaState, -1);
+	lua_pop(a_LuaState, 1);  // Stack: []
+	return res;
+}
+
+
+
+
+
 void cLuaState::Push(const cEntity * a_Entity)
 {
 	// Once we can make Lua understand constness, this function shall receive a corresponding function body
@@ -995,15 +1010,18 @@ void cLuaState::Push(cEntity * a_Entity)
 					}
 					case cEntity::etProjectile:
 					{
-						// Push the specific projectile type:
-						return a_Entity->GetClass();
+						// Push the specific projectile type, but only if it is exported to the API - not
+						// all projectile types are, and pushing an unknown type aborts the server:
+						const char * ProjectileClassName = a_Entity->GetClass();
+						return IsClassExportedToLua(m_LuaState, ProjectileClassName) ? ProjectileClassName : "cProjectileEntity";
 					}
 
 					case cEntity::etEntity:
 					case cEntity::etEnderCrystal:
 					case cEntity::etMinecart:
+					case cEntity::etAreaEffectCloud:
 					{
-						// Push the generic entity class type:
+						// Push the generic entity class type (the concrete class is not exported):
 						return "cEntity";
 					}
 				}  // switch (EntityType)
