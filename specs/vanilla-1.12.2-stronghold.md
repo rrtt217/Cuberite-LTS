@@ -207,15 +207,22 @@ Finishers=..., OverworldClumpFlowers, ForestRocks, PieceStructures: Stronghold
 
 | 文件 | 说明 |
 |---|---|
-| `Server/Prefabs/PieceStructures/Stronghold.cubeset` | 新增（数据，含 3.1 的两处修正与来源头注释） |
+| `Server/Prefabs/PieceStructures/Stronghold.cubeset` | 新增（数据，含 3.1 的两处修正、来源与许可头注释） |
 | `src/Generating/ComposableGenerator.cpp` | 主世界默认 finishers 末尾加 `PieceStructures: Stronghold` |
 | `tests/Generating/StrongholdTest.cpp` | 新增数据不变量测试 |
 | `tests/Generating/CMakeLists.txt` | 注册 `StrongholdTest` |
+| `CONTRIBUTORS` | 加入 #5605 的作者 `helcostr`（`CONTRIBUTING.md` 的 Copyright 节要求） |
 | `specs/vanilla-1.12.2-stronghold.md` | 本文件 |
 
 ## 7. 未决 / 已决定
 
-1. **数据许可**：cubeset 是 Gallery 社区作品导出（@NiLSPACE 提供，#5605 附带）。在本 fork 内分发需确认许可与署名方式。
+1. **数据许可**：**已解决——随 Cuberite 本体，Apache License 2.0**。
+   仓库 `LICENSE` 即 Apache-2.0（"Copyright 2011-2025 Cuberite Contributors"）；`README.md` 的 Contributing 节写明
+   "Cuberite is licensed under the Apache License V2"；`CONTRIBUTING.md` 的 Copyright 节规定贡献必须置于
+   public domain 或 Apache-2.0 之下、并把作者加入 `CONTRIBUTORS`。
+   因此**随 PR 提交的文件与本仓库同许可**，本 cubeset 无需另行取得授权，只需按该机制署名：
+   `helcostr`（#5605 作者）已加入 `CONTRIBUTORS`，cubeset 头部补了许可与出处说明，
+   各 piece 的 Gallery 作者（`OriginData.CreatorName`）保留为溯源信息。
 2. **分布规则**（环状 128 个 + `#stronghold_biased_to` 群系偏置）：**本阶段不做**（见开头阶段决定与第 4 节）。
    现有网格近似即为最终形态，除非日后另行立项。
 3. **框架预填眼 10%**（需要生成器支持按块随机替换，`cPrefab` 目前没有该机制）：**本阶段不做**。

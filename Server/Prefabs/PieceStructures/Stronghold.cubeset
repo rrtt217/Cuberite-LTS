@@ -3,6 +3,8 @@
 -- Defines the prefabs in the group Stronghold (vanilla 1.12.2 要塞 / stronghold)
 -- 来源：cuberite/cuberite PR #5605 附带的 GalExport 导出（由 @NiLSPACE 提供，
 --       构件出自 Gallery 服务器的社区作品，CreatorName 见各 piece 的 OriginData）。
+-- 许可：随 Cuberite 本体，Apache License 2.0（见仓库 LICENSE 与 CONTRIBUTING 的 Copyright 节：
+--       随 PR 提交的文件即按该许可发布，提交者列入 CONTRIBUTORS）。
 --       本仓库仅做了两处修正，见 specs/vanilla-1.12.2-stronghold.md：
 --         1. 文件的 group / ExportName 由 Fortress 改名为 Stronghold；
 --         2. 两个末地传送门房的 12 个传送门框架朝向改为「朝向门内侧」——
