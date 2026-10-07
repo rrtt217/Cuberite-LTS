@@ -77,7 +77,8 @@ static constexpr int END_CITY_BASE_ROOM_FRAME = 12;
 
 /** The layer of a large room's own blueprint each piece starts on: base_floor at 0, second_floor_2
 at 1 (its staircase runs three layers down over base_floor), second_roof at 8, third_floor_2 at 5
-(its staircase runs down over second_floor_2) and third_roof at 12. */
+(its staircase runs down over second_floor_2) and third_roof at 12. A tower on the roof stands on the
+roof's own layer, whose middle is open for the tower's ladder to descend through. */
 static constexpr int END_CITY_ROOM_BASE_ROOF_LAYER = 4;
 static constexpr int END_CITY_ROOM_SECOND_LAYER = 1;
 static constexpr int END_CITY_ROOM_SECOND_ROOF_LAYER = 8;
@@ -1689,14 +1690,14 @@ protected:
 					if (RoomStoreys == 2)
 					{
 						AddRoomPiece(P.m_SecondRoof[RoomRotation], END_CITY_ROOM_SECOND_ROOF_LAYER);
-						RoomTopY = RoomY + END_CITY_ROOM_SECOND_ROOF_LAYER + StackHeightForName("SecondRoof");
+						RoomTopY = RoomY + END_CITY_ROOM_SECOND_ROOF_LAYER;
 					}
 				}
 				if (RoomStoreys == 3)
 				{
 					AddRoomPiece(P.m_ThirdFloor2[RoomRotation], END_CITY_ROOM_THIRD_LAYER);
 					AddRoomPiece(P.m_ThirdRoof[RoomRotation], END_CITY_ROOM_THIRD_ROOF_LAYER);
-					RoomTopY = RoomY + END_CITY_ROOM_THIRD_ROOF_LAYER + StackHeightForName("ThirdRoof");
+					RoomTopY = RoomY + END_CITY_ROOM_THIRD_ROOF_LAYER;
 				}
 
 				// The taller rooms may carry a small tower on their roof. The tower continues the room's
