@@ -1336,6 +1336,11 @@ protected:
 		std::vector<int> StoreyYs;
 		int StoreyCount = 0;
 
+		// The small tower is shifted so its ladder continues the base room's shaft, so it is not
+		// centred on the city origin. Everything stacked above must follow its centre:
+		int TowerCenterX = m_OriginX;
+		int TowerCenterZ = m_OriginZ;
+
 		// The small tower always goes on the base room, its ladder shaft descending through the roof:
 		if ((P.m_TowerBase != nullptr) && (P.m_TowerPiece != nullptr))
 		{
@@ -1345,6 +1350,8 @@ protected:
 			// tower so its shaft continues the room's spiral ladder:
 			const int SmallTowerX = m_OriginX - (END_CITY_BASE_FRAME / 2) + END_CITY_BASE_LADDER_X - END_CITY_TOWER_LADDER_X;
 			const int SmallTowerZ = m_OriginZ - (END_CITY_BASE_FRAME / 2) + END_CITY_BASE_LADDER_Z - END_CITY_TOWER_LADDER_Z;
+			TowerCenterX = SmallTowerX + (PrefabSize(*P.m_TowerBase).x / 2);
+			TowerCenterZ = SmallTowerZ + (PrefabSize(*P.m_TowerBase).z / 2);
 			StoreyYs.push_back(TowerBaseY);
 			Add(P.m_TowerBase.get(), Vector3i(SmallTowerX, TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH, SmallTowerZ));
 			Y = TowerBaseY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
@@ -1378,14 +1385,14 @@ protected:
 			for (int i = 0; i < StoreyCount; i++)
 			{
 				StoreyYs.push_back(Y);
-				AddCentered(P.m_FatTower.get(), m_OriginX, Y, m_OriginZ);
+				AddCentered(P.m_FatTower.get(), TowerCenterX, Y, TowerCenterZ);
 				Y += StackHeightForName("FatTower");
 			}
 
 			// Cap the fat tower with its loot room:
 			if (P.m_FatTowerTop != nullptr)
 			{
-				AddCentered(P.m_FatTowerTop.get(), m_OriginX, Y, m_OriginZ, P.m_FatTowerTopChests);
+				AddCentered(P.m_FatTowerTop.get(), TowerCenterX, Y, TowerCenterZ, P.m_FatTowerTopChests);
 				Y += StackHeightForName("FatTowerTop");
 			}
 		}
@@ -1439,7 +1446,7 @@ protected:
 
 			// The bridge starts at the tower's outer wall. The staircase piece raises the far end
 			// cumulatively, so bridges can reach towers at other heights:
-			Vector3i Edge(m_OriginX + (DirX * Half), a_BranchY, m_OriginZ + (DirZ * Half));
+			Vector3i Edge(TowerCenterX + (DirX * Half), a_BranchY, TowerCenterZ + (DirZ * Half));
 
 			const int StraightCount = END_CITY_BRIDGE_MIN_SEGMENTS + static_cast<int>(Rng() % END_CITY_BRIDGE_EXTRA_SEGMENTS);
 			for (int i = 0; i < StraightCount; i++)
@@ -1471,7 +1478,7 @@ protected:
 			}
 
 			// Open a doorway through the tower wall where the bridge meets it:
-			AddCarve(m_OriginX + (DirX * Half), a_BranchY + 1, m_OriginZ + (DirZ * Half));
+			AddCarve(TowerCenterX + (DirX * Half), a_BranchY + 1, TowerCenterZ + (DirZ * Half));
 
 			// An End ship may end the bridge instead of another tower:
 			const sOrientedPrefab & Ship = P.m_Ship[a_Dir];
