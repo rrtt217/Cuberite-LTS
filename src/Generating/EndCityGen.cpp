@@ -75,6 +75,12 @@ upper storeys and roofs are 18x18; centring each on its own frame keeps their bl
 static constexpr int END_CITY_BASE_FRAME = 18;
 static constexpr int END_CITY_BASE_ROOM_FRAME = 12;
 
+/** The layer of the base blueprint each storey starts on, and the height of the whole base. */
+static constexpr int END_CITY_SECOND_FLOOR_LAYER = 1;
+static constexpr int END_CITY_THIRD_FLOOR_LAYER = 8;
+static constexpr int END_CITY_THIRD_ROOF_LAYER = 12;
+static constexpr int END_CITY_BASE_HEIGHT = 14;
+
 /** The base room's topmost ladder cell within that frame, and the small tower's ladder cell within its
 own frame. Placing the tower so the two coincide continues the room's spiral ladder into the tower. */
 static constexpr int END_CITY_BASE_LADDER_X = 10;
@@ -1380,26 +1386,27 @@ protected:
 		const cEndCityPieces & P = GetEndCityPieces();
 		std::minstd_rand Rng(MakeCellSeed(a_Seed, m_GridX + END_CITY_SEED_OFFSET_X, m_GridZ + END_CITY_SEED_OFFSET_Z));
 
-		// The base of a city is the vanilla stack of storeys. The 12x12 rooms are centred on the origin,
-		// which places them on the wider 18x18 frame that the upper storeys and the roofs use, so the
-		// whole base keeps one set of blueprint coordinates:
+		// The base of a city is the vanilla stack of storeys, placed on the layer of the base
+		// blueprint each one occupies. second_floor_1 begins three layers below the first storey's roof,
+		// where its slab staircase runs, and so overlaps the storey below it:
 		int Y = BaseY;
-		auto AddBaseStorey = [&](const std::unique_ptr<cPrefab> & a_Piece, const char * a_Name, int a_Frame)
+		if (P.m_BaseFloor != nullptr)
 		{
-			if (a_Piece == nullptr)
-			{
-				return;
-			}
-			AddCenteredFrame(a_Piece.get(), a_Frame, a_Frame, m_OriginX, Y, m_OriginZ);
-			Y += StackHeightForName(a_Name);
-		};
-		// A storey carries the roof that caps the one below it: second_floor_1 and third_floor_1
-		// each begin with that roof layer, whose stairs reach down over the storey below. base_roof
-		// and second_roof therefore only cap a base that ends early:
-		AddBaseStorey(P.m_BaseFloor, "BaseFloor", END_CITY_BASE_ROOM_FRAME);
-		AddBaseStorey(P.m_SecondFloor1, "SecondFloor1", END_CITY_BASE_FRAME);
-		AddBaseStorey(P.m_ThirdFloor1, "ThirdFloor1", END_CITY_BASE_FRAME);
-		AddBaseStorey(P.m_ThirdRoof, "ThirdRoof", END_CITY_BASE_FRAME);
+			AddCenteredFrame(P.m_BaseFloor.get(), END_CITY_BASE_ROOM_FRAME, END_CITY_BASE_ROOM_FRAME, m_OriginX, Y, m_OriginZ);
+		}
+		if (P.m_SecondFloor1 != nullptr)
+		{
+			AddCenteredFrame(P.m_SecondFloor1.get(), END_CITY_BASE_FRAME, END_CITY_BASE_FRAME, m_OriginX, Y + END_CITY_SECOND_FLOOR_LAYER, m_OriginZ);
+		}
+		if (P.m_ThirdFloor1 != nullptr)
+		{
+			AddCenteredFrame(P.m_ThirdFloor1.get(), END_CITY_BASE_FRAME, END_CITY_BASE_FRAME, m_OriginX, Y + END_CITY_THIRD_FLOOR_LAYER, m_OriginZ);
+		}
+		if (P.m_ThirdRoof != nullptr)
+		{
+			AddCenteredFrame(P.m_ThirdRoof.get(), END_CITY_BASE_FRAME, END_CITY_BASE_FRAME, m_OriginX, Y + END_CITY_THIRD_ROOF_LAYER, m_OriginZ);
+		}
+		Y += END_CITY_BASE_HEIGHT;
 
 		// The wiki: the base room always carries a small tower (three, four or five storeys), and a
 		// large tower only ever generates on top of a small tower, never directly on the base room:

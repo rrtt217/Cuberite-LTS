@@ -156,7 +156,7 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 |---|---|
 | `BaseFloor`（12×12×4） | ✓ 68 PB / 54 ESB / 12 glass / 12 pillar / 2 stairs，与 `base_floor` 完全一致 |
 | `BaseRoof`（12×12×2） | ✓ 100 PB / 44 stairs / 4 rod，与 `base_roof` 完全一致 |
-| `SecondFloor1`（18×18×4） | /Base 画布第 4–7 层，**含它下面那层屋顶**；95 PB / 44 stairs / 12 pillar / 7 slab / 4 rod 与 `second_floor_1` 表吻合 |
+| `SecondFloor1`（18×18×7） | /Base 画布第 **1–7** 层：第 1–3 层只保留它的半砖螺旋梯（`L-P-L` 斜列，位于第一层屋顶**下面**、`base_floor` 里没有这些格），第 4–7 层是屋顶 + 二层墙。装配时从画布第 1 层放下，因此这三层楼梯会覆盖到第一层结构上 |
 | `ThirdFloor1`（18×18×4） | /Base 画布第 8–11 层，含下面那层屋顶；64 stairs / 32 glass 与 `third_floor_1` 表吻合 |
 | `SecondRoof` / `ThirdRoof` | 对应画布第 8 层 / 第 12–13 层；`second_roof` 只在基座提前封顶时用 |
 | `TowerBase` / `TowerPiece` / `TowerTop` | ✓ 与 `tower_base` / `tower_piece` / `tower_top` 完全一致 |
