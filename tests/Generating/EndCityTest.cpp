@@ -204,12 +204,13 @@ static void testLadderAttachment(void)
 							const NIBBLETYPE Meta = Chunk.GetBlockMeta(x, y, z);
 							int Dx = 0;
 							int Dz = 0;
+							// The meta is the direction the ladder faces; it is attached to the opposite neighbour:
 							switch (Meta)
 							{
-								case 2: { Dz = -1; break; }
-								case 3: { Dz = 1; break; }
-								case 4: { Dx = -1; break; }
-								case 5: { Dx = 1; break; }
+								case 2: { Dz = 1; break; }
+								case 3: { Dz = -1; break; }
+								case 4: { Dx = 1; break; }
+								case 5: { Dx = -1; break; }
 								default: { TEST_FAIL("Invalid ladder meta"); break; }
 							}
 							const int Nx = x + Dx;

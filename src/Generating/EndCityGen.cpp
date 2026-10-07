@@ -584,22 +584,24 @@ static void FixFacingMetas(cBlockArea & a_Area)
 				}
 				else
 				{
+					// The ladder's meta is the direction it faces, which is away from the block it is
+					// attached to (cBlockLadderHandler::CanBeAt checks the opposite neighbour):
 					Facing = END_CITY_FACING_NORTH;
 					if (West)
 					{
-						Facing = END_CITY_FACING_WEST;
+						Facing = END_CITY_FACING_EAST;
 					}
 					else if (East)
 					{
-						Facing = END_CITY_FACING_EAST;
+						Facing = END_CITY_FACING_WEST;
 					}
 					else if (North)
 					{
-						Facing = END_CITY_FACING_NORTH;
+						Facing = END_CITY_FACING_SOUTH;
 					}
 					else if (South)
 					{
-						Facing = END_CITY_FACING_SOUTH;
+						Facing = END_CITY_FACING_NORTH;
 					}
 				}
 				a_Area.SetRelBlockTypeMeta(x, y, z, Type, Facing);
