@@ -43,6 +43,7 @@ public:
 		pkFirework,
 		pkWitherSkull,
 		pkDragonFireball,
+		pkEnderEye,
 	} ;
 
 	// tolua_end

@@ -78,3 +78,16 @@ EMCSBiome cChunkGenerator::GetBiomeAt(int a_BlockX, int a_BlockZ)
 
 
 
+
+bool cChunkGenerator::GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target)
+{
+	// The default generator doesn't know any structures:
+	UNUSED(a_Structure);
+	UNUSED(a_Position);
+	UNUSED(a_Target);
+	return false;
+}
+
+
+
+

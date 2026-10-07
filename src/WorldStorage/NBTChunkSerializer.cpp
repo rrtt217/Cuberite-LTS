@@ -1107,6 +1107,7 @@ public:
 				case cProjectileEntity::pkEnderPearl:
 				case cProjectileEntity::pkSnowball:
 				case cProjectileEntity::pkDragonFireball:
+				case cProjectileEntity::pkEnderEye:  // The eye is short-lived and is not saved between restarts
 				{
 					break;
 				}

@@ -202,6 +202,22 @@ void cComposableGenerator::Generate(cChunkDesc & a_ChunkDesc)
 
 
 
+bool cComposableGenerator::GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target)
+{
+	for (const auto & Finisher: m_FinishGens)
+	{
+		if (Finisher->GetNearestStructureTarget(a_Structure, a_Position, a_Target))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+
+
+
+
 void cComposableGenerator::InitializeGeneratorDefaults(cIniFile & a_IniFile, eDimension a_Dimension)
 {
 	switch (a_Dimension)

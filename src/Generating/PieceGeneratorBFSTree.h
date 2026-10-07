@@ -27,6 +27,12 @@ public:
 	The Y coord is generated automatically based on the starting piece that is chosen. */
 	void PlacePieces(int a_BlockX, int a_BlockZ, int a_MaxDepth, cPlacedPieces & a_OutPieces);
 
+	/** Returns the Y coord at which PlacePieces() places the starting piece for the structure at the
+	specified coords, or -1 if the pool has no starting piece at all.
+	This is the read-only variant of the starting-piece choice: it creates no pieces and changes no state,
+	so it can be used to locate a structure without generating it. */
+	int GetStartingPieceHeight(int a_BlockX, int a_BlockZ) const;
+
 
 protected:
 
@@ -67,6 +73,10 @@ protected:
 	/** Selects a starting piece and places it, including its height and rotation.
 	Also puts the piece's connectors in a_OutConnectors. */
 	cPlacedPiecePtr PlaceStartingPiece(int a_BlockX, int a_BlockZ, cFreeConnectors & a_OutConnectors);
+
+	/** Chooses the starting piece for the structure at the specified coords, using the same noise and
+	weights as PlaceStartingPiece(). Returns nullptr if the pool has no starting pieces. */
+	cPiece * ChooseStartingPiece(int a_BlockX, int a_BlockZ) const;
 
 	/** Tries to place a new piece at the specified (placed) connector. Returns true if successful. */
 	bool TryPlacePieceAtConnector(

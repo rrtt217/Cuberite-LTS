@@ -36,31 +36,10 @@ cPlacedPiecePtr cPieceGeneratorBFSTree::PlaceStartingPiece(int a_BlockX, int a_B
 	int rnd = m_Noise.IntNoise2DInt(a_BlockX, a_BlockZ) / 7;
 
 	// Choose a random one of the starting pieces:
-	cPieces StartingPieces = m_PiecePool.GetStartingPieces();
-	int Total = 0;
-	for (cPieces::const_iterator itr = StartingPieces.begin(), end = StartingPieces.end(); itr != end; ++itr)
+	cPiece * StartingPiece = ChooseStartingPiece(a_BlockX, a_BlockZ);
+	if (StartingPiece == nullptr)
 	{
-		Total += m_PiecePool.GetStartingPieceWeight(**itr);
-	}
-	cPiece * StartingPiece;
-	if (Total > 0)
-	{
-		int Chosen = rnd % Total;
-		StartingPiece = StartingPieces.front();
-		for (cPieces::const_iterator itr = StartingPieces.begin(), end = StartingPieces.end(); itr != end; ++itr)
-		{
-			Chosen -= m_PiecePool.GetStartingPieceWeight(**itr);
-			if (Chosen <= 0)
-			{
-				StartingPiece = *itr;
-				break;
-			}
-		}
-	}
-	else
-	{
-		// All pieces returned zero weight, but we need one to start. Choose with equal chance:
-		StartingPiece = StartingPieces[static_cast<size_t>(rnd) % StartingPieces.size()];
+		return nullptr;
 	}
 	rnd = rnd >> 16;
 
@@ -91,6 +70,56 @@ cPlacedPiecePtr cPieceGeneratorBFSTree::PlaceStartingPiece(int a_BlockX, int a_B
 	}
 
 	return cPlacedPiecePtr(res);
+}
+
+
+
+
+
+cPiece * cPieceGeneratorBFSTree::ChooseStartingPiece(int a_BlockX, int a_BlockZ) const
+{
+	int rnd = m_Noise.IntNoise2DInt(a_BlockX, a_BlockZ) / 7;
+
+	// Choose a random one of the starting pieces:
+	cPieces StartingPieces = m_PiecePool.GetStartingPieces();
+	if (StartingPieces.empty())
+	{
+		return nullptr;
+	}
+	int Total = 0;
+	for (cPieces::const_iterator itr = StartingPieces.begin(), end = StartingPieces.end(); itr != end; ++itr)
+	{
+		Total += m_PiecePool.GetStartingPieceWeight(**itr);
+	}
+	if (Total <= 0)
+	{
+		// All pieces returned zero weight, but we need one to start. Choose with equal chance:
+		return StartingPieces[static_cast<size_t>(rnd) % StartingPieces.size()];
+	}
+	int Chosen = rnd % Total;
+	for (cPieces::const_iterator itr = StartingPieces.begin(), end = StartingPieces.end(); itr != end; ++itr)
+	{
+		Chosen -= m_PiecePool.GetStartingPieceWeight(**itr);
+		if (Chosen <= 0)
+		{
+			return *itr;
+		}
+	}
+	return StartingPieces.back();
+}
+
+
+
+
+
+int cPieceGeneratorBFSTree::GetStartingPieceHeight(int a_BlockX, int a_BlockZ) const
+{
+	cPiece * StartingPiece = ChooseStartingPiece(a_BlockX, a_BlockZ);
+	if (StartingPiece == nullptr)
+	{
+		return -1;
+	}
+	return StartingPiece->GetStartingPieceHeight(a_BlockX, a_BlockZ);
 }
 
 
@@ -231,7 +260,13 @@ void cPieceGeneratorBFSTree::PlacePieces(int a_BlockX, int a_BlockZ, int a_MaxDe
 	cFreeConnectors ConnectorPool;
 
 	// Place the starting piece:
-	a_OutPieces.push_back(PlaceStartingPiece(a_BlockX, a_BlockZ, ConnectorPool));
+	cPlacedPiecePtr StartingPiece = PlaceStartingPiece(a_BlockX, a_BlockZ, ConnectorPool);
+	if (StartingPiece == nullptr)
+	{
+		// The pool has no starting piece at all, nothing can be placed:
+		return;
+	}
+	a_OutPieces.push_back(std::move(StartingPiece));
 
 	/*
 	// DEBUG:
