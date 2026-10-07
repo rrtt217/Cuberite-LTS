@@ -156,7 +156,9 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 |---|---|
 | `BaseFloor`（12×12×4） | ✓ 68 PB / 54 ESB / 12 glass / 12 pillar / 2 stairs，与 `base_floor` 完全一致 |
 | `BaseRoof`（12×12×2） | ✓ 100 PB / 44 stairs / 4 rod，与 `base_roof` 完全一致 |
-| `SecondFloor1` / `SecondRoof` / `ThirdFloor1` / `ThirdRoof` | 由 /Base 画布按 storey 边界切出；件名与边界按 Wiki，逐件材料数因 Wiki 未单独给出这些件的蓝图而只能近似 |
+| `SecondFloor1`（18×18×4） | /Base 画布第 4–7 层，**含它下面那层屋顶**；95 PB / 44 stairs / 12 pillar / 7 slab / 4 rod 与 `second_floor_1` 表吻合 |
+| `ThirdFloor1`（18×18×4） | /Base 画布第 8–11 层，含下面那层屋顶；64 stairs / 32 glass 与 `third_floor_1` 表吻合 |
+| `SecondRoof` / `ThirdRoof` | 对应画布第 8 层 / 第 12–13 层；`second_roof` 只在基座提前封顶时用 |
 | `TowerBase` / `TowerPiece` / `TowerTop` | ✓ 与 `tower_base` / `tower_piece` / `tower_top` 完全一致 |
 | `BridgePiece` / `BridgeGentleStairs` / `BridgeEnd` | ✓ 完全一致 |
 | `BridgeSteepStairs` | 按 /Bridge 的 ASCII 图逐格转录（16 PB / 1 pillar）；Wiki 材料表写 15 PB / 2 pillar，两者自相矛盾，以图为准 |

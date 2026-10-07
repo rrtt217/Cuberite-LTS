@@ -968,9 +968,7 @@ public:
 	{
 		// The base of a city is the vanilla stack of storeys, each a piece of its own:
 		m_BaseFloor = MakePrefab("BaseFloor");
-		m_BaseRoof = MakePrefab("BaseRoof");
 		m_SecondFloor1 = MakePrefab("SecondFloor1");
-		m_SecondRoof = MakePrefab("SecondRoof");
 		m_ThirdFloor1 = MakePrefab("ThirdFloor1");
 		m_ThirdRoof = MakePrefab("ThirdRoof");
 		m_TowerBase = MakePrefab("TowerBase");
@@ -1001,9 +999,7 @@ public:
 	}
 
 	std::unique_ptr<cPrefab> m_BaseFloor;
-	std::unique_ptr<cPrefab> m_BaseRoof;
 	std::unique_ptr<cPrefab> m_SecondFloor1;
-	std::unique_ptr<cPrefab> m_SecondRoof;
 	std::unique_ptr<cPrefab> m_ThirdFloor1;
 	std::unique_ptr<cPrefab> m_ThirdRoof;
 	std::unique_ptr<cPrefab> m_TowerBase;
@@ -1397,10 +1393,11 @@ protected:
 			AddCenteredFrame(a_Piece.get(), a_Frame, a_Frame, m_OriginX, Y, m_OriginZ);
 			Y += StackHeightForName(a_Name);
 		};
+		// A storey carries the roof that caps the one below it: second_floor_1 and third_floor_1
+		// each begin with that roof layer, whose stairs reach down over the storey below. base_roof
+		// and second_roof therefore only cap a base that ends early:
 		AddBaseStorey(P.m_BaseFloor, "BaseFloor", END_CITY_BASE_ROOM_FRAME);
-		AddBaseStorey(P.m_BaseRoof, "BaseRoof", END_CITY_BASE_ROOM_FRAME);
 		AddBaseStorey(P.m_SecondFloor1, "SecondFloor1", END_CITY_BASE_FRAME);
-		AddBaseStorey(P.m_SecondRoof, "SecondRoof", END_CITY_BASE_FRAME);
 		AddBaseStorey(P.m_ThirdFloor1, "ThirdFloor1", END_CITY_BASE_FRAME);
 		AddBaseStorey(P.m_ThirdRoof, "ThirdRoof", END_CITY_BASE_FRAME);
 
