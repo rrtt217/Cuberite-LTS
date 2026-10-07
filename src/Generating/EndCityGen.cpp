@@ -78,6 +78,7 @@ static constexpr int END_CITY_BASE_ROOM_FRAME = 12;
 /** The layer of a large room's own blueprint each piece starts on: base_floor at 0, second_floor_2
 at 1 (its staircase runs three layers down over base_floor), second_roof at 8, third_floor_2 at 5
 (its staircase runs down over second_floor_2) and third_roof at 12. */
+static constexpr int END_CITY_ROOM_BASE_ROOF_LAYER = 4;
 static constexpr int END_CITY_ROOM_SECOND_LAYER = 1;
 static constexpr int END_CITY_ROOM_SECOND_ROOF_LAYER = 8;
 static constexpr int END_CITY_ROOM_THIRD_LAYER = 5;
@@ -997,6 +998,7 @@ public:
 		m_FatTowerTopChests = ChestsOf("FatTowerTop");
 		MakeRotatedPrefabs("BaseFloor", m_BaseFloorRoom);
 		MakeRotatedPrefabs("EmptyRoom", m_EmptyRoom);
+		MakeRotatedPrefabs("BaseRoof", m_BaseRoofRoom);
 		MakeRotatedPrefabs("SecondFloor2", m_SecondFloor2);
 		MakeRotatedPrefabs("SecondRoof", m_SecondRoof);
 		MakeRotatedPrefabs("ThirdFloor2", m_ThirdFloor2);
@@ -1032,6 +1034,7 @@ public:
 	std::vector<Vector3i> m_FatTowerTopChests;
 	sRotatedPrefab m_BaseFloorRoom[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_EmptyRoom[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_BaseRoofRoom[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_SecondFloor2[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_SecondRoof[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_ThirdFloor2[END_CITY_DIR_COUNT];
@@ -1611,35 +1614,19 @@ protected:
 			bool RoomTower = (RoomStoreys >= 2) &&
 				(P.m_TowerBase != nullptr) && (P.m_TowerPiece != nullptr) &&
 				((Rng() % END_CITY_ROOM_TOWER_DENOMINATOR) == 0);
-			const sRotatedPrefab * RoomSet = nullptr;
-			// The ground storey of a room is end_city/base_floor, which carries no roof of its own:
-			// the roof (end_city/base_roof) is a separate piece, so an arch meeting the room is not
-			// buried under the roof overhang.
-			if (RoomStoreys == 1)
-			{
-				RoomSet = P.m_BaseFloorRoom;
-			}
-			else if (RoomStoreys == 2)
-			{
-				RoomSet = P.m_LargeRoom2;
-			}
-			else
-			{
-				RoomSet = P.m_LargeRoom3;
-			}
-
-			// Rotate the room so that its doorway faces back toward the bridge:
+			// Rotate the room so that its doorway faces back toward the bridge. The arch meets the room's
+			// ground storey, so the rotation is the one base_floor's own doorway calls for:
 			const int RequiredSide = (a_Dir + (END_CITY_DIR_COUNT / 2)) % END_CITY_DIR_COUNT;
 			int RoomRotation = -1;
 			for (int r = 0; r < END_CITY_DIR_COUNT; r++)
 			{
-				if ((RoomSet[r].m_Prefab != nullptr) && (RoomSet[r].m_DoorwaySide == RequiredSide))
+				if ((P.m_BaseFloorRoom[r].m_Prefab != nullptr) && (P.m_BaseFloorRoom[r].m_DoorwaySide == RequiredSide))
 				{
 					RoomRotation = r;
 					break;
 				}
 			}
-			if ((RoomRotation < 0) && (RoomSet[0].m_Prefab != nullptr))
+			if ((RoomRotation < 0) && (P.m_BaseFloorRoom[0].m_Prefab != nullptr))
 			{
 				RoomRotation = 0;
 			}
@@ -1690,6 +1677,12 @@ protected:
 					Add(a_Piece.m_Prefab.get(), Vector3i(RoomCenterX - (Size.x / 2), RoomY + a_Layer, RoomCenterZ - (Size.z / 2)), a_Piece.m_Chests);
 				};
 				int RoomTopY = RoomY + StackHeightForName("BaseFloor");
+				if (RoomStoreys == 1)
+				{
+					// The empty room is base_floor plus base_roof; a room is never left open topped:
+					AddRoomPiece(P.m_BaseRoofRoom[RoomRotation], END_CITY_ROOM_BASE_ROOF_LAYER);
+					RoomTopY = RoomY + END_CITY_ROOM_BASE_ROOF_LAYER + StackHeightForName("BaseRoof");
+				}
 				if (RoomStoreys >= 2)
 				{
 					AddRoomPiece(P.m_SecondFloor2[RoomRotation], END_CITY_ROOM_SECOND_LAYER);
