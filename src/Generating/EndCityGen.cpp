@@ -797,6 +797,14 @@ struct sRotatedPrefab
 	int m_DoorX = 0;
 	int m_DoorZ = 0;
 
+	/** The extent of the piece's lowest layer in its local X and Z. A bridge arch meets the floor a
+	piece stands on, not the roof overhang or the storeys above it, so the piece is placed by this
+	rather than by the bounding box of the whole prefab. */
+	int m_FloorMinX = 0;
+	int m_FloorMaxX = 0;
+	int m_FloorMinZ = 0;
+	int m_FloorMaxZ = 0;
+
 	/** Offsets of the loot chests, relative to the prefab's minimum corner. */
 	std::vector<Vector3i> m_Chests;
 
@@ -965,6 +973,7 @@ public:
 		m_FatTower = MakePrefab("FatTower");
 		m_FatTowerTop = MakePrefab("FatTowerTop");
 		m_FatTowerTopChests = ChestsOf("FatTowerTop");
+		MakeRotatedPrefabs("BaseFloor", m_BaseFloor);
 		MakeRotatedPrefabs("EmptyRoom", m_EmptyRoom);
 		MakeRotatedPrefabs("LootRoom2", m_LootRoom2);
 		MakeRotatedPrefabs("LootRoom3", m_LootRoom3);
@@ -991,6 +1000,7 @@ public:
 	std::unique_ptr<cPrefab> m_FatTower;
 	std::unique_ptr<cPrefab> m_FatTowerTop;
 	std::vector<Vector3i> m_FatTowerTopChests;
+	sRotatedPrefab m_BaseFloor[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_EmptyRoom[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_LootRoom2[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_LootRoom3[END_CITY_DIR_COUNT];
@@ -1105,6 +1115,27 @@ protected:
 			FixFacingMetas(*Rotated);
 			a_Out[r].m_DoorwaySide = DoorwaySide(*Rotated, a_Out[r].m_DoorX, a_Out[r].m_DoorZ);
 			a_Out[r].m_Chests = CollectBlocks(*Rotated, E_BLOCK_CHEST);
+
+			// Record the extent of the lowest layer, so a bridge can meet the floor:
+			a_Out[r].m_FloorMinX = Rotated->GetSizeX();
+			a_Out[r].m_FloorMaxX = -1;
+			a_Out[r].m_FloorMinZ = Rotated->GetSizeZ();
+			a_Out[r].m_FloorMaxZ = -1;
+			for (int z = 0; z < Rotated->GetSizeZ(); z++)
+			{
+				for (int x = 0; x < Rotated->GetSizeX(); x++)
+				{
+					if (Rotated->GetRelBlockType(x, 0, z) == E_BLOCK_AIR)
+					{
+						continue;
+					}
+					a_Out[r].m_FloorMinX = std::min(a_Out[r].m_FloorMinX, x);
+					a_Out[r].m_FloorMaxX = std::max(a_Out[r].m_FloorMaxX, x);
+					a_Out[r].m_FloorMinZ = std::min(a_Out[r].m_FloorMinZ, z);
+					a_Out[r].m_FloorMaxZ = std::max(a_Out[r].m_FloorMaxZ, z);
+				}
+			}
+
 			a_Out[r].m_LadderX = -1;
 			a_Out[r].m_LadderZ = -1;
 			for (int y = Rotated->GetSizeY() - 1; y >= 0; y--)
@@ -1527,9 +1558,12 @@ protected:
 				(P.m_TowerBase != nullptr) && (P.m_TowerPiece != nullptr) &&
 				((Rng() % END_CITY_ROOM_TOWER_DENOMINATOR) == 0);
 			const sRotatedPrefab * RoomSet = nullptr;
+			// The ground storey of a room is end_city/base_floor, which carries no roof of its own:
+			// the roof (end_city/base_roof) is a separate piece, so an arch meeting the room is not
+			// buried under the roof overhang.
 			if (RoomStoreys == 1)
 			{
-				RoomSet = P.m_EmptyRoom;
+				RoomSet = P.m_BaseFloor;
 			}
 			else if (RoomStoreys == 2)
 			{
@@ -1557,28 +1591,29 @@ protected:
 			}
 			if (Room != nullptr)
 			{
-				// Along the bridge the room starts at the arch's far row, so the arch cannot end up
-				// inside the room; across it, the room's doorway column is centred on the archway:
-				const Vector3i RoomSize = PrefabSize(*Room->m_Prefab);
+				// Meet the arch with the room's lowest layer, not with the bounding box of the whole
+				// prefab: a room's roof and its upper storeys overhang its floor by several blocks, so
+				// placing the box would leave the arch pointing at air. Across the bridge the room's
+				// doorway column is centred on the archway instead:
 				const int FarX = Edge.x - DirX;
 				const int FarZ = Edge.z - DirZ;
 				int PosX = Edge.x - Room->m_DoorX;
 				int PosZ = Edge.z - Room->m_DoorZ;
 				if (DirX > 0)
 				{
-					PosX = FarX;
+					PosX = FarX + 1 - Room->m_FloorMinX;
 				}
 				else if (DirX < 0)
 				{
-					PosX = FarX - (RoomSize.x - 1);
+					PosX = FarX - 1 - Room->m_FloorMaxX;
 				}
 				if (DirZ > 0)
 				{
-					PosZ = FarZ;
+					PosZ = FarZ + 1 - Room->m_FloorMinZ;
 				}
 				else if (DirZ < 0)
 				{
-					PosZ = FarZ - (RoomSize.z - 1);
+					PosZ = FarZ - 1 - Room->m_FloorMaxZ;
 				}
 
 				// The room's floor sits in its own bottom layer, one above the bridge's lowered frame:

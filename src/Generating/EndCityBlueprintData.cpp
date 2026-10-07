@@ -127,6 +127,28 @@ static const sEndCityBlueprintLayer Layers_FatTowerTop[] =
 
 
 
+static const sEndCityBlueprintLayer Layers_BaseFloor[] =
+{
+	{0, "            |            |  PPPPPPPP  | SPPPPPPPP  | PPPPPPPPP  | PPPPPPPPP  | PPPPPPPPP  | PPPPPPPPP  | SPPPPPPPP  |  PPPPPPPP  |            |            "},
+	{1, "            |            |  UEEEEEEU  |  E      E  |  E      E  |         E  |         E  |  E      E  |  E      E  |  UEEEEEEU  |            |            "},
+	{2, "            |            |  UEGEEGEU  |  E      E  | KE      G  |         E  |         E  | KE      G  |  E      E  |  UEGEEGEU  |            |            "},
+	{3, "            |            |  UEGEEGEU  |  E      E  |  E      G  |         E  |         E  |  E      G  |  E      E  |  UEGEEGEU  |            |            "},
+};
+
+
+
+
+
+static const sEndCityBlueprintLayer Layers_BaseRoof[] =
+{
+	{0, "SSSSSSSSSSSS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SPPPPPPPPPPS|SSSSSSSSSSSS"},
+	{1, "            | D        D |            |            |            |            |            |            |            |            | D        D |            "},
+};
+
+
+
+
+
 static const sEndCityBlueprintLayer Layers_EmptyRoom[] =
 {
 	{0, "            |            |  PPPPPPPP  | SPPPPPPPP  | PPPPPPPPP  | PPPPPPPPP  | PPPPPPPPP  | PPPPPPPPP  | SPPPPPPPP  |  PPPPPPPP  |            |            "},
@@ -277,6 +299,8 @@ const sEndCityBlueprint g_EndCityBlueprints[] =
 	{"TowerTop", "P=Purpur Block|S=Purpur Stairs-rot180|s=Purpur Stairs|L=Purpur Slab|B=Magenta Wall Banner|D=End Rod|E=End Stone Bricks|U=Purpur Pillar@top|G=Magenta Stained Glass|H=EntitySprite:Shulker-rot180", 9, 9, 5, Layers_TowerTop},
 	{"FatTower", "P=Purpur Block|S=Purpur Stairs|L=Purpur Slab|D=End Rod|E=End Rod-rot90|d=End Rod-rot180|e=End Rod-rot270|U=Purpur Pillar@top|u=Purpur Pillar|p=Purpur Pillar@horizontal|H=EntitySprite:Shulker|K=EntitySprite:Shulker-rot90|h=EntitySprite:Shulker-rot180|k=EntitySprite:Shulker-rot270", 14, 13, 12, Layers_FatTower},
 	{"FatTowerTop", "P=Purpur Block|S=Purpur Stairs|L=Purpur Slab|Y=Green Wool|N=Red Wool|C=Chest|U=Purpur Pillar@top|G=Purple Stained Glass|E=End Stone Bricks|D=End Rod", 20, 19, 6, Layers_FatTowerTop},
+	{"BaseFloor", "P=Purpur Block|U=Purpur Pillar@top|S=Purpur Stairs|E=End Stone Bricks|D=End Rod|G=Magenta Stained Glass|K=EntitySprite:Shulker-rot270", 12, 12, 4, Layers_BaseFloor, true},
+	{"BaseRoof", "P=Purpur Block|S=Purpur Stairs|D=End Rod", 12, 12, 2, Layers_BaseRoof, true},
 	{"EmptyRoom", "P=Purpur Block|U=Purpur Pillar@top|S=Purpur Stairs|E=End Stone Bricks|D=End Rod|G=Magenta Stained Glass|K=EntitySprite:Shulker-rot270", 12, 12, 6, Layers_EmptyRoom, true},
 	{"LootRoom2", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|D=End Rod|A=Ladder", 30, 18, 10, Layers_LootRoom2, true},
 	{"LootRoom3", "P=Purpur Block|S=Purpur Stairs|U=Purpur Pillar@top|E=End Stone Bricks|L=Purpur Slab|G=Magenta Stained Glass|D=End Rod|A=Ladder|C=Chest|e=Ender Chest", 31, 16, 14, Layers_LootRoom3, true},

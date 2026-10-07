@@ -127,7 +127,26 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 - 房间的包围盒比它的地板宽（屋顶 / 上层地板悬挑）；把房间按门洞对齐会把拱门压进房间，拱门顶冠被屋顶盖掉。正确做法是沿桥轴把房间的起点定在拱门远端那排，横向再按门洞列对齐。
 - 门洞 carve 盒是 3×3×3（沿桥轴 ±1），会向后吃掉一格拱门；接房间时应把 carve 中心放到房间一侧。
 
-> 待确认：`end_city/base_floor`（= Empty Room 去掉第 4 层屋顶；屋顶是单独的 `base_roof`）本身没有屋顶。若桥端用的是 base_floor 而不是带屋顶的整间，拱门顶冠 `HBBBH` 不会被任何东西压住。本仓库目前把屋顶烤进了 `EmptyRoom` 一个 prefab，所以房间端拱门的顶冠那一排仍与房间屋顶同层。
+### 3.5 原版 piece 名单（权威）
+
+来源：[End City](https://minecraft.wiki/w/End_City) 的 “Structure details” 表 —— 它列出 `data/minecraft/structures/end_city` 里的全部 20 个结构名，各附投影图 `File:End city <name>.png`：
+
+`base_floor`、`base_roof`、`second_floor_1`、`second_floor_2`、`second_roof`、`third_floor_1`、`third_floor_2`、`third_roof`、`tower_base`、`tower_piece`、`tower_floor`、`tower_top`、`fat_tower_base`、`fat_tower_middle`、`fat_tower_top`、`bridge_piece`、`bridge_gentle_stairs`、`bridge_steep_stairs`、`bridge_end`、`ship`。
+
+**没有** `loot_room` / `empty_room` / `small_room` / `large_room` 这几个结构名 —— 「战利品房 / 空房间 / 旗帜房 / 大房间」是房间**类型**（见 End City 正文），落到实件上分别是 `third_floor_2`（+ `fat_tower_top`）、`base_floor`、`tower_top`、以及 `/Large_Room` 页那两种带复杂楼梯的房间。
+
+拆件关系（已核对材料数）：
+
+| 实件 | 等于 |
+|---|---|
+| `base_floor` | 本仓库 `EmptyRoom` 的第 0–3 层，**也是** `BaseRoom` 的第一层（同一件，无顶） |
+| `base_roof` | `EmptyRoom` 的第 4–5 层（100 Purpur Block + 44 Stairs + 4 End Rod） |
+| `EmptyRoom`（旧合称） | `base_floor` + `base_roof` |
+| `BaseRoom`（旧合称） | `base_floor` + `base_roof` + `second_floor_*` + `second_roof` + `third_floor_*` + `third_roof` 按 18×18 帧叠起来的整栋 |
+
+`base_floor` 的投影图（`File:End city base_floor.png`）确认它是**敞口无顶**的小房间：地面 + 3 层墙，墙顶一圈就是最高处。
+
+因此桥端房间必须用 `base_floor`（无顶）而不是 `EmptyRoom`/`BaseRoom` 的合并件 —— 否则屋顶悬挑正好落在拱门顶冠 `HBBBH` 那一层，把它整排盖掉。
 
 ---
 
