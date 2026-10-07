@@ -185,7 +185,7 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 
 由此从两个组合件切出：`SecondFloor2`（14×14×7）= 下探楼梯 3 层 + 第二层 4 层，70 PB 与表一致；`ThirdFloor2`（16×16×7）= 下探楼梯 3 层 + 第三层 4 层，56 stairs / 24 glass / 6 rod 与表一致；`SecondRoof` 改用大房间版本（14×14×2，144/52/4 全中）。
 
-> 生成器目前仍以组合件 `LargeRoom2`/`LargeRoom3` 落地（与组合结果逐格相同）；拆出的子件已注册并核对，装配重构不改变输出。
+> 生成器已改成逐件装配：房间 = `base_floor`（第 0 层起）+ `second_floor_2`（第 1 层起，楼梯下探覆盖第一层）+ 屋顶（`second_roof` 第 8 层起 / 三层房再加 `third_floor_2` 第 5 层起 + `third_roof` 第 12 层起）。每件按自己的 frame 居中在房间中心，`base_floor` 仍以最下层范围与桥拱门对接。组合件 `LargeRoom2`/`LargeRoom3` 只用于挑选朝向，不再落地。
 
 ---
 

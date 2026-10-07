@@ -75,6 +75,14 @@ upper storeys and roofs are 18x18; centring each on its own frame keeps their bl
 static constexpr int END_CITY_BASE_FRAME = 18;
 static constexpr int END_CITY_BASE_ROOM_FRAME = 12;
 
+/** The layer of a large room's own blueprint each piece starts on: base_floor at 0, second_floor_2
+at 1 (its staircase runs three layers down over base_floor), second_roof at 8, third_floor_2 at 5
+(its staircase runs down over second_floor_2) and third_roof at 12. */
+static constexpr int END_CITY_ROOM_SECOND_LAYER = 1;
+static constexpr int END_CITY_ROOM_SECOND_ROOF_LAYER = 8;
+static constexpr int END_CITY_ROOM_THIRD_LAYER = 5;
+static constexpr int END_CITY_ROOM_THIRD_ROOF_LAYER = 12;
+
 /** The layer of the base blueprint each storey starts on, and the layer a tower stands on. The third
 roof's blocks are on layer 12 and its last End Rods on layer 13, so the roof's walking surface - where
 the small tower's floor goes - is layer 13. */
@@ -978,7 +986,7 @@ public:
 		m_BaseFloor = MakePrefab("BaseFloor");
 		m_SecondFloor1 = MakePrefab("SecondFloor1");
 		m_ThirdFloor1 = MakePrefab("ThirdFloor1");
-		m_ThirdRoof = MakePrefab("ThirdRoof");
+		m_BaseThirdRoof = MakePrefab("ThirdRoof");
 		m_TowerBase = MakePrefab("TowerBase");
 		m_TowerPiece = MakePrefab("TowerPiece");
 		m_TowerFloor = MakePrefab("TowerFloor");
@@ -989,6 +997,10 @@ public:
 		m_FatTowerTopChests = ChestsOf("FatTowerTop");
 		MakeRotatedPrefabs("BaseFloor", m_BaseFloorRoom);
 		MakeRotatedPrefabs("EmptyRoom", m_EmptyRoom);
+		MakeRotatedPrefabs("SecondFloor2", m_SecondFloor2);
+		MakeRotatedPrefabs("SecondRoof", m_SecondRoof);
+		MakeRotatedPrefabs("ThirdFloor2", m_ThirdFloor2);
+		MakeRotatedPrefabs("ThirdRoof", m_ThirdRoof);
 		MakeRotatedPrefabs("LargeRoom2", m_LargeRoom2);
 		MakeRotatedPrefabs("LargeRoom3", m_LargeRoom3);
 
@@ -1009,7 +1021,7 @@ public:
 	std::unique_ptr<cPrefab> m_BaseFloor;
 	std::unique_ptr<cPrefab> m_SecondFloor1;
 	std::unique_ptr<cPrefab> m_ThirdFloor1;
-	std::unique_ptr<cPrefab> m_ThirdRoof;
+	std::unique_ptr<cPrefab> m_BaseThirdRoof;
 	std::unique_ptr<cPrefab> m_TowerBase;
 	std::unique_ptr<cPrefab> m_TowerPiece;
 	std::unique_ptr<cPrefab> m_TowerFloor;
@@ -1020,6 +1032,10 @@ public:
 	std::vector<Vector3i> m_FatTowerTopChests;
 	sRotatedPrefab m_BaseFloorRoom[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_EmptyRoom[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_SecondFloor2[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_SecondRoof[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_ThirdFloor2[END_CITY_DIR_COUNT];
+	sRotatedPrefab m_ThirdRoof[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_LargeRoom2[END_CITY_DIR_COUNT];
 	sRotatedPrefab m_LargeRoom3[END_CITY_DIR_COUNT];
 
@@ -1404,9 +1420,9 @@ protected:
 		{
 			AddCenteredFrame(P.m_ThirdFloor1.get(), END_CITY_BASE_FRAME, END_CITY_BASE_FRAME, m_OriginX, Y + END_CITY_THIRD_FLOOR_LAYER, m_OriginZ);
 		}
-		if (P.m_ThirdRoof != nullptr)
+		if (P.m_BaseThirdRoof != nullptr)
 		{
-			AddCenteredFrame(P.m_ThirdRoof.get(), END_CITY_BASE_FRAME, END_CITY_BASE_FRAME, m_OriginX, Y + END_CITY_THIRD_ROOF_LAYER, m_OriginZ);
+			AddCenteredFrame(P.m_BaseThirdRoof.get(), END_CITY_BASE_FRAME, END_CITY_BASE_FRAME, m_OriginX, Y + END_CITY_THIRD_ROOF_LAYER, m_OriginZ);
 		}
 		Y = BaseY + END_CITY_BASE_TOP_LAYER;
 
@@ -1614,60 +1630,90 @@ protected:
 
 			// Rotate the room so that its doorway faces back toward the bridge:
 			const int RequiredSide = (a_Dir + (END_CITY_DIR_COUNT / 2)) % END_CITY_DIR_COUNT;
-			const sRotatedPrefab * Room = nullptr;
+			int RoomRotation = -1;
 			for (int r = 0; r < END_CITY_DIR_COUNT; r++)
 			{
 				if ((RoomSet[r].m_Prefab != nullptr) && (RoomSet[r].m_DoorwaySide == RequiredSide))
 				{
-					Room = &RoomSet[r];
+					RoomRotation = r;
 					break;
 				}
 			}
-			if ((Room == nullptr) && (RoomSet[0].m_Prefab != nullptr))
+			if ((RoomRotation < 0) && (RoomSet[0].m_Prefab != nullptr))
 			{
-				Room = &RoomSet[0];
+				RoomRotation = 0;
 			}
-			if (Room != nullptr)
+			if (RoomRotation >= 0)
 			{
-				// Meet the arch with the room's lowest layer, not with the bounding box of the whole
-				// prefab: a room's roof and its upper storeys overhang its floor by several blocks, so
-				// placing the box would leave the arch pointing at air. Across the bridge the room's
-				// doorway column is centred on the archway instead:
+				// The ground storey is end_city/base_floor. Meet the arch with its lowest layer, not with
+				// the bounding box of the whole room: the upper storeys and the roofs overhang the floor
+				// by several blocks, so placing the box would leave the arch pointing at air. Across the
+				// bridge the room's doorway column is centred on the archway instead:
+				const sRotatedPrefab & Floor = P.m_BaseFloorRoom[RoomRotation];
 				const int FarX = Edge.x - DirX;
 				const int FarZ = Edge.z - DirZ;
-				int PosX = Edge.x - Room->m_DoorX;
-				int PosZ = Edge.z - Room->m_DoorZ;
+				int PosX = Edge.x - Floor.m_DoorX;
+				int PosZ = Edge.z - Floor.m_DoorZ;
 				if (DirX > 0)
 				{
-					PosX = FarX + 1 - Room->m_FloorMinX;
+					PosX = FarX + 1 - Floor.m_FloorMinX;
 				}
 				else if (DirX < 0)
 				{
-					PosX = FarX - 1 - Room->m_FloorMaxX;
+					PosX = FarX - 1 - Floor.m_FloorMaxX;
 				}
 				if (DirZ > 0)
 				{
-					PosZ = FarZ + 1 - Room->m_FloorMinZ;
+					PosZ = FarZ + 1 - Floor.m_FloorMinZ;
 				}
 				else if (DirZ < 0)
 				{
-					PosZ = FarZ - 1 - Room->m_FloorMaxZ;
+					PosZ = FarZ - 1 - Floor.m_FloorMaxZ;
 				}
 
-				// The room's floor sits in its own bottom layer, one above the bridge's lowered frame:
+				// The floor sits in its own bottom layer, one above the bridge's lowered frame:
 				const int RoomY = Edge.y + 1;
-				Add(Room->m_Prefab.get(), Vector3i(PosX, RoomY, PosZ), Room->m_Chests);
+				Add(Floor.m_Prefab.get(), Vector3i(PosX, RoomY, PosZ), Floor.m_Chests);
+
+				// The storeys above share the room's blueprint canvas, so each is centred on the floor's
+				// centre and placed on the layer it occupies:
+				const Vector3i FloorSize = PrefabSize(*Floor.m_Prefab);
+				const int RoomCenterX = PosX + (FloorSize.x / 2);
+				const int RoomCenterZ = PosZ + (FloorSize.z / 2);
+				auto AddRoomPiece = [&](const sRotatedPrefab & a_Piece, int a_Layer)
+				{
+					if (a_Piece.m_Prefab == nullptr)
+					{
+						return;
+					}
+					const Vector3i Size = PrefabSize(*a_Piece.m_Prefab);
+					Add(a_Piece.m_Prefab.get(), Vector3i(RoomCenterX - (Size.x / 2), RoomY + a_Layer, RoomCenterZ - (Size.z / 2)), a_Piece.m_Chests);
+				};
+				int RoomTopY = RoomY + StackHeightForName("BaseFloor");
+				if (RoomStoreys >= 2)
+				{
+					AddRoomPiece(P.m_SecondFloor2[RoomRotation], END_CITY_ROOM_SECOND_LAYER);
+					if (RoomStoreys == 2)
+					{
+						AddRoomPiece(P.m_SecondRoof[RoomRotation], END_CITY_ROOM_SECOND_ROOF_LAYER);
+						RoomTopY = RoomY + END_CITY_ROOM_SECOND_ROOF_LAYER + StackHeightForName("SecondRoof");
+					}
+				}
+				if (RoomStoreys == 3)
+				{
+					AddRoomPiece(P.m_ThirdFloor2[RoomRotation], END_CITY_ROOM_THIRD_LAYER);
+					AddRoomPiece(P.m_ThirdRoof[RoomRotation], END_CITY_ROOM_THIRD_ROOF_LAYER);
+					RoomTopY = RoomY + END_CITY_ROOM_THIRD_ROOF_LAYER + StackHeightForName("ThirdRoof");
+				}
 
 				// The taller rooms may carry a small tower on their roof. The tower continues the room's
 				// own ladder column, so line the tower's ladder up with the room's ladder instead of
 				// centring the tower on the room:
 				if (RoomTower)
 				{
-					const AString RoomName = (RoomStoreys == 2) ? "LargeRoom2" : "LargeRoom3";
-					const int TowerX = PosX + Room->m_LadderX - END_CITY_TOWER_LADDER_X;
-					const int TowerZ = PosZ + Room->m_LadderZ - END_CITY_TOWER_LADDER_Z;
+					const int TowerX = PosX + Floor.m_LadderX - END_CITY_TOWER_LADDER_X;
+					const int TowerZ = PosZ + Floor.m_LadderZ - END_CITY_TOWER_LADDER_Z;
 					// The tower's base carries the ladder entrance, so let it descend into the room below:
-					const int RoomTopY = RoomY + StackHeightForName(RoomName);
 					Add(P.m_TowerBase.get(), Vector3i(TowerX, RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH, TowerZ));
 					int TowerY = RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
 					const int TowerStoreys = 3 + static_cast<int>(Rng() % 3);
