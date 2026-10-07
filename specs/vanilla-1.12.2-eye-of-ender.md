@@ -60,8 +60,13 @@
 `cThrownEnderEyeEntity`（`pkEnderEye`，size 0.25×0.25）：
 
 - 不受重力、不与方块/实体碰撞（覆写 `OnHitSolidBlock`/`OnHitEntity` 为空，`HandlePhysics` 自算飞行）。
-- 每 tick：朝目标水平移动 `HORIZONTAL_SPEED = 0.15` 格/tick（80 tick ≈ 12 格，对应 wiki 的"约 12 格"），
-  Y 方向 `+0.2`（距离 > 12 格）或 `-0.2`（≤ 12 格）。
+- 速度单位与 `cEntity::SetSpeed`/`cProjectileEntity::HandlePhysics` 一致，为**格/秒**（位移 = 速度 × 秒数）：
+  - **飞行阶段**（前 `TRAVEL_TICKS = 48` tick ≈ 2.4 秒，对应 wiki 的"2–3 秒"）：朝目标水平移动
+    `HORIZONTAL_SPEED = 5.0` 格/秒 → 约 **12 格**，对应 wiki 的"约 12 格"；Y 方向 `+CLIMB_SPEED = 4.0`
+    （水平距离 > `HIKE_DISTANCE = 12` 格）或 `-DIVE_SPEED = 4.0`（≤ 12 格）。
+  - **悬停阶段**（`TRAVEL_TICKS` 之后到 `LIFETIME_TICKS = 80`）：速度归零，停在原地
+    （wiki："the eye floats in the air briefly"）。
+  - 水平方向不会越过目标点。
 - `m_TicksAlive >= 80` 时结束：`RandInt(99) < 20` 则碎裂（粒子），否则 `SpawnItemPickups` 掉出末影之眼；
   两者都播放 `entity.ender_eye.death`。
 - 不保存到存档（寿命 4 秒；`NBTChunkSerializer` 里显式跳过，Debug 下不会触发
@@ -81,6 +86,8 @@
    就是传送门房，实际效果是**直接指向传送门房**。
 2. **飞行剖面是近似**：vanilla 有加速/转向曲线，这里用恒定水平速度 + 固定爬升/俯冲速度；
    常量取值以 wiki 的"约 12 格 / 2–3 秒 / 12 格阈值"为准推导，未逐帧对齐（**推测/待实机微调**）。
+   注意速度单位必须是**格/秒**（与 `SetSpeed` 一致）；早期版本把"格/tick"的常量直接乘了秒数，
+   导致实际速度只有约 0.0075 格/tick、整个飞行只挪动不到 1 格——已修正。
 3. **粒子拖尾未在服务端广播**：wiki 只说"留下紫色粒子拖尾"；vanilla 疑似由客户端随实体渲染
    （**推测/待确认**），故本分支只在碎裂时广播 `PARTICLE_EYE_OF_ENDER`（2003）。
 4. **音效名是 1.9+ 的扁平名**（`entity.ender_eye.*`）：与本仓库其它所有音效一致；

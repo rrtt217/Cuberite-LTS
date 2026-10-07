@@ -64,7 +64,15 @@ void cThrownEnderEyeEntity::HandlePhysics(std::chrono::milliseconds a_Dt, cChunk
 	UNUSED(a_Chunk);
 
 	// The eye computes its own flight: it ignores gravity, blocks and entities, and instead moves towards
-	// the target while climbing or diving, depending on how far away the target still is:
+	// the target while climbing or diving, depending on how far away the target still is. It only does so
+	// for a limited time (vanilla: two to three seconds of travel), after which it hovers in place until
+	// it drops or shatters:
+	if (m_TicksAlive >= TRAVEL_TICKS)
+	{
+		SetSpeed(0, 0, 0);
+		return;
+	}
+
 	const double DtSec = std::chrono::duration_cast<std::chrono::duration<double>>(a_Dt).count();
 	const Vector3d Pos = GetPosition();
 	const double ToTargetX = m_Target.x - Pos.x;

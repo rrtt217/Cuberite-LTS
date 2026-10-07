@@ -27,21 +27,26 @@ public:  // tolua_export
 
 private:
 
-	/** How many ticks the eye flies before it drops or shatters (vanilla: two to three seconds of travel). */
+	/** How many ticks the eye flies towards the target before it starts hovering.
+	Vanilla: two to three seconds of travel (Minecraft Wiki: Eye of Ender). */
+	static constexpr int TRAVEL_TICKS = 48;
+
+	/** How many ticks after being thrown the eye drops or shatters, i.e. the travel plus the short
+	hover at the end of the flight. */
 	static constexpr int LIFETIME_TICKS = 80;
 
 	/** Chance, in percent, that the eye shatters instead of dropping as an item (vanilla: 20%). */
 	static constexpr int SHATTER_CHANCE = 20;
 
-	/** Horizontal speed towards the target, in blocks per tick; 80 ticks at this speed cover roughly the
-	12 blocks an eye of ender travels in vanilla. */
-	static constexpr double HORIZONTAL_SPEED = 0.15;
+	/** Horizontal speed towards the target, in blocks per second (the same unit that cEntity::SetSpeed uses).
+	48 ticks at 5 blocks per second cover the ~12 blocks an eye of ender travels in vanilla. */
+	static constexpr double HORIZONTAL_SPEED = 5.0;
 
-	/** How fast the eye climbs while far from the target, in blocks per tick. */
-	static constexpr double CLIMB_SPEED = 0.2;
+	/** How fast the eye climbs while far from the target, in blocks per second. */
+	static constexpr double CLIMB_SPEED = 4.0;
 
-	/** How fast the eye dives once close to the target, in blocks per tick. */
-	static constexpr double DIVE_SPEED = 0.2;
+	/** How fast the eye dives once close to the target, in blocks per second. */
+	static constexpr double DIVE_SPEED = 4.0;
 
 	/** While further than this many blocks from the target (horizontally), the eye climbs; once closer, it dives. */
 	static constexpr double HIKE_DISTANCE = 12.0;
