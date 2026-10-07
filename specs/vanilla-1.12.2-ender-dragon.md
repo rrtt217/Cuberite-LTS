@@ -150,6 +150,10 @@
     [Dragon's Breath](https://minecraft.wiki/w/Dragon%27s_Breath)）：
     - `cDragonFireballEntity`（`pkDragonFireball`，Spawn Object ID 93）直线飞行、无重力；命中方块 **0.5 s（10 tick）后**炸出
       紫色区域效果云（半径 3→5 / 30 s、Instant Damage II、`RadiusOnUse = 0` 不因生效而缩小）；**命中实体不造成伤害/击退**，直接穿过。
+    - 飞行速度为 **1 格/tick（20 格/s）**，与其它火球同类；注意 `cEntity::SetSpeed` 及投射物速度的单位是
+      **格/秒**，把“格/tick”的常量直接当格/秒传入会让实际速度只有 1 格/s、看起来停在空中
+      （与 `vanilla-1.12.2-eye-of-ender.md` §4.2 是同一类单位错误）。该取值沿用本分支既有实现意图，
+      **未经 wiki 数值佐证，标注为推测/待实机微调**。
     - Strafing 阶段目标进入 **64 格**时发射一颗火球（每次 strafe 一发），自龙头前方射出。
     - 该云标记 `CanBeCollected`，玩家手持玻璃瓶右键获得龙息，同时云半径 -0.5，半径归零则消散。
 
@@ -210,6 +214,16 @@
 - **未做自动化单测**：现有测试框架只编译孤立源文件，无法链接实体引擎做有意义的 `cEnderDragon` 测试。
 - 其余 7 个部件的顺序未逐一确认（不影响头部全额伤害；如需可加临时日志或抓包逐部件核对）。
 - 状态机分支：`lua CheckBasicStyle.lua` 0 违规；`cmake --build build` exit 0；`ctest` 26/26。飞行/悬停观感需实机确认。
+- 龙火球速度单位 + 崩服修复：`lua CheckBasicStyle.lua` 0 违规；`cmake --build build` exit 0；`ctest` 33/33（排除两个联网用例）；
+  `cd src/Bindings && lua CheckBindingsDependencies.lua` 无输出。崩溃来自 tolua 未注册类型，现有测试框架不链接实体引擎、
+  无法做有意义的单测，故以「未导出类型回退」的代码路径 + 规格核对为准，实机复测（末影龙战斗：火球飞行速度、
+  被爆炸波及不再崩服）待维护者。
+- 龙火球的区域效果云伤害：**维护者实机确认有伤害**；另用无头探针（临时插件 `World:CreateProjectile(pkDragonFireball)`
+  + `World:SetChunkAlwaysTicked`）复核：云对云内生物每 10 tick 施加一次 `Instant Damage II`，观测到
+  `HOOK_TAKE_DAMAGE` 的 `dtPotionOfHarming`、`raw=12 final=12`，铁傀儡 100 → 88。此前「云似乎不造成伤害」是
+  火球速度单位 Bug 的连带现象（火球悬停在空中、云落不到玩家脚下），随速度修复消失；云本身无需改动。
+  探针注意：**无客户端时 `cChunk::ShouldBeTicked()` 恒假、所有区块都不 tick**，必须先用
+  `cWorld:SetChunkAlwaysTicked()` 强制，否则实体物理、引信与云 tick 全都不会发生。
 
 ### 已知偏差
 
@@ -235,3 +249,10 @@
 18. 护甲耐久改为在 `cEntity::DoTakeDamage` 真正落地后结算（原先在 4 参 `TakeDamage` 里、绕过 `m_InvulnerableTicks`，导致龙的每 tick 接触伤害把护甲按约 20/s 磨损）；这是引擎级战斗修复，影响所有伤害来源。
 19. 出口传送门/龙蛋的 Y 硬编码为生成器祭坛 Y=62 加偏移（63 / 67）；若生成器挪动祭坛需同步。未实现“战斗开始时传送门失活”“击败时重新生成 End Stone / 方块复位”和 End gateway（均依赖下次召唤/完整 fight 控制器）。
 14. 致命伤时攻击者会被提前记入 `Killed` 统计（基类 `DoTakeDamage` 在 `KilledBy` 之后无条件调用），此时龙尚未真正死亡。
+20. `cLuaState::Push(cEntity *)` 原先对所有投射物都推送 `GetClass()` 得到的具体类型；`cDragonFireballEntity`、`cThrownEnderEyeEntity`
+    等**未导出到 API** 的投射物一旦作为钩子参数（`HOOK_TAKE_DAMAGE`、`HOOK_PROJECTILE_HIT_BLOCK` / `_ENTITY`）被推送，
+    tolua 的 `tolua_pushusertype` 断言失败会**直接终止整个服务器**（实机崩溃：末影水晶爆炸波及飞行中的龙火球）。
+    现改为具体类型未导出时回退到 `cProjectileEntity`，与 `etMonster` 一律推送 `cMonster` 的既有做法一致。
+    同一函数的 `switch (EntityType)` 还漏了 `etAreaEffectCloud`（未导出）而落到 `UNREACHABLE`：龙火球炸出的区域效果云若被爆炸
+    波及或被箭命中，同样会推送到该分支，故一并按 `cEntity` 推送。仍存在的偏差：插件在这些钩子里拿到的是基类
+    （`cProjectileEntity` / `cEntity`）而非具体类型（这些具体类本就未导出，插件无法 `tolua.cast`）。

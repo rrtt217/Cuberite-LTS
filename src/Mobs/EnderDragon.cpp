@@ -62,8 +62,9 @@ static constexpr int STRAFING_DURATION_TICKS = 60;
 /** Distance from the target within which a strafing dragon shoots its fireball, in blocks. */
 static constexpr double DRAGON_FIREBALL_RANGE = 64.0;
 
-/** Speed at which a dragon fireball travels, in blocks per tick. */
-static constexpr double DRAGON_FIREBALL_SPEED = 1.0;
+/** Speed at which a dragon fireball travels, in blocks per second. Entity speeds are kept in blocks
+per second (see cProjectileEntity::HandlePhysics()), so the spec's 1 block per tick becomes 20. */
+static constexpr double DRAGON_FIREBALL_SPEED = 20.0;
 
 /** Y that the dragon's feet descend to when perching, on top of the exit portal's central pillar.
 The entity position is the bottom of its bounding box, and the generated fountain's pillar top is at
