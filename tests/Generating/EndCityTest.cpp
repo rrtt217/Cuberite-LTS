@@ -6,6 +6,8 @@
 #include "../TestHelpers.h"
 
 #include <cstring>
+#include <memory>
+#include <vector>
 
 
 
@@ -426,12 +428,103 @@ static void testRoomRoofCentered(void)
 
 
 
+/** Counts the intact bridge_end arch courses in a rectangle of chunks. The arch's topmost but one
+course is two Purpur Slabs flanking an open middle between two Purpur Blocks. Before the bridge was
+levelled and the ending room moved off the arch, that course was erased at every bridge end of a city,
+so no recognisable bridge_end was left. The rectangle's outermost ring is only generated, never
+scanned, so that a course crossing a chunk border can still be read. */
+static int countBridgeEndArches(int a_Seed, int a_FromChunkX, int a_ToChunkX, int a_FromChunkZ, int a_ToChunkZ, cTerrainHeightGen & a_HeightGen)
+{
+	cEndCityGen Gen(a_Seed, a_HeightGen);
+	const int SizeZ = a_ToChunkZ - a_FromChunkZ + 1;
+
+	std::vector<std::unique_ptr<cChunkDesc>> Chunks;
+	Chunks.reserve((a_ToChunkX - a_FromChunkX + 1) * SizeZ);
+	for (int chunkX = a_FromChunkX; chunkX <= a_ToChunkX; chunkX++)
+	{
+		for (int chunkZ = a_FromChunkZ; chunkZ <= a_ToChunkZ; chunkZ++)
+		{
+			auto Chunk = std::make_unique<cChunkDesc>(cChunkCoords{chunkX, chunkZ});
+			Gen.GenFinish(*Chunk);
+			Chunks.push_back(std::move(Chunk));
+		}
+	}
+
+	// Reads an absolute block, crossing chunk borders as needed:
+	const auto At = [&Chunks, a_FromChunkX, a_FromChunkZ, SizeZ](int a_X, int a_Y, int a_Z) -> BLOCKTYPE
+	{
+		const int ChunkX = (a_X >= 0) ? (a_X / cChunkDef::Width) : -((-a_X + cChunkDef::Width - 1) / cChunkDef::Width);
+		const int ChunkZ = (a_Z >= 0) ? (a_Z / cChunkDef::Width) : -((-a_Z + cChunkDef::Width - 1) / cChunkDef::Width);
+		const int Index = ((ChunkX - a_FromChunkX) * SizeZ) + (ChunkZ - a_FromChunkZ);
+		return Chunks[Index]->GetBlockType(a_X - (ChunkX * cChunkDef::Width), a_Y, a_Z - (ChunkZ * cChunkDef::Width));
+	};
+
+	int Count = 0;
+	for (int chunkX = a_FromChunkX + 1; chunkX <= a_ToChunkX - 1; chunkX++)
+	{
+		for (int chunkZ = a_FromChunkZ + 1; chunkZ <= a_ToChunkZ - 1; chunkZ++)
+		{
+			for (int y = 3; y <= TEST_MAX_SCAN_Y; y++)
+			{
+				for (int z = 0; z < cChunkDef::Width; z++)
+				{
+					for (int x = 0; x < cChunkDef::Width; x++)
+					{
+						const int X = (chunkX * cChunkDef::Width) + x;
+						const int Z = (chunkZ * cChunkDef::Width) + z;
+
+						// The course runs across the bridge, so it matches along one of the axes:
+						const auto IsCourse = [&At](int a_X, int a_Y, int a_Z, int a_DX, int a_DZ) -> bool
+						{
+							return
+								(At(a_X - (2 * a_DX), a_Y, a_Z - (2 * a_DZ)) == E_BLOCK_PURPUR_BLOCK) &&
+								(At(a_X - a_DX, a_Y, a_Z - a_DZ) == E_BLOCK_PURPUR_SLAB) &&
+								(At(a_X, a_Y, a_Z) == E_BLOCK_AIR) &&
+								(At(a_X + a_DX, a_Y, a_Z + a_DZ) == E_BLOCK_PURPUR_SLAB) &&
+								(At(a_X + (2 * a_DX), a_Y, a_Z + (2 * a_DZ)) == E_BLOCK_PURPUR_BLOCK);
+						};
+						if (!IsCourse(X, y, Z, 1, 0) && !IsCourse(X, y, Z, 0, 1))
+						{
+							continue;
+						}
+						// The deck below the far row must be solid, or the arch hangs over a hole:
+						TEST_NOTEQUAL(At(X, y - 3, Z), E_BLOCK_AIR);
+						Count++;
+					}
+				}
+			}
+		}
+	}
+	return Count;
+}
+
+
+
+
+
+/** Verifies that bridge ends keep their arch. */
+static void testBridgeEndArch(void)
+{
+	LOG("Testing the End City bridge-end arch...");
+
+	cTestHeightGen HeightGen(TEST_SURFACE_Y, 0);
+
+	// A city of one seed, and another of a second seed, so the check does not rest on one layout:
+	TEST_GREATER_THAN_OR_EQUAL(countBridgeEndArches(1033961529, 15, 32, -80, -64, HeightGen), 1);
+	TEST_GREATER_THAN_OR_EQUAL(countBridgeEndArches(1, 55, 70, 55, 70, HeightGen), 1);
+}
+
+
+
+
+
 IMPLEMENT_TEST_MAIN("EndCityTest",
 	testGridOrigin();
 	testGeneration();
 	testChestMeta();
 	testLadderAttachment();
 	testRoomRoofCentered();
+	testBridgeEndArch();
 	testRejectedLocations();
 	testDeterminism();
 )

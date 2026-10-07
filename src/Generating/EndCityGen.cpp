@@ -62,6 +62,11 @@ static constexpr int END_CITY_ROOM_TOWER_DENOMINATOR = 2;
 static constexpr int END_CITY_BRIDGE_MIN_SEGMENTS = 2;
 static constexpr int END_CITY_BRIDGE_EXTRA_SEGMENTS = 3;
 
+/** The layer of a staircase's topmost walkable tread, in the piece's own coordinates. The piece after
+a staircase must meet that tread, not the railing layer above it, or every staircase would raise the
+bridge one block more than it climbs. */
+static constexpr int END_CITY_STAIRS_TOP_TREAD_Y = 5;
+
 /** How far the small tower's ladder shaft descends into the room below. */
 static constexpr int END_CITY_SMALL_TOWER_LADDER_DEPTH = 3;
 
@@ -1458,9 +1463,21 @@ protected:
 				return (DirX != 0) ? Size.x : Size.z;
 			};
 
-			// The bridge starts at the tower's outer wall. The staircase piece raises the far end
-			// cumulatively, so bridges can reach towers at other heights:
-			Vector3i Edge(TowerCenterX + (DirX * Half), a_BranchY, TowerCenterZ + (DirZ * Half));
+			// The bridge leaves the tower through an arch of its own: the arch's far row lands in the
+			// tower's outer wall cell, so the archway is flush with the wall and embedded in it:
+			const sOrientedPrefab & StartArch = P.m_BridgeEnd[a_Dir];
+			const Vector3i StartEdge(TowerCenterX + (DirX * (Half - 1)), a_BranchY - 1, TowerCenterZ + (DirZ * (Half - 1)));
+			if (StartArch.m_Prefab != nullptr)
+			{
+				Add(StartArch.m_Prefab.get(), Vector3i(StartEdge.x + StartArch.m_MinOffset.x, StartEdge.y, StartEdge.z + StartArch.m_MinOffset.z));
+			}
+
+			// The bridge itself starts just outside that wall. A bridge piece carries its walking deck in
+			// its second layer, while the floor of a tower storey or of a room sits in its own bottom
+			// layer, so the bridge is placed one block lower: the deck block then lands in the floor's
+			// layer and the two walking surfaces stay flush instead of off by one. The staircase piece
+			// raises the far end cumulatively, so bridges can reach towers at other heights:
+			Vector3i Edge(TowerCenterX + (DirX * (Half + 1)), a_BranchY - 1, TowerCenterZ + (DirZ * (Half + 1)));
 
 			const int StraightCount = END_CITY_BRIDGE_MIN_SEGMENTS + static_cast<int>(Rng() % END_CITY_BRIDGE_EXTRA_SEGMENTS);
 			for (int i = 0; i < StraightCount; i++)
@@ -1479,7 +1496,8 @@ protected:
 				const int Step = LengthOf(Stairs);
 				Edge.x += DirX * Step;
 				Edge.z += DirZ * Step;
-				Edge.y += StackHeightForName(Gentle ? "BridgeGentleStairs" : "BridgeSteepStairs") - 1;
+				// Meet the staircase's topmost tread, not its railing layer:
+				Edge.y += END_CITY_STAIRS_TOP_TREAD_Y - 1;
 			}
 
 			const sOrientedPrefab & End = P.m_BridgeEnd[a_Dir];
@@ -1491,8 +1509,7 @@ protected:
 				Edge.z += DirZ * Step;
 			}
 
-			// Open a doorway through the tower wall where the bridge meets it:
-			AddCarve(TowerCenterX + (DirX * Half), a_BranchY + 1, TowerCenterZ + (DirZ * Half));
+			// The arch at the tower end already opens the wall it is embedded in:
 
 			// An End ship may end the bridge instead of another tower:
 			const sOrientedPrefab & Ship = P.m_Ship[a_Dir];
@@ -1540,12 +1557,33 @@ protected:
 			}
 			if (Room != nullptr)
 			{
-				// Line the room's doorway up with the bridge's last block. A room's roof is wider than
-				// its lower walls, so centring on the bounding box would leave the bridge pointing at
-				// the roof edge instead of at the opening:
-				const int PosX = Edge.x - DirX - Room->m_DoorX;
-				const int PosZ = Edge.z - DirZ - Room->m_DoorZ;
-				Add(Room->m_Prefab.get(), Vector3i(PosX, Edge.y, PosZ), Room->m_Chests);
+				// Along the bridge the room starts at the arch's far row, so the arch cannot end up
+				// inside the room; across it, the room's doorway column is centred on the archway:
+				const Vector3i RoomSize = PrefabSize(*Room->m_Prefab);
+				const int FarX = Edge.x - DirX;
+				const int FarZ = Edge.z - DirZ;
+				int PosX = Edge.x - Room->m_DoorX;
+				int PosZ = Edge.z - Room->m_DoorZ;
+				if (DirX > 0)
+				{
+					PosX = FarX;
+				}
+				else if (DirX < 0)
+				{
+					PosX = FarX - (RoomSize.x - 1);
+				}
+				if (DirZ > 0)
+				{
+					PosZ = FarZ;
+				}
+				else if (DirZ < 0)
+				{
+					PosZ = FarZ - (RoomSize.z - 1);
+				}
+
+				// The room's floor sits in its own bottom layer, one above the bridge's lowered frame:
+				const int RoomY = Edge.y + 1;
+				Add(Room->m_Prefab.get(), Vector3i(PosX, RoomY, PosZ), Room->m_Chests);
 
 				// The taller rooms may carry a small tower on their roof. The tower continues the room's
 				// own ladder column, so line the tower's ladder up with the room's ladder instead of
@@ -1556,7 +1594,7 @@ protected:
 					const int TowerX = PosX + Room->m_LadderX - END_CITY_TOWER_LADDER_X;
 					const int TowerZ = PosZ + Room->m_LadderZ - END_CITY_TOWER_LADDER_Z;
 					// The tower's base carries the ladder entrance, so let it descend into the room below:
-					const int RoomTopY = Edge.y + StackHeightForName(RoomName);
+					const int RoomTopY = RoomY + StackHeightForName(RoomName);
 					Add(P.m_TowerBase.get(), Vector3i(TowerX, RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH, TowerZ));
 					int TowerY = RoomTopY - END_CITY_SMALL_TOWER_LADDER_DEPTH + StackHeightForName("TowerBase");
 					const int TowerStoreys = 3 + static_cast<int>(Rng() % 3);
@@ -1571,7 +1609,9 @@ protected:
 						Add(P.m_TowerTop.get(), Vector3i(TowerX - TopOffset, TowerY, TowerZ - TopOffset));
 					}
 				}
-				AddCarve(Edge.x, Edge.y + 1, Edge.z);
+				// Open the room's doorway from the walking surface up, one block into its box so the
+				// carve cannot reach back over the arch:
+				AddCarve(Edge.x + DirX, Edge.y + 2, Edge.z + DirZ);
 				return;
 			}
 
@@ -1584,7 +1624,7 @@ protected:
 			// Overlap the last bridge block by one so that the tower is not separated by a gap:
 			const int Overlap = (SecondaryHalf == 0) ? 0 : (SecondaryHalf - 1);
 			const Vector3i SecondaryCenter(Edge.x + (DirX * Overlap), Edge.y, Edge.z + (DirZ * Overlap));
-			int SecondaryY = Edge.y;
+			int SecondaryY = Edge.y + 1;
 			AddCentered(P.m_TowerFloor.get(), SecondaryCenter.x, SecondaryY, SecondaryCenter.z);
 			SecondaryY += StackHeightForName("TowerFloor");
 			const int SecondaryStoreys = 3 + static_cast<int>(Rng() % 3);
@@ -1597,7 +1637,7 @@ protected:
 			{
 				AddCentered(P.m_TowerTop.get(), SecondaryCenter.x, SecondaryY, SecondaryCenter.z);
 			}
-			AddCarve(Edge.x, Edge.y + 1, Edge.z);
+			AddCarve(Edge.x + DirX, Edge.y + 2, Edge.z + DirZ);
 		};
 
 		// Bridges leave only from the storeys the wiki documents:

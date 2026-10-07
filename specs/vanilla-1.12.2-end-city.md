@@ -111,6 +111,24 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 
 每页蓝图均声明了半砖 Bottom/Top、楼梯朝向、柱头方向等；cPrefab 的 char-map 可编码 type + meta，足够表达。
 
+### 3.4 桥端（bridge_end）与两端的接缝
+
+来源：wiki 的 [/Bridge](https://minecraft.wiki/w/End_City/Structure/Bridge) 把这块叫 **Dock**（材料 21 Purpur Block / 4 Purpur Slab / 3 Purpur Stairs / 2 End Rod / 1 Purpur Pillar，与本仓库 `BridgeEnd` 蓝图一致），[/Empty_Room](https://minecraft.wiki/w/End_City/Structure/Empty_Room) 给出房间几何；接缝形状另有 1.12.2 客户端实测观察。
+
+- **桥的两端各有 bridge_end**：塔端（桥的起点）和远端（接房间 / 末地船 / 另一座塔）。
+- Dock 蓝图的**近端那排**是 `BSSSB` 甲板 + End Rod（层 2 的 `E   E`），**远端那排**是 ` BBB `/`BBBBB` 加层 3/4 的 `BH HB` / `HBBBH` 顶冠。远端朝目的构件，近端朝桥。
+- 接**大塔 / 小塔**（桥的起点）：拱门远端那排就落在塔外墙那一格里 —— 与墙面齐平并嵌入墙内，塔墙上因此出现 3 格宽的拱门洞。
+- 接**房间**：拱门下沿（层 0 的 `BBBBB`/`BSSSB`）与房间第一层的地面同层；沿桥轴向上，拱门远端那排紧邻房间地板的第一格，**不重叠也不留空隙**；横向房门洞的格子与拱门洞的 3 格对齐。
+
+实现约束（本仓库蓝图坐标体系，local y = wiki 层号 + 1）：
+
+- 桥构件（BridgePiece / 两种楼梯 / BridgeEnd）的甲板在 **local y=1**，而塔层与房间的地板在 **local y=0**。桥必须放在 `a_BranchY - 1`，甲板块才落在塔层地板块那一层。
+- 楼梯最上一级踏面在 **local y=5**（wiki 层 4），其上方 local y6 只是栏杆。因此楼梯之后 Y 前进量是 `5 - 1 = 4`；旧代码用「结构顶（local y6）+ 1 = 6」，会让后面每一件（包括拱门）比楼梯出口高 2 格 —— 这就是「拱门和桥脱节」。
+- 房间的包围盒比它的地板宽（屋顶 / 上层地板悬挑）；把房间按门洞对齐会把拱门压进房间，拱门顶冠被屋顶盖掉。正确做法是沿桥轴把房间的起点定在拱门远端那排，横向再按门洞列对齐。
+- 门洞 carve 盒是 3×3×3（沿桥轴 ±1），会向后吃掉一格拱门；接房间时应把 carve 中心放到房间一侧。
+
+> 待确认：`end_city/base_floor`（= Empty Room 去掉第 4 层屋顶；屋顶是单独的 `base_roof`）本身没有屋顶。若桥端用的是 base_floor 而不是带屋顶的整间，拱门顶冠 `HBBBH` 不会被任何东西压住。本仓库目前把屋顶烤进了 `EmptyRoom` 一个 prefab，所以房间端拱门的顶冠那一排仍与房间屋顶同层。
+
 ---
 
 ## 4. 构件目录（源自 End City 的 Structure details）
