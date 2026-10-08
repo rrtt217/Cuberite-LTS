@@ -2600,10 +2600,12 @@ void cBlockArea::MergeBlockEntities(int a_RelX, int a_RelY, int a_RelZ, const cB
 			continue;
 		}
 
-		// Copy a BE from a_Src, if it exists there:
-		auto srcX = x + a_RelX;
-		auto srcY = y + a_RelY;
-		auto srcZ = z + a_RelZ;
+		// Copy a BE from a_Src, if it exists there.
+		// The merge places a_Src's origin at (a_RelX, a_RelY, a_RelZ) in this area, so a source cell is
+		// the destination cell offset by the negative of that (same convention as the block merge above):
+		auto srcX = x - a_RelX;
+		auto srcY = y - a_RelY;
+		auto srcZ = z - a_RelZ;
 		if (a_Src.IsValidRelCoords(srcX, srcY, srcZ))
 		{
 			auto srcIdx = a_Src.MakeIndex(srcX, srcY, srcZ);
