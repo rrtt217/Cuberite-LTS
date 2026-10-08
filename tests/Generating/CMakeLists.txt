@@ -330,10 +330,26 @@ add_test(
 
 
 
+# Connector rotation test:
+add_executable(ConnectorRotationTest
+	ConnectorRotationTest.cpp
+)
+target_link_libraries(ConnectorRotationTest GeneratorTestingSupport)
+add_test(
+	NAME ConnectorRotationTest
+	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/Server
+	COMMAND ConnectorRotationTest
+)
+
+
+
+
+
 # Put the projects into solution folders (MSVC):
 set_target_properties(
 	BasicGeneratorTest
 	ChorusTreeTest
+	ConnectorRotationTest
 	CubesetBlockEntitiesTest
 	GeneratorTestingSupport
 	LoadablePieces

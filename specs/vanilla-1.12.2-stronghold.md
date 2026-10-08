@@ -255,9 +255,11 @@ X 轴（`dirXM ↔ dirXP`）与全部 corner 变体都正确翻转了 X 与 Z，
 影响面是**任何允许 180° 旋转且带 Z 朝向连接器的 prefab**，因此受影响的不止要塞；
 表现就是「哪些结构位置退化」取决于起始件抽到的旋转角。
 
-**处置**：这是与本功能无关的既有生成器缺陷，**不在本分支修**。建议另开
-`fix/generating-connector-180-rotation` 分支，复现方法即本节所述的临时 BFS 探针，
-不变量可以写成「对每个 piece、每个允许的旋转角，旋转后连接器的方向必须与它所在的面一致」。
+**处置**：这是与本功能（cubeset 方块实体）无关的既有生成器缺陷，故**不在那个分支修**。
+**已由 `fix/generating-connector-180-rotation` 分支修复**：改动只有 `RotateDirection()` 的两行，
+规格与不变量测试见 [piece-connector-rotation.md](piece-connector-rotation.md)。
+同一探针的对照结果：退化单元由 8/25 降到 1/25，最大 piece 数由 109 升到 335
+（余下那 1/25 是 5.6 节所述的蓝图几何限制，与本次修复无关）。
 
 ## 6. 变更清单
 

@@ -295,8 +295,8 @@ cPiece::cConnector::eDirection cPiece::cConnector::RotateDirection(eDirection a_
 		case dirXP:       return dirXM;
 		case dirYM:       return dirYM;
 		case dirYP:       return dirYP;
-		case dirZM:       return dirZM;
-		case dirZP:       return dirZP;
+		case dirZM:       return dirZP;
+		case dirZP:       return dirZM;
 		case dirYM_XM_ZM: return dirYM_XP_ZP;
 		case dirYM_XM_ZP: return dirYM_XP_ZM;
 		case dirYM_XP_ZM: return dirYM_XM_ZP;
