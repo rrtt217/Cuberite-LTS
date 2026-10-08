@@ -9,7 +9,7 @@
 
 - `cBlockArea` 有 `baBlockEntities`（[src/BlockArea.h:53](../src/BlockArea.h#L53)）；
 - char-map 写块时 `SetRelBlockTypeMeta` → `RescanBlockEntities` 会造出**默认内容**的活对象（[src/BlockArea.cpp:814-822](../src/BlockArea.cpp#L814-L822)）；
-- `CopyFrom` / `RotateCCW` / `MirrorXY|YZ` 都会搬运并重定位 BE（[src/BlockArea.cpp:572-579](../src/BlockArea.cpp#L572-L579)、[:1077-1091](../src/BlockArea.cpp#L1077-L1091)、[:1205-1218](../src/BlockArea.cpp#L1205-L1218)）；
+- `CopyTo`（`CopyFrom` 转发到它）/ `RotateCCW` / `MirrorXY|YZ` 都会搬运并重定位 BE（[src/BlockArea.cpp:572-579](../src/BlockArea.cpp#L572-L579)、[:1077-1091](../src/BlockArea.cpp#L1077-L1091)、[:1205-1218](../src/BlockArea.cpp#L1205-L1218)）；
 - `cPrefab::Draw` → `cChunkDesc::WriteBlockArea` → `cBlockArea::Merge` → `MergeBlockEntities` 会连内容一起搬（[src/BlockArea.cpp:2561](../src/BlockArea.cpp#L2561)、[:2574-2622](../src/BlockArea.cpp#L2574-L2622)）；
 - 生成结束后 BE 被 move 进 chunk（[src/World.cpp:4193](../src/World.cpp#L4193)、[src/Chunk.cpp:370](../src/Chunk.cpp#L370)）。
 
@@ -47,7 +47,7 @@ BlockEntities =
 - **按块类型分派，而不是另设 `Type` 字段**：读取时看 `(X,Y,Z)` 上是什么方块，再要求对应的字段。这样数据不可能与图像不一致，也不需要维护一份类型名表。
 - **稀疏坐标而非与图像平行的字符层**：阶段 0 每个 piece 只有 0–4 个 BE，稀疏表更省、更好手写、diff 友好；字符层要复刻整幅图，手工维护易错。
 - **可选字段**：旧 cubeset（`CubesetFormatVersion = 1`）完全不受影响；不设该字段即维持今天的行为。
-- **应用时机**：在 `LoadPrefabFromCubesetVer1()` 里、`SetAllowedRotations()` **之前**注入，因此已有的旋转/镜像代码会自动把 BE 一起变换（[src/Generating/PrefabPiecePool.cpp:302-318](../src/Generating/PrefabPiecePool.cpp#L302-L318)）。
+- **应用时机**：在 `LoadPrefabFromCubesetVer1()` 里、`SetAllowedRotations()` **之前**注入，因此已有的旋转/镜像代码会自动把 BE 一起变换（[src/Generating/PrefabPiecePool.cpp:312-328](../src/Generating/PrefabPiecePool.cpp#L312-L328)：312–318 是注入点，328 是 `SetAllowedRotations()`）。
 - 阶段 0 支持的字段：`Entity`（mob spawner）、`Item`/`Meta`（flower pot）。其余字段（床上色、告示牌文字、旗帜图案…）**不做**，遇到即警告并跳过。
 - **失败语义分两级**：
   - 条目本身不成立（没有 `X`/`Y`/`Z`、生物名未知、花盆内容非法、块类型尚不能携带内容）→ **加载失败**（与畸形的 Connectors 同级）；

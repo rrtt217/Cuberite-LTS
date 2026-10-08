@@ -246,7 +246,7 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 ### 6.2 为什么排除 A（纯 BFS 预制件池）
 
 - 末地城骨架是算法化的：基础层按固定次序加宽、随后在小塔/胖塔间做决策、塔竖直堆叠固定层数、每方向 50% 接桥、全城至多 1 船。cPieceGeneratorBFSTree 是按连接器 + 权重随机扩展的随机树，无法自然表达「固定次序的线性塔身」「全局唯一一艘船」「每个塔每方向的独立 50%」。
-- 虽然可像 cVillage 那样包一层带状态的 cPiecePool（src/Generating/VillageGen.cpp:231），但会把强次序逻辑塞进权重里，脆弱且难评审。
+- 虽然可像 cVillage 那样包一层带状态的 cPiecePool（src/Generating/VillageGen.cpp:40），但会把强次序逻辑塞进权重里，脆弱且难评审。
 - 结论：不采用纯 BFS 池。
 
 ### 6.3 为什么排除 C/D
@@ -259,10 +259,10 @@ End City/Structure 的每个子页都给出 layered blueprint（逐层 ASCII 图
 新建 cEndCityGen : cGridStructGen，内含一个 cGridStructGen::cStructure 派生，做两件事：
 
 1. 骨架引擎（自写）：在 CreateStructure(gridX, gridZ, originX, originZ) 里用「世界种子 + 格点坐标」确定性地生成整座城的放置列表，每个元素 = {cPrefab*、绝对坐标、CCW 旋转数、是否船}。骨架按 3.2 的推断算法。
-2. 绘制：DrawIntoChunk(cChunkDesc&) 对每个与当前区块相交的房间调 cPrefab::Draw(a_Chunk, coords, rotations)（src/Generating/Prefab.cpp:142），随后按记录补写方块实体（箱子/末影箱/酿造台/旗帜）与实体（潜影贝/物品展示框）。
+2. 绘制：DrawIntoChunk(cChunkDesc&) 对每个与当前区块相交的房间调 cPrefab::Draw(a_Chunk, coords, rotations)（src/Generating/Prefab.cpp:151、定义在 160），随后按记录补写方块实体（箱子/末影箱/酿造台/旗帜）与实体（潜影贝/物品展示框）。
 
 关键复用点
-- cGridStructGen 已提供格点划分、跨区块确定性重建、LRU 缓存、按区块求交（src/Generating/GridStructGen.cpp:117-235）。
+- cGridStructGen 已提供格点划分、跨区块确定性重建、LRU 缓存、按区块求交（src/Generating/GridStructGen.cpp:172-253）。
 - cPrefab 提供 char-map 图像、4 向旋转、merge 策略、efs* 贴地扩展（src/Generating/Prefab.h）。骨架引擎不需要连接器，直接构造放置即可（cPlacedPiece 只是可选载体，也可用自有轻量 struct + 直接调 cPrefab::Draw）。
 - 房间几何从 3.3 的 wiki 蓝图手工重画。两种承载方式：
   - B1（推荐）：编译进 C++ 的 cPrefab::sDef 数组（如 EndCityPieces.cpp），零运行时文件依赖，和末地城骨架一起评审。
