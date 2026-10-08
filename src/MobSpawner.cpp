@@ -131,6 +131,20 @@ bool cMobSpawner::CanSpawnHere(cChunk * a_Chunk, Vector3i a_RelPos, eMonsterType
 			);
 		}
 
+		case mtSilverfish:
+		{
+			// Silverfish spawn from the stronghold portal rooms' spawners and need a light level of 11 or lower
+			// (Minecraft Wiki, Silverfish - Monster spawners):
+			return
+			(
+				(TargetBlock == E_BLOCK_AIR) &&
+				(BlockAbove == E_BLOCK_AIR) &&
+				((!cBlockInfo::IsTransparent(BlockBelow)) || (a_DisableSolidBelowCheck)) &&
+				(BlockLight <= 11) &&
+				(SkyLight <= 11)
+			);
+		}
+
 		case mtChicken:
 		case mtCow:
 		case mtPig:
