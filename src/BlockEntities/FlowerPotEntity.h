@@ -9,6 +9,7 @@
 #pragma once
 
 #include "BlockEntity.h"
+#include "../BlockType.h"
 #include "../Item.h"
 
 
@@ -48,7 +49,33 @@ public:  // tolua_export
 	virtual bool UsedBy(cPlayer * a_Player) override;
 	virtual void SendTo(cClientHandle & a_Client) override;
 
-	static bool IsFlower(short m_ItemType, short m_ItemData);
+	/** Returns whether the specified item can be placed into a flower pot.
+	Kept inline so that the data-file loaders can validate the contents without linking the
+	world-bound implementation of this block entity. */
+	static bool IsFlower(short m_ItemType, short m_ItemData)
+	{
+		switch (m_ItemType)
+		{
+			case E_BLOCK_DANDELION:
+			case E_BLOCK_FLOWER:
+			case E_BLOCK_CACTUS:
+			case E_BLOCK_BROWN_MUSHROOM:
+			case E_BLOCK_RED_MUSHROOM:
+			case E_BLOCK_SAPLING:
+			case E_BLOCK_DEAD_BUSH:
+			{
+				return true;
+			}
+			case E_BLOCK_TALL_GRASS:
+			{
+				return (m_ItemData == static_cast<short>(2));
+			}
+			default:
+			{
+				return false;
+			}
+		}
+	}
 
 private:
 

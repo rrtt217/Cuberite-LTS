@@ -208,6 +208,24 @@ protected:
 		bool a_LogWarnings
 	);
 
+	/** Reads a single piece's block entities from the cubeset file parsed into the specified Lua state.
+	The piece's definition table is expected to be at the top of the Lua stack.
+	Returns true on success, false on failure.
+	The contents are applied into the a_Prefab object.
+	No BlockEntities table is considered a success - the pieces without block entity contents are perfectly valid.
+	An entry that cannot be applied (missing coords, an unknown value, a block type that cannot carry contents yet)
+	is considered a failure, although the rest of the entries will still load.
+	An entry whose coords hold no block entity is only reported, not a failure - see the implementation for why.
+	a_PieceName is the identification of the piece, used for logging only.
+	If a_LogWarnings is true, logs a warning to console when loading fails. */
+	bool ReadBlockEntitiesCubesetVer1(
+		const AString & a_FileName,
+		cLuaState & a_LuaState,
+		const AString & a_PieceName,
+		cPrefab * a_Prefab,
+		bool a_LogWarnings
+	);
+
 	/** Reads a single piece's metadata from the cubeset file parsed into the specified Lua state.
 	The piece's definition table is expected to be at the top of the Lua stack.
 	Returns true on success, false on failure.

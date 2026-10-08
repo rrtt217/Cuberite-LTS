@@ -3,6 +3,11 @@
 
 -- Defines the prefabs in the group NetherFort
 
+-- 方块实体（本仓库手工补充，见 specs/vanilla-1.12.2-cubeset-block-entities.md）：
+--   * BlazePlatform / BlazePlatformOverhang 的刷怪笼补为 blaze
+--     （Minecraft Wiki, Nether Fortress；上游 issue cuberite/cuberite#2455）。
+--   * 箱子（CorridorCornerChest5、TinyCorridorCornerChest）的战利品属于阶段 1，当前仍为空。
+
 -- NOTE: This file has been generated automatically by GalExport!
 -- Any manual changes will be overwritten by the next automatic export!
 
@@ -1771,6 +1776,13 @@ Cubeset =
 				"mmmmmmmm.....m",  --  6
 
 			},
+
+			-- The blaze monster spawner in the center of the platform overhang
+			-- (Minecraft Wiki, Nether Fortress: "with a blaze monster spawner in the center"):
+			BlockEntities =
+			{
+				{ X = 10, Y = 7, Z = 3, Entity = "blaze" },
+			},
 		},  -- BlazePlatformOverhang
 
 
@@ -2313,6 +2325,13 @@ Cubeset =
 				"mmmmm....m",  --  5
 				"mmmmmmmmmm",  --  6
 
+			},
+
+			-- The blaze monster spawner in the center of the platform
+			-- (Minecraft Wiki, Nether Fortress: "with a blaze monster spawner in the center"):
+			BlockEntities =
+			{
+				{ X = 6, Y = 3, Z = 3, Entity = "blaze" },
 			},
 		},  -- BlazePlatform
 

@@ -156,6 +156,13 @@ public:
 	/** Sets the internal hitbox to the specified value. */
 	void SetHitBox(const cCuboid & a_HitBox) { m_HitBox = a_HitBox; }
 
+	/** Calls a_Callback for the block entity at the specified prefab-relative coords.
+	The coords always refer to the unrotated image, so this must be called before SetAllowedRotations(),
+	while the rotated images don't exist yet.
+	Returns false if there is no block entity at those coords, or if the coords are outside the prefab.
+	Otherwise returns the value that the callback has returned. */
+	bool DoWithBlockEntity(int a_RelX, int a_RelY, int a_RelZ, cBlockEntityCallback a_Callback);
+
 protected:
 	/** Packs complete definition of a single block, for per-letter assignment. */
 	struct sBlockTypeDef

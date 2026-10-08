@@ -3,6 +3,10 @@
 
 -- Defines the prefabs in the group SandVillage
 
+-- 方块实体：SmallHut 的两张床的颜色在 1.12.2 存在方块实体里（cBedEntity），
+-- cubeset 暂不能携带，因此生成出来一律是默认红色。属阶段 0 未覆盖项，
+-- 见 specs/vanilla-1.12.2-cubeset-block-entities.md 第 4.2 节。
+
 -- NOTE: This file has been generated automatically by GalExport!
 -- Any manual changes will be overwritten by the next automatic export!
 

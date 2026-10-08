@@ -30,6 +30,7 @@ set (SHARED_SRCS
 	${PROJECT_SOURCE_DIR}/src/OSSupport/WinStackWalker.cpp
 
 	${PROJECT_SOURCE_DIR}/src/WorldStorage/FastNBT.cpp
+	${PROJECT_SOURCE_DIR}/src/WorldStorage/NamespaceSerializer.cpp  # Needed for the cubeset BlockEntities
 	${PROJECT_SOURCE_DIR}/src/WorldStorage/SchematicFileSerializer.cpp
 )
 
@@ -314,10 +315,26 @@ add_test(
 
 
 
+# Cubeset block entities test:
+add_executable(CubesetBlockEntitiesTest
+	CubesetBlockEntitiesTest.cpp
+)
+target_link_libraries(CubesetBlockEntitiesTest GeneratorTestingSupport)
+add_test(
+	NAME CubesetBlockEntitiesTest
+	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/Server
+	COMMAND CubesetBlockEntitiesTest
+)
+
+
+
+
+
 # Put the projects into solution folders (MSVC):
 set_target_properties(
 	BasicGeneratorTest
 	ChorusTreeTest
+	CubesetBlockEntitiesTest
 	GeneratorTestingSupport
 	LoadablePieces
 	PieceGeneratorBFSTree

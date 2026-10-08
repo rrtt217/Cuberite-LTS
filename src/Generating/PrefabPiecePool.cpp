@@ -7,6 +7,9 @@
 #include "PrefabPiecePool.h"
 #include "VerticalStrategy.h"
 #include "../Bindings/LuaState.h"
+#include "../BlockEntities/FlowerPotEntity.h"
+#include "../BlockEntities/MobSpawnerEntity.h"
+#include "../WorldStorage/NamespaceSerializer.h"
 #include "../WorldStorage/SchematicFileSerializer.h"
 #include "../StringCompression.h"
 
@@ -306,6 +309,13 @@ bool cPrefabPiecePool::LoadCubesetPieceVer1(const AString & a_FileName, cLuaStat
 	}
 	prefab->SetHitBox(Hitbox);
 
+	// Read the block entity contents. This must happen before SetAllowedRotations(), while only the
+	// unrotated image exists and thus the coords in the file still address the same blocks:
+	if (!ReadBlockEntitiesCubesetVer1(a_FileName, a_LuaState, PieceName, prefab.get(), a_LogWarnings))
+	{
+		return false;
+	}
+
 	// Read the connectors
 	if (!ReadConnectorsCubesetVer1(a_FileName, a_LuaState, PieceName, prefab.get(), a_LogWarnings))
 	{
@@ -439,6 +449,169 @@ std::unique_ptr<cPrefab> cPrefabPiecePool::LoadPrefabFromCubesetVer1(
 	}
 
 	return std::make_unique<cPrefab>(BlockDefStr, BlockDataStr, SizeX, SizeY, SizeZ);
+}
+
+
+
+
+
+/** Applies the content fields of a single BlockEntities entry to the specified block entity.
+The block type of the entity decides which fields are recognized, so that the file can never contradict the image.
+The entry's table is expected to be at the top of the Lua stack.
+Returns true on success, false if the entry is malformed or the block type cannot carry any content yet.
+a_PieceName / a_FileName / a_EntryIndex are used for logging only. */
+static bool ApplyBlockEntityContentCubesetVer1(
+	cBlockEntity & a_BlockEntity,
+	cLuaState & a_LuaState,
+	const AString & a_PieceName,
+	const AString & a_FileName,
+	int a_EntryIndex,
+	bool a_LogWarnings
+)
+{
+	switch (a_BlockEntity.GetBlockType())
+	{
+		case E_BLOCK_MOB_SPAWNER:
+		{
+			AString EntityName;
+			if (!a_LuaState.GetNamedValue("Entity", EntityName) || EntityName.empty())
+			{
+				CONDWARNING(a_LogWarnings, "Mob spawner at block entity #%d in piece %s in cubeset %s has no Entity field.",
+					a_EntryIndex, a_PieceName.c_str(), a_FileName.c_str()
+				);
+				return false;
+			}
+
+			// Accept both the plain and the explicitly namespaced identifier:
+			eMonsterType MobType = mtInvalidType;
+			try
+			{
+				MobType = NamespaceSerializer::ToMonsterType(NamespaceSerializer::SplitNamespacedID(EntityName).second);
+			}
+			catch (const std::out_of_range &)
+			{
+				// Handled below, together with the other unknown-type cases:
+			}
+			if (MobType == mtInvalidType)
+			{
+				CONDWARNING(a_LogWarnings, "Unknown mob type \"%s\" for the mob spawner at block entity #%d in piece %s in cubeset %s.",
+					EntityName.c_str(), a_EntryIndex, a_PieceName.c_str(), a_FileName.c_str()
+				);
+				return false;
+			}
+			static_cast<cMobSpawnerEntity &>(a_BlockEntity).SetEntity(MobType);
+			return true;
+		}  // case E_BLOCK_MOB_SPAWNER
+
+		case E_BLOCK_FLOWER_POT:
+		{
+			int ItemType = 0, ItemMeta = 0;
+			if (!a_LuaState.GetNamedValue("Item", ItemType))
+			{
+				CONDWARNING(a_LogWarnings, "Flower pot at block entity #%d in piece %s in cubeset %s has no Item field.",
+					a_EntryIndex, a_PieceName.c_str(), a_FileName.c_str()
+				);
+				return false;
+			}
+			a_LuaState.GetNamedValue("Meta", ItemMeta);
+			if (!cFlowerPotEntity::IsFlower(static_cast<short>(ItemType), static_cast<short>(ItemMeta)))
+			{
+				CONDWARNING(a_LogWarnings, "Item %d:%d is not a valid flower pot content (block entity #%d in piece %s in cubeset %s).",
+					ItemType, ItemMeta, a_EntryIndex, a_PieceName.c_str(), a_FileName.c_str()
+				);
+				return false;
+			}
+			static_cast<cFlowerPotEntity &>(a_BlockEntity).SetItem(cItem(static_cast<short>(ItemType), 1, static_cast<short>(ItemMeta)));
+			return true;
+		}  // case E_BLOCK_FLOWER_POT
+
+		default:
+		{
+			CONDWARNING(a_LogWarnings, "Block entity #%d in piece %s in cubeset %s is of a block type that cannot carry content yet (block type %d). Skipping it.",
+				a_EntryIndex, a_PieceName.c_str(), a_FileName.c_str(), a_BlockEntity.GetBlockType()
+			);
+			return false;
+		}
+	}  // switch (a_BlockEntity.GetBlockType())
+}
+
+
+
+
+
+bool cPrefabPiecePool::ReadBlockEntitiesCubesetVer1(
+	const AString & a_FileName,
+	cLuaState & a_LuaState,
+	const AString & a_PieceName,
+	cPrefab * a_Prefab,
+	bool a_LogWarnings
+)
+{
+	// Get the BlockEntities subtable. It is an optional field, a piece without any contents is perfectly valid:
+	auto blockEntities = a_LuaState.WalkToValue("BlockEntities");
+	if (!blockEntities.IsValid() || !lua_istable(a_LuaState, -1))
+	{
+		return true;
+	}
+
+	// Iterate over all items in the BlockEntities table:
+	int idx = 1;
+	bool res = true;
+	while (true)
+	{
+		lua_pushinteger(a_LuaState, idx);  // stk: [BlockEntities] [idx]
+		lua_gettable(a_LuaState, -2);      // stk: [BlockEntities] [entry]
+		if (!lua_istable(a_LuaState, -1))
+		{
+			// The entry is not present, we've iterated over all items
+			lua_pop(a_LuaState, 1);  // stk: [BlockEntities]
+			break;
+		}
+
+		int RelX = 0, RelY = 0, RelZ = 0;
+		if (
+			!a_LuaState.GetNamedValue("X", RelX) ||
+			!a_LuaState.GetNamedValue("Y", RelY) ||
+			!a_LuaState.GetNamedValue("Z", RelZ)
+		)
+		{
+			CONDWARNING(a_LogWarnings, "Block entity #%d in piece %s in cubeset %s has no X / Y / Z coords. Skipping it.",
+				idx, a_PieceName.c_str(), a_FileName.c_str()
+			);
+			res = false;
+			lua_pop(a_LuaState, 1);  // stk: [BlockEntities]
+			idx += 1;
+			continue;
+		}
+
+		// Apply the contents. The block type at the coords decides which fields are recognized:
+		bool entryOk = true;
+		bool hasBlockEntity = a_Prefab->DoWithBlockEntity(RelX, RelY, RelZ,
+			[&](cBlockEntity & a_BlockEntity)
+			{
+				entryOk = ApplyBlockEntityContentCubesetVer1(a_BlockEntity, a_LuaState, a_PieceName, a_FileName, idx, a_LogWarnings);
+				return true;
+			}
+		);
+		if (!hasBlockEntity)
+		{
+			// There is no block entity at the coords, so there is nothing to fill. In a normal build the block
+			// types that can carry contents always get a block entity when the image is built, so this means the
+			// entry's coords are wrong. Report it, but leave the rest of the piece valid - one bad annotation
+			// shouldn't void the whole structure:
+			CONDWARNING(a_LogWarnings, "Block entity #%d in piece %s in cubeset %s is at (%d, %d, %d), where there is no block entity. Skipping it.",
+				idx, a_PieceName.c_str(), a_FileName.c_str(), RelX, RelY, RelZ
+			);
+		}
+		else if (!entryOk)
+		{
+			res = false;
+		}
+
+		lua_pop(a_LuaState, 1);  // stk: [BlockEntities]
+		idx += 1;
+	}
+	return res;
 }
 
 

@@ -74,31 +74,3 @@ void cFlowerPotEntity::SendTo(cClientHandle & a_Client)
 	a_Client.SendUpdateBlockEntity(*this);
 }
 
-
-
-
-
-bool cFlowerPotEntity::IsFlower(short m_ItemType, short m_ItemData)
-{
-	switch (m_ItemType)
-	{
-		case E_BLOCK_DANDELION:
-		case E_BLOCK_FLOWER:
-		case E_BLOCK_CACTUS:
-		case E_BLOCK_BROWN_MUSHROOM:
-		case E_BLOCK_RED_MUSHROOM:
-		case E_BLOCK_SAPLING:
-		case E_BLOCK_DEAD_BUSH:
-		{
-			return true;
-		}
-		case E_BLOCK_TALL_GRASS:
-		{
-			return (m_ItemData == static_cast<short>(2));
-		}
-		default:
-		{
-			return false;
-		}
-	}
-}

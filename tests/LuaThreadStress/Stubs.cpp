@@ -282,3 +282,42 @@ int BlockStringToType(const AString &)
 {
 	return 0;
 }
+
+
+
+
+
+cItem::cItem()
+{
+}
+
+
+
+
+
+cItem::cItem(
+	short a_ItemType,
+	char a_ItemCount,
+	short a_ItemDamage,
+	const AString & a_Enchantments,
+	const AString & a_CustomName,
+	const AStringVector & a_LoreTable
+)
+{
+}
+
+
+
+
+
+void cItem::Empty()
+{
+}
+
+
+
+
+
+cEnchantments::cEnchantments()
+{
+}

@@ -3,6 +3,10 @@
 
 -- Defines the prefabs in the group WitchHut
 
+-- 方块实体：花盆 (3,3,5) 的内容来源不明 —— Minecraft Wiki 的叙述与上游 bug MC-66154
+-- （"Flower pots generate empty in swamp huts"）相互矛盾，因此保持为空。
+-- 见 specs/vanilla-1.12.2-cubeset-block-entities.md 第 4.2 与第 7 节。
+
 -- NOTE: This file has been generated automatically by GalExport!
 -- Any manual changes will be overwritten by the next automatic export!
 

@@ -3,6 +3,10 @@
 
 -- Defines the prefabs in the group JapaneseVillage
 
+-- 方块实体：2 个箱子的战利品属于阶段 1；Forge 的 2 个熔炉与 HouseWithGarden 的 4 个花盆
+-- 内容不可考（Gallery 社区作品，无 vanilla 来源可对照），保持为空。
+-- 见 specs/vanilla-1.12.2-cubeset-block-entities.md。
+
 -- NOTE: This file has been generated automatically by GalExport!
 -- Any manual changes will be overwritten by the next automatic export!
 

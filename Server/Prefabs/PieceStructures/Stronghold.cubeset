@@ -5,11 +5,16 @@
 --       构件出自 Gallery 服务器的社区作品，CreatorName 见各 piece 的 OriginData）。
 -- 许可：随 Cuberite 本体，Apache License 2.0（见仓库 LICENSE 与 CONTRIBUTING 的 Copyright 节：
 --       随 PR 提交的文件即按该许可发布，提交者列入 CONTRIBUTORS）。
---       本仓库仅做了两处修正，见 specs/vanilla-1.12.2-stronghold.md：
+--       本仓库做了三处修正，见 specs/vanilla-1.12.2-stronghold.md 与
+--       specs/vanilla-1.12.2-cubeset-block-entities.md：
 --         1. 文件的 group / ExportName 由 Fortress 改名为 Stronghold；
 --         2. 两个末地传送门房的 12 个传送门框架朝向改为「朝向门内侧」——
 --            原始导出（Fortress_253 全 0、Fortress_27 为 0/1/3）无法被
---            cBlockEndPortalFrameHandler::FindAndSetPortal 接受，末地门永远无法激活。
+--            cBlockEndPortalFrameHandler::FindAndSetPortal 接受，末地门永远无法激活；
+--         3. Stronghold_253 / Stronghold_27 的刷怪笼补为 silverfish（Minecraft Wiki, Silverfish -
+--            Monster spawners："Silverfish monster spawners naturally generate in End portal rooms
+--            in strongholds"）。
+--       箱子（Stronghold_52、_225、_227）的战利品属于阶段 1，当前仍为空。
 -- NOTE: This file has been generated automatically by GalExport!
 -- Any manual changes will be overwritten by the next automatic export!
 
@@ -252,6 +257,12 @@ Cubeset =
 				"cbbbbbbbbcbbb",  -- 14
 
 			},
+
+			-- The portal room's silverfish spawner (Minecraft Wiki, Silverfish - Monster spawners):
+			BlockEntities =
+			{
+				{ X = 6, Y = 3, Z = 5, Entity = "silverfish" },
+			},
 		},  -- Fortress_253
 
 
@@ -466,6 +477,12 @@ Cubeset =
 				"aaaaaaaaaacaa",  -- 12
 				"acbaaaaabaaaa",  -- 13
 
+			},
+
+			-- The portal room's silverfish spawner (Minecraft Wiki, Silverfish - Monster spawners):
+			BlockEntities =
+			{
+				{ X = 6, Y = 3, Z = 7, Entity = "silverfish" },
 			},
 		},  -- Fortress_27
 

@@ -31,6 +31,7 @@ set (SHARED_SRCS
 	${PROJECT_SOURCE_DIR}/src/OSSupport/WinStackWalker.cpp
 
 	${PROJECT_SOURCE_DIR}/src/WorldStorage/FastNBT.cpp
+	${PROJECT_SOURCE_DIR}/src/WorldStorage/NamespaceSerializer.cpp  # Needed by PrefabPiecePool's cubeset block entity contents
 	${PROJECT_SOURCE_DIR}/src/WorldStorage/SchematicFileSerializer.cpp
 )
 

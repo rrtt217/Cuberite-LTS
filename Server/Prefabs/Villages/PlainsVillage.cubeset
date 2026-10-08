@@ -3,6 +3,10 @@
 
 -- Defines the prefabs in the group PlainsVillage
 
+-- 方块实体：3 个箱子的战利品属于阶段 1；4 个熔炉与 WoodenMill5x5 的漏斗内容不可考
+-- （Gallery 社区作品，无 vanilla 来源可对照），保持为空。
+-- 见 specs/vanilla-1.12.2-cubeset-block-entities.md。
+
 -- NOTE: This file has been generated automatically by GalExport!
 -- Any manual changes will be overwritten by the next automatic export!
 

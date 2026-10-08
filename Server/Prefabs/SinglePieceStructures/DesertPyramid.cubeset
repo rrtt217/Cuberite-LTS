@@ -3,6 +3,9 @@
 
 -- Defines the prefabs in the group DesertPyramid
 
+-- 方块实体：两个 piece 各 4 个箱子的战利品属于阶段 1，当前仍为空。
+-- 见 specs/vanilla-1.12.2-cubeset-block-entities.md。
+
 -- NOTE: This file has been generated automatically by GalExport!
 -- Any manual changes will be overwritten by the next automatic export!
 

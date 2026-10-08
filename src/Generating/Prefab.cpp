@@ -130,6 +130,24 @@ void cPrefab::AddRotatedBlockAreas(void)
 
 
 
+bool cPrefab::DoWithBlockEntity(int a_RelX, int a_RelY, int a_RelZ, cBlockEntityCallback a_Callback)
+{
+	if (
+		(a_RelX < 0) || (a_RelX >= m_Size.x) ||
+		(a_RelY < 0) || (a_RelY >= m_Size.y) ||
+		(a_RelZ < 0) || (a_RelZ >= m_Size.z)
+	)
+	{
+		// Out of bounds. The prefab data comes from user-editable files, so report it as "no block entity" instead of asserting:
+		return false;
+	}
+	return m_BlockArea[0].DoWithBlockEntityRelAt(a_RelX, a_RelY, a_RelZ, a_Callback);
+}
+
+
+
+
+
 void cPrefab::Draw(cChunkDesc & a_Dest, const cPlacedPiece * a_Placement) const
 {
 	Draw(a_Dest, a_Placement->GetCoords(), a_Placement->GetNumCCWRotations());
