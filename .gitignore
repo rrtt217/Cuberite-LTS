@@ -131,3 +131,7 @@ tags
 
 # mac things
 .DS_Store
+
+# Agent instruction local overlays (machine / checkout specific, never committed)
+AGENTS.local.md
+CLAUDE.local.md
