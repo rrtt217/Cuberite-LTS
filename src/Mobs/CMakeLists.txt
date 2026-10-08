@@ -52,6 +52,7 @@ target_sources(
 	EnderDragon.h
 	Endermite.h
 	Enderman.h
+	EndermanTeleportRules.h
 	Ghast.h
 	Giant.h
 	Guardian.h

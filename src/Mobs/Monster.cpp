@@ -228,9 +228,12 @@ void cMonster::MoveToWayPoint(cChunk & a_Chunk)
 			Distance *= 0.25f;
 		}
 
-		if ((m_EMState == CHASING) || (m_EMState == ESCAPING))
+		if ((m_EMState == CHASING) || (m_EMState == ESCAPING) || (GetTarget() != nullptr))
 		{
-			// Apply run speed:
+			/* Apply run speed.  A mob that HOLDS an attack target counts as "attacking" even while its
+			emergency AI state momentarily reads IDLE - Vanilla gates the attacking speed modifier on the
+			target being present (Chinese wiki "Attribute/Speed", the 13w21a modifier table), and gating on
+			m_EMState alone leaked WalkSpeed into chase movement whenever the state flickered. */
 			Distance *= m_BaseRunSpeed * m_RelativeWalkSpeed;
 		}
 		else
