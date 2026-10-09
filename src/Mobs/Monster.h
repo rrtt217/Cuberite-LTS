@@ -291,6 +291,19 @@ protected:
 	/** Move in a straight line to the next waypoint in the path, will jump if needed. */
 	void MoveToWayPoint(cChunk & a_Chunk);
 
+	/** If the mob has landed and reaching the given point requires a jump, performs the jump towards
+	it.  The landing itself gates the cadence: a hop fires as soon as the mob has landed, so the
+	interval between hops is the jump's own airtime, with no extra grounded delay.  The jump's
+	horizontal speed scales with the distance to the point, so faraway points need to be clamped to
+	about one block ahead by the caller. */
+	void HopToward(const Vector3d & a_Destination);
+
+	/** Applies the situational and walk / run speed multipliers for movement towards the given
+	point, without jumping.  Used by MoveToWayPoint for waypoint movement, and by Tick to glide
+	towards the final destination while the pathfinder is still calculating (spec
+	vanilla-1.12.2-enderman.md 6.10). */
+	void ApplySpeedToward(const Vector3d & a_Destination);
+
 	/** Stops pathfinding. Calls ResetPathFinding and sets m_IsFollowingPath to false */
 	void StopMovingToPosition();
 

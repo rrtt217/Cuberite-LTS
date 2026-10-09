@@ -208,7 +208,46 @@ void cMonster::MoveToWayPoint(cChunk & a_Chunk)
 		--m_JumpCoolDown;
 	}
 
-	Vector3d Distance = m_NextWayPointPosition - GetPosition();
+	ApplySpeedToward(m_NextWayPointPosition);
+}
+
+
+
+
+
+/** If the mob has landed and reaching the given point requires a jump, performs the jump towards it.
+The landing itself gates the cadence: a hop fires as soon as the mob has landed, so the interval
+between hops is the jump's own airtime - shorter when the hop reaches the block above, longer when
+it falls back - with no extra grounded delay, like vanilla navigation, which hops with almost no
+delay.  The jump's horizontal speed scales with the distance to the point, so faraway points need
+to be clamped to about one block ahead by the caller.  Waypoint movement does not use this: it
+keeps its own jump cooldown and may jump while swimming. */
+void cMonster::HopToward(const Vector3d & a_Destination)
+{
+	if (!IsOnGround())
+	{
+		return;
+	}
+
+	if (!DoesPosYRequireJump(FloorC(a_Destination.y)))
+	{
+		return;
+	}
+
+	m_bOnGround = false;
+	AddPosY(1.6);  // Jump!!
+	SetSpeedY(1);
+	SetSpeedX(3.2 * (a_Destination.x - GetPosition().x));  // Move forward in a preset speed.
+	SetSpeedZ(3.2 * (a_Destination.z - GetPosition().z));  // The numbers were picked based on trial and error
+}
+
+
+
+
+
+void cMonster::ApplySpeedToward(const Vector3d & a_Destination)
+{
+	Vector3d Distance = a_Destination - GetPosition();
 	if ((std::abs(Distance.x) > 0.05) || (std::abs(Distance.z) > 0.05))
 	{
 		Distance.y = 0;
@@ -346,6 +385,31 @@ void cMonster::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 				case ePathFinderStatus::PATH_NOT_FOUND:
 				{
 					StopMovingToPosition();
+					break;
+				}
+				case ePathFinderStatus::CALCULATING:
+				{
+					/* While the pathfinder is still working - a multi-tick A* search, or the 20-tick
+					cooldown after a failed one - a mob that only moves on PATH_FOUND stands completely
+					still for over a second at a time, so chases periodically freeze; the tall
+					(3-block-clearance) enderman, whose searches fail the most, was hit the hardest
+					(spec vanilla-1.12.2-enderman.md 6.10).  Glide straight towards the final
+					destination until the path is ready, and hop when it lies higher - e.g. when a
+					one-block step is between the mob and its target.  The landing gates the hop
+					cadence (measured on vanilla: hops come with almost no delay), and the hop target
+					is clamped to one block ahead so the hop's horizontal speed matches a waypoint
+					jump - a faraway glide target would launch the mob. */
+					Vector3d Distance = m_FinalDestination - GetPosition();
+					if ((std::abs(Distance.x) > 0.05) || (std::abs(Distance.z) > 0.05))
+					{
+						Vector3d JumpTarget = GetPosition();
+						Distance.y = 0;
+						Distance.Normalize();
+						JumpTarget += Distance;
+						JumpTarget.y = m_FinalDestination.y;
+						HopToward(JumpTarget);
+					}
+					ApplySpeedToward(m_FinalDestination);
 					break;
 				}
 				default:
