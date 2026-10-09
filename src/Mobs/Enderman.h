@@ -29,6 +29,10 @@ public:
 	BLOCKTYPE GetCarriedBlock(void) const {return m_CarriedBlock; }
 	NIBBLETYPE GetCarriedMeta(void) const {return m_CarriedMeta; }
 
+	/** Sets the carried block without broadcasting the change; used when loading from NBT.
+	Runtime changes go through the pickup / placement code, which broadcasts the entity metadata. */
+	void SetCarriedBlock(BLOCKTYPE a_BlockType, NIBBLETYPE a_BlockMeta);
+
 private:
 
 	/** Makes a teleport attempt to a random destination within the 64x64x64 cube around the current position.
@@ -42,6 +46,20 @@ private:
 	/** Moves the enderman to the destination and shows the teleport effects
 	(sound at the destination, portal particles at both ends). */
 	void DoTeleport(Vector3d a_Destination);
+
+	/** Runs the block-carrying behaviour for this tick: an enderman without a carried block may pick one
+	up, one that carries a block may place it (spec 3.7). */
+	void TickBlockCarrying(void);
+
+	/** Makes a pickup attempt in the 4x3x4 region around the enderman, if the random chance passes (spec 3.7). */
+	void TryPickUpBlock(void);
+
+	/** Makes a placement attempt in the 2x2x2 region around the enderman, if the random chance passes (spec 3.7). */
+	void TryPlaceCarriedBlock(void);
+
+	/** Returns whether the line of sight from the enderman's head to the center of the block is not
+	obstructed by a solid block (spec 3.7: the enderman must be able to directly see the block). */
+	bool CanSeeBlock(Vector3i a_BlockPos) const;
 
 	bool m_bIsScreaming;
 	BLOCKTYPE m_CarriedBlock;

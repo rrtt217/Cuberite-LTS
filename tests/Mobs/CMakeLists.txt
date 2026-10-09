@@ -10,3 +10,12 @@ add_test(
 	NAME EndermanTeleportRulesTest
 	COMMAND EndermanTeleportRulesTest
 )
+
+add_executable(EndermanBlockRulesTest
+	EndermanBlockRulesTest.cpp
+)
+target_link_libraries(EndermanBlockRulesTest GeneratorTestingSupport)
+add_test(
+	NAME EndermanBlockRulesTest
+	COMMAND EndermanBlockRulesTest
+)

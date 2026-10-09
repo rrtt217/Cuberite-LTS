@@ -3,7 +3,10 @@
 
 #include "Chunk.h"
 #include "Enderman.h"
+#include "EndermanBlockRules.h"
 #include "EndermanTeleportRules.h"
+#include "../BlockInfo.h"
+#include "../Blocks/BlockHandler.h"
 #include "../Entities/Player.h"
 #include "../FastRandom.h"
 #include "../LineBlockTracer.h"
@@ -79,6 +82,48 @@ protected:
 
 
 
+// cEndermanBlockSightCheck
+// Checks whether the enderman can directly see one specific block (spec 3.7): the line from its head to
+// the block's center must reach the block without hitting a solid block on the way.  The target itself may
+// be non-solid (flowers and mushrooms are holdable), so the trace must not simply stop at the first solid
+// block - it stops at the target and reports whether it got there.
+class cEndermanBlockSightCheck:
+	public cBlockTracer::cCallbacks
+{
+public:
+
+	cEndermanBlockSightCheck(Vector3i a_Target):
+		m_Target(a_Target),
+		m_IsVisible(false)
+	{
+	}
+
+	virtual bool OnNextBlock(Vector3i a_BlockPos, BLOCKTYPE a_BlockType, NIBBLETYPE a_BlockMeta, eBlockFace a_EntryFace) override
+	{
+		UNUSED(a_BlockMeta);
+		UNUSED(a_EntryFace);
+
+		if (a_BlockPos == m_Target)
+		{
+			m_IsVisible = true;
+			return true;
+		}
+
+		// Solid blocks obstruct the view, transparent solids included (spec 3.7, like the stare check):
+		return cBlockInfo::IsSolid(a_BlockType);
+	}
+
+	bool IsVisible(void) const { return m_IsVisible; }
+
+protected:
+
+	Vector3i m_Target;
+	bool m_IsVisible;
+} ;
+
+
+
+
 
 cEnderman::cEnderman(void) :
 	Super("Enderman", mtEnderman, "entity.endermen.hurt", "entity.endermen.death", "entity.endermen.ambient", 0.6f, 2.9f),
@@ -94,6 +139,16 @@ cEnderman::cEnderman(void) :
 
 
 
+void cEnderman::SetCarriedBlock(BLOCKTYPE a_BlockType, NIBBLETYPE a_BlockMeta)
+{
+	m_CarriedBlock = a_BlockType;
+	m_CarriedMeta = a_BlockMeta;
+}
+
+
+
+
+
 void cEnderman::GetDrops(cItems & a_Drops, cEntity * a_Killer)
 {
 	unsigned int LootingLevel = 0;
@@ -102,6 +157,26 @@ void cEnderman::GetDrops(cItems & a_Drops, cEntity * a_Killer)
 		LootingLevel = a_Killer->GetEquippedWeapon().m_Enchantments.GetLevel(cEnchantments::enchLooting);
 	}
 	AddRandomDropItem(a_Drops, 0, 1 + LootingLevel, E_ITEM_ENDER_PEARL);
+
+	// An enderman drops the block it is holding as the Silk Touch drop of that block (spec 3.7,
+	// wiki "Moving blocks"; since 1.9 / 15w31a, so it applies to 1.12.2).  For every block on the
+	// holdable list that drop is the block itself - including mycelium and podzol, whose Cuberite block
+	// handlers do not honour Silk Touch (they always drop dirt), so they must not go through them:
+	if (m_CarriedBlock != E_BLOCK_AIR)
+	{
+		if (IsEndermanHoldableBlock(m_CarriedBlock, m_CarriedMeta))
+		{
+			a_Drops.emplace_back(m_CarriedBlock, 1, m_CarriedMeta);
+		}
+		else
+		{
+			// Only reachable for blocks given through NBT / summon; synthesize the tool, since the drop
+			// does not depend on the tool the killer used:
+			const cItem SilkTouchTool(E_ITEM_DIAMOND_AXE, 1, 0, "SilkTouch=1");
+			const cItems Pickups = cBlockHandler::For(m_CarriedBlock).ConvertToPickups(m_CarriedMeta, &SilkTouchTool);
+			a_Drops.insert(a_Drops.end(), Pickups.cbegin(), Pickups.cend());
+		}
+	}
 }
 
 
@@ -282,6 +357,119 @@ void cEnderman::DoTeleport(Vector3d a_Destination)
 
 
 
+void cEnderman::TickBlockCarrying(void)
+{
+	// An enderman either picks a block up or, while carrying one, puts it down - never both (spec 3.7):
+	if (m_CarriedBlock == E_BLOCK_AIR)
+	{
+		TryPickUpBlock();
+	}
+	else
+	{
+		TryPlaceCarriedBlock();
+	}
+}
+
+
+
+
+
+void cEnderman::TryPickUpBlock(void)
+{
+	if (GetRandomProvider().RandInt(1, ENDERMAN_PICKUP_CHANCE_DENOMINATOR) != 1)
+	{
+		return;
+	}
+
+	auto & Random = GetRandomProvider();
+	const Vector3i Base = GetPosition().Floor();
+	const Vector3i BlockPos(
+		Base.x + Random.RandInt(ENDERMAN_PICKUP_MIN_HORIZONTAL_OFFSET, ENDERMAN_PICKUP_MAX_HORIZONTAL_OFFSET),
+		Base.y + Random.RandInt(ENDERMAN_PICKUP_MIN_VERTICAL_OFFSET, ENDERMAN_PICKUP_MAX_VERTICAL_OFFSET),
+		Base.z + Random.RandInt(ENDERMAN_PICKUP_MIN_HORIZONTAL_OFFSET, ENDERMAN_PICKUP_MAX_HORIZONTAL_OFFSET)
+	);
+
+	BLOCKTYPE BlockType;
+	NIBBLETYPE BlockMeta;
+	if (!m_World->GetBlockTypeMeta(BlockPos, BlockType, BlockMeta))
+	{
+		return;
+	}
+
+	if (!IsEndermanHoldableBlock(BlockType, BlockMeta))
+	{
+		return;
+	}
+
+	if (!CanSeeBlock(BlockPos))
+	{
+		return;
+	}
+
+	// The block disappears into the enderman's hands; the clients are told through the entity metadata:
+	m_World->SetBlock(BlockPos, E_BLOCK_AIR, 0);
+	SetCarriedBlock(BlockType, BlockMeta);
+	m_World->BroadcastEntityMetadata(*this);
+}
+
+
+
+
+
+void cEnderman::TryPlaceCarriedBlock(void)
+{
+	if (GetRandomProvider().RandInt(1, ENDERMAN_PLACE_CHANCE_DENOMINATOR) != 1)
+	{
+		return;
+	}
+
+	auto & Random = GetRandomProvider();
+	const Vector3i Base = GetPosition().Floor();
+	const Vector3i BlockPos(
+		Base.x + Random.RandInt(ENDERMAN_PLACE_MIN_HORIZONTAL_OFFSET, ENDERMAN_PLACE_MAX_HORIZONTAL_OFFSET),
+		Base.y + Random.RandInt(ENDERMAN_PLACE_MIN_VERTICAL_OFFSET, ENDERMAN_PLACE_MAX_VERTICAL_OFFSET),
+		Base.z + Random.RandInt(ENDERMAN_PLACE_MIN_HORIZONTAL_OFFSET, ENDERMAN_PLACE_MAX_HORIZONTAL_OFFSET)
+	);
+
+	BLOCKTYPE TargetType;
+	NIBBLETYPE TargetMeta;
+	if (!m_World->GetBlockTypeMeta(BlockPos, TargetType, TargetMeta))
+	{
+		return;
+	}
+	UNUSED(TargetMeta);
+
+	if (!EndermanCanPlaceBlockAt(TargetType, m_World->GetBlock(BlockPos.addedY(-1))))
+	{
+		return;
+	}
+	// Placement is silent (MC-167369, unfixed in 1.12.2 - spec 3.7):
+	m_World->SetBlock(BlockPos, m_CarriedBlock, m_CarriedMeta);
+	SetCarriedBlock(E_BLOCK_AIR, 0);
+	m_World->BroadcastEntityMetadata(*this);
+}
+
+
+
+
+
+bool cEnderman::CanSeeBlock(Vector3i a_BlockPos) const
+{
+	cEndermanBlockSightCheck Callbacks(a_BlockPos);
+	const Vector3d EyePosition = GetPosition().addedY(GetHeight());
+	const Vector3d BlockCenter(
+		a_BlockPos.x + 0.5,
+		a_BlockPos.y + 0.5,
+		a_BlockPos.z + 0.5
+	);
+	cLineBlockTracer::Trace(*m_World, Callbacks, EyePosition, BlockCenter);
+	return Callbacks.IsVisible();
+}
+
+
+
+
+
 void cEnderman::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 {
 	Super::Tick(a_Dt, a_Chunk);
@@ -366,4 +554,7 @@ void cEnderman::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 			}
 		}
 	}
+
+	// Pick up or put down a block (spec 3.7):
+	TickBlockCarrying();
 }

@@ -28,15 +28,15 @@
 | 掉落 0–1 珍珠（+抢夺） | `Enderman.cpp: GetDrops` |
 | metadata：carried block / screaming（1.8–1.16 协议全量） | `src/Protocol/Protocol_*.cpp` |
 | NBT **写入** `carried`/`carriedData` | `src/WorldStorage/NBTChunkSerializer.cpp` |
+| 搬方块：可携带列表、每 tick 拿起/放置、`carried` NBT **读回**、死亡掉落丝触等效物 | `src/Mobs/EndermanBlockRules.h`、`src/Mobs/Enderman.{h,cpp}`、`src/WorldStorage/WSSAnvil.cpp`（本分支） |
 | 刷怪落点检查（≥3 格空气、光照 ≤7、y<250） | `src/MobSpawner.cpp` |
 | 传送落点搜索原型 `cPawn::FindTeleportDestination`（紫颂果在用） | `src/Entities/Pawn.cpp` |
 
 缺失（本规格覆盖）：
 
 1. **传送：完全没有**（`Enderman.cpp` 内 `TODO teleport to a safe location`）——本规格 §3.6。
-2. **搬方块：完全没有**（`m_CarriedBlock` 无任何写入方；`LoadEndermanFromNBT` 也不读 `carried`）——§3.7。
-3. **自然刷怪被禁用**（`World.cpp` 主世界/末地默认列表剔除 enderman；`MobSpawner.cpp` 下界候选列表无 enderman）——§2。
-4. 已知偏差清单见 §6。
+2. **自然刷怪被禁用**（`World.cpp` 主世界/末地默认列表剔除 enderman；`MobSpawner.cpp` 下界候选列表无 enderman）——§2。
+3. 已知偏差清单见 §6。
 
 ---
 
@@ -152,15 +152,21 @@ Cuberite 落点：`cPawn::FindTeleportDestination(world, 3, tries, dest, minCorn
 
 ### 3.7 搬方块（Moving blocks）
 
-来源：wiki「Moving blocks」节（列表按历史表裁剪回 1.12.2）。
+来源：英文 wiki [Moving blocks](https://minecraft.wiki/w/Enderman#Moving_blocks) + 中文 wiki [移动方块](https://zh.minecraft.wiki/w/%E6%9C%AB%E5%BD%B1%E4%BA%BA)（两节写法不同、互为首要补充），版本裁剪用 [Java 版历史表](https://minecraft.wiki/w/Enderman#Java_Edition)。
 
-- 每 tick **1/20** 概率：在以其为中心 **4×3×4**（水平 4、垂直含自身 3）区域内随机取一格；若为「可携带列表」方块**且可直接看到**，则拿起（方块消失，进入 `carried`）。
-- 每 tick **1/2000** 概率：把携带方块放到以其为中心 **2×2×2**（水平 2、与其同层）区域内「上方为空气 + 下方为完整方块」的位置；放置无音效（MC-167369，1.12.2 时代未修=无声 ✅）。
-- `mobGriefing = false` 时禁止拿起与放置。
-- **1.12.2 可携带列表** = 现行 wiki 列表减去 1.13+ 新增（nylium、crimson/warped roots & fungi、mud、muddy mangrove roots、moss、pale moss、rooted dirt、cactus flower、eyeblossom、azalea 系），**加上 netherrack**（1.10/16w20a 加入，1.16/20w07a 移除）：草方块、泥土、podzol（灰化土）、coarse dirt（粗土）〔待核〕、沙、红沙、砾石、黏土、蘑菇、小花、南瓜（含雕刻南瓜）、西瓜、TNT、仙人掌、菌丝（mycelium）、netherrack。逐块清单落地前用 1.12 时代资料逐块复核。
-- 死亡掉落所拿方块物品的**丝触等效掉落物**（1.9/15w31a 起 ✅适用 1.12.2）。
-- NBT：`carried`（short）/`carriedData`（short）读写（写已有，**读缺失**）；summon 支持等价 `carriedBlockState` 即读回 `carried`。
+- **拿起**：每 tick **1/20**；在以自身为中心的 **4×3×4** 区域内随机取一格（水平 4、垂直 3）。垂直范围**从脚下方块向上**覆盖末影人自身的 3 格身高（中文 wiki「向上 4×3×4」、英文 wiki「vertically encompassing it」），因此**完全平坦的地面拿不起方块**（两份 wiki 均明确记录该行为）。若该格在可携带列表内且**可直接看到**，则拿起（方块消失，进入 `carried`）。
+- **放置**：携带方块时每 tick **1/2000**；在 **2×2×2** 区域内随机取一格（水平 2、与自身同层，英文 wiki「vertically at the same level as the enderman itself」）；目标须为**空气**、下方为**完整方块**（中文 wiki「下方是完整碰撞体积方块」）。放置**无声**（MC-167369，1.12.2 未修 ✅）。
+- 拿起与放置**互斥**：不携带时掷拿起、携带时掷放置（同一 tick 只做一件）。
+- `mobGriefing = false` 时禁止拿起与放置。**Cuberite 无 gamerule 系统**，本分支不实现（§6）。
+- **1.12.2 可携带列表** = 现行 wiki 列表减去 1.13+ 新增（nylium、crimson/warped roots & fungi、mud、muddy mangrove roots、moss、pale moss、rooted dirt、cactus flower、eyeblossom、azalea 系），**加上 netherrack**（1.10/16w20a 加入、1.16/20w07a 移除，历史表）：草方块、泥土、podzol（灰化土）、粗土、沙、红沙、砾石、黏土、蘑菇（红/棕）、小花、南瓜（含雕刻南瓜）、西瓜、TNT、仙人掌、菌丝（mycelium）、netherrack。
+  - 「粗土」在 1.12.2 是 `E_BLOCK_DIRT` meta 1（与泥土、podzol 共块），meta 由可携带判定区分；「小花」= `E_BLOCK_DANDELION` + `E_BLOCK_FLOWER` meta 0–8（双击植物/大型花不可携带）；「雕刻南瓜」在 1.13 之前不是独立方块，即 `E_BLOCK_PUMPKIN`。
+  - **不实现**（1.13+ 语义）：1.16.2 起的「不放在基岩上」（pre1）与「不放在实体上」（pre2）——故 1.12.2 可放在基岩上。
+- **死亡掉落**：掉落所拿方块的**丝触等效掉落物**（1.9/15w31a 起 ✅适用 1.12.2）——即持丝触钻石斧挖取该方块的掉落；对可携带列表而言**就是方块本身**（草方块→草方块而非泥土，菌丝/podzol 同理；Cuberite 的菌丝/泥土 handler 不认丝触，故列表内不走 handler——§6 偏差 6）。
+- **NBT**：`carried`（short）/`carriedData`（short）**读 + 写**（写既有，本分支补读）；`/summon` 的等价 `carriedBlockState` 即读回 `carried`。**方块元数据保留**——「拿仙人掌时 `age` 一律归 0」是 1.16.2/pre2 的平整化改动，1.12.2 不适用。
 - 「拿方块不 despawn」为 1.16 修复（MC-124812），**1.12.2 不适用，不实现**。
+- 骑乘（船/矿车）中**仍可**拿起与放置（英文 wiki「even when angered」「can still pick up and place blocks while sitting in a boat」）——与传送的骑乘限制不同。
+
+**Cuberite 落点**：可携带列表与区域几何抽为纯函数 [EndermanBlockRules.h](src/Mobs/EndermanBlockRules.h)（`IsEndermanHoldableBlock` / `EndermanCanPlaceBlockAt` + 具名常数）；`cEnderman::TickBlockCarrying` 在 `Tick` 末尾调用；视线判定复用 `cLineBlockTracer`——射线在**目标方块**处停止而不是在首个固体处停止，否则非固体的小花/蘑菇永远判为不可见。偶数尺寸区域的**具体偏移**无白名单来源给出（只给尺寸），实现取「覆盖跨度的下半段、垂直从脚下方块起算」，标〔待核〕（§6）。
 
 ### 3.8 追击速度（Speed attribute）
 
@@ -195,7 +201,7 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 ## 4. 数据值
 
 - metadata 15 `carried block ID`（OptBlock/short<<4|meta 依协议版本）、16 `screaming`：✅全协议已实现。
-- NBT `carried`/`carriedData`：写 ✅、**读缺**（`WSSAnvil.cpp: LoadEndermanFromNBT`）。
+- NBT `carried`/`carriedData`：读写 ✅（读在本分支补上，`WSSAnvil.cpp: LoadEndermanFromNBT`）。
 
 ---
 
@@ -209,7 +215,7 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 | 传送几何与天光概率单元测试 | `tests/Mobs/`（新目录） + `tests/CMakeLists.txt` | 本分支 |
 | 基类移动模型：`CALCULATING` 滑移（寻路计算/冷却期间不再定身，影响所有怪） | `src/Mobs/Monster.{h,cpp}` | `feature/mobs-pathfinding-glide` |
 | 末影人 RunSpeed 回标定 10→2（罚站修复后，§3.8） | `Server/monsters.ini` | `feature/mobs-pathfinding-glide` |
-| 可携带列表判定纯函数、拿起/放置 tick、`carried` NBT 读取、死亡掉落 | `src/Mobs/Enderman.*`、`WSSAnvil.cpp` | 后续 `feature/mobs-enderman-block-carrying` |
+| 可携带列表判定纯函数、拿起/放置 tick、`carried` NBT 读取、死亡掉落 | `src/Mobs/EndermanBlockRules.h`、`src/Mobs/Enderman.*`、`WSSAnvil.cpp` | **本分支 `feature/mobs-enderman-block-carrying`（已完成）** |
 | 默认刷怪列表（主世界/末地）、下界候选列表 | `World.cpp`、`MobSpawner.cpp` | 后续 `feature/mobs-enderman-natural-spawning` |
 | 攻击伤害 7、经验 5、stare 音效、凝视 hitbox 化、末影螨 LOS 与珍珠来源 | 分散 | 后续小修分支 |
 | 弹射物临近预测（64 次尝试特例）、水瓶对末影人伤害 | `ArrowEntity`/药水效果侧 | 后续（§3.5/§3.6 特例） |
@@ -243,7 +249,17 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 	- 滑移中**遇 1 格台阶会跳**（vanilla 寻路导航对 1 格台阶本就跳跃——路点移动已按此实现，滑移沿用同一行为）：跳跃目标钳制到**前方 1 格**（水平单位向量 ×1、Y 取最终目标）——跳跃的水平速度 `3.2×dx` 假设目标在 1 格内，直接滑向远目标会把怪水平弹出；滑移跳为**落地门控**（`cMonster::HopToward`，仅 `IsOnGround` + 目标更高即跳）：间隔 = 跳跃自身滞空时间——**成功跳上台阶的滞空约为落回本格的一半**（维护者实机指认的 vanilla 物理），两种情形各自跟随实际滞空、无额外地面停顿，落地即跳（vanilla 跳跃几乎没有延时）；固定 tick 冷却曾把两种滞空压成同一间隔（已弃）。路点移动不用 `HopToward`——保留其自身 20 tick 冷却与水中跳跃旁路（master 原文，零变化）；
 	- vanilla 的等效掩盖（近身对玩家持续闪现，本分支 T2）保留；随之 `RunSpeed` 从补偿值 10 回标定至属性比例 ≈2（§3.8）。
 
-**〔待核〕数值汇总**：T2 的 9×11×9/16/17/1.5–2 s（英文 wiki Needs-testing）；T3 公式与 600gt 前置对 1.12.2 的适用性（公式为现行描述，1.0 历史条目仅证「白天会逃离」）；「内部光照等级」定义（以时间修正天光近似）；T3 眼睛取 +2 方块〔推测〕；受击尝试次数 1（en/zh 冲突从 zh）；速度锚点 0.23〔推测〕；水中伤害节拍；1.12.2 Easy/Hard 攻击力；1.12.2 下界刷怪权重。
+**搬方块分支（`feature/mobs-enderman-block-carrying`）偏差与待确认**：
+
+1. **`mobGriefing` gamerule 不实现**：Cuberite 完全没有 gamerule 系统（全仓库仅 [Silverfish.cpp:27](src/Mobs/Silverfish.cpp#L27) 与 [Chunk.cpp:867](src/Chunk.cpp#L867) 两处 TODO），因此拿起/放置**始终生效**。补 gamerule 是独立分支规模的改动（跨 `cWorld` / 命令 / 配置），记为**可绕过的相关缺口**（AGENTS §3 第 2 类），后续另案。
+2. **偶数尺寸区域的偏移〔待核〕**：两份 wiki 只给区域**尺寸**（4×3×4 / 2×2×2），不给落在哪个格子。实现取「覆盖跨度的**下半段**、垂直从脚下方块起算」；水平偏移的取法（−2..+1 / −1..0）无来源佐证，标〔待核〕。
+3. **放置支撑判定用 `cBlockInfo::FullyOccupiesVoxel`**（近似「完整方块」）：该表是人工维护的清单（[BlockInfo.cpp:606](src/BlockInfo.cpp#L606)），**漏掉 TNT 等完整方块**，故末影人无法把方块放在 TNT 上（vanilla 可以）。判据换成「碰撞体积是否满格」需要引擎侧新原语，记为已知偏差。
+4. **视线判定用 `cBlockInfo::IsSolid` 近似遮挡**：射线在目标方块处停止（小花/蘑菇本身非固体，必须这样才可拿起），途中遇 `IsSolid` 的方块即判为被遮挡。透明固体（玻璃、树叶）算遮挡，与凝视规则一致；与 vanilla 的碰撞形状射线可能有边角差异。
+5. **眼睛位置取脚上 `GetHeight()`（=2.9，头顶）**：与凝视判定 `cPlayerLookCheck` 一致；无白名单来源给末影人的精确眼高，标〔推测〕。
+6. **死亡掉落绕过方块 handler（对可携带列表）**：可携带列表内每一块的丝触掉落物都是它自己，而 Cuberite 的 `BlockMycelium` / `BlockDirt` handler **不认丝触**（菌丝→泥土、podzol→泥土，见 [BlockMycelium.h:21](src/Blocks/BlockMycelium.h#L21)、[BlockDirt.h:21](src/Blocks/BlockDirt.h#L21)），故列表内方块直接掉 `cItem(block, meta)`；只有经 NBT/summon 拿到的**列表外**方块才走 `cBlockHandler::For(...).ConvertToPickups(meta, 合成丝触钻石斧)`。历史条目「丝触钻石斧，但掉落实际取决于工具」中的工具依赖边角未复刻。
+7. **不实现**（均属 1.13+/1.16+ 语义）：放在基岩/实体上（1.16.2 pre1/pre2）、拿方块不 despawn（20w22a）、拿仙人掌 `age` 归 0（pre2）。1.12.2 保持可放基岩、照常 despawn、保留元数据。
+
+**〔待核〕数值汇总**：T2 的 9×11×9/16/17/1.5–2 s（英文 wiki Needs-testing）；T3 公式与 600gt 前置对 1.12.2 的适用性（公式为现行描述，1.0 历史条目仅证「白天会逃离」）；「内部光照等级」定义（以时间修正天光近似）；T3 眼睛取 +2 方块〔推测〕；受击尝试次数 1（en/zh 冲突从 zh）；速度锚点 0.23〔推测〕；水中伤害节拍；1.12.2 Easy/Hard 攻击力；1.12.2 下界刷怪权重；**搬方块偶数区域的具体偏移**（见上第 2 条）。
 
 ---
 
@@ -255,7 +271,9 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 
 - `EndermanChaseTeleportCenter` 几何：目标 >16/≤16、|dy|>17/≤17 的四象限组合、斜向独立钳制、目标在正上方、目标重合退化情形——锁定 §3.6.2 的 16/17 常数与「取目标坐标」分支。
 - `EndermanSunlightTeleportChance` 概率：Li<13 → 0；Li=13 → 23/1575；Li=15 → 1/25；单调增——锁定 §3.6.3 公式。
+- `EndermanBlockRulesTest`（搬方块分支）：`IsEndermanHoldableBlock` 全列表 + 元数据区分（dirt 0/1/2、flower 0–8）与反例（石头/树苗/高草/巨型蘑菇/南瓜灯/大型花/越界元数据）；`EndermanCanPlaceBlockAt` 的空气+完整方块组合（含基岩=可放，1.12.2）；区域尺寸 4×3×4 / 2×2×2 与「垂直从脚下方块起算」（平坦地面拿不起）——锁定 §3.7。
 - （T1/T4 仅常数与调用；落点校验语义由 `FindTeleportDestination` 既有实现承载，改动风险低，无世界测试桩不强行覆盖。）
+- （搬方块的拿起/放置 tick、视线判定、NBT 读回、死亡掉落依赖 `cWorld`/`cChunk`/实体引擎，现有测试框架只编译孤立源文件，无法链接实体引擎，故不强行覆盖；验证以规格逐条核对 + 编译 + `ctest` 为准。）
 - 罚站滑移（§6.10，`feature/mobs-pathfinding-glide`）：改动在 `cMonster::Tick` / `MoveToWayPoint` 控制流内，需要实体引擎（`cChunk`/`cWorld`）才有意义，现有测试框架只编译孤立源文件，无法链接实体引擎，故不强行覆盖；验证以规格逐条核对 + 编译 + `ctest` 为准（同 cEnderDragon 先例）。滑移跳跃与路点跳跃共用 `JumpToward`（同一代码路径，无独立分支）。
 
 行为核对（无 vanilla oracle，逐条对照本文）：
@@ -266,12 +284,14 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 - 追击玩家目标时每 1.5–2 s 闪一次（**任何距离**）：远处跳近、近处绕玩家 ±4 随机跳（含身后）；追末影螨时不闪；近战缠斗中它会持续冲锋、偶尔闪现，**不应出现 >1 s 的原地罚站循环**，被 1 格台阶挡住时**落地即跳**（滑移跳跃落地门控：间隔 = 滞空时间，成功跳上≈落回本格的一半，§6.10）；
 - **首次与它对视（凝视挑衅）→ 它立即跳走一次**，随后**即便一直盯着它也会冲过来**；1.12.2 **无**站桩僵直、**无**对视期间持续跳（均为 1.14+ 行为/误读）；
 - 追击跑速明显快于僵尸、能贴住急走的玩家（RunSpeed=2，属性比例 0.45/0.23；罚站修复后追击速度连续无 >1 s 停顿），脱战漫步略快（≈1.3 倍）；**打/凝视它之后立刻生效**，不需要等它「进入追击态」。
+- 搬方块：草地上生成的末影人几秒内拿起一块土/草方块（5%/tick）并显示手中方块（客户端 metadata）；平地上站很久也不拿（脚下地面不被采样）；拿起后再放下的目标格上方是空气、下方是完整方块，**无声**；杀掉携带方块的末影人掉落该方块（草方块掉草方块，不是泥土）；`/summon enderman ~ ~ ~ {carried:86s,carriedData:0s}` 读回后客户端即显示手中南瓜（1.12.2 的 NBT 形态是 `carried`/`carriedData` 两个 short，`carriedBlockState` 是 1.13+ 的名字，不在本分支范围）。
 
 ---
 
 ## 8. 分支拆分（按 AGENTS §3）
 
 1. **本分支** `feature/mobs-enderman-teleportation`：§3.6 全部 + §6.1 修复 + 本规格文档。
-2. `feature/mobs-enderman-block-carrying`：§3.7（含 NBT 读回、死亡掉落）。
+2. `feature/mobs-enderman-block-carrying` **（已完成）**：§3.7（可携带列表与区域纯函数 + 拿起/放置 tick + NBT 读回 + 死亡掉落）。
 3. `feature/mobs-enderman-natural-spawning`：§2（依赖 1）。
 4. 小修分支：§5 表末行（伤害/经验数值、stare 音、凝视判定精化、末影螨细节）。
+5. `mobGriefing` gamerule（若维护者下达）：搬方块的开关（§6 搬方块分支偏差 1）。

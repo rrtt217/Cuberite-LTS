@@ -2625,6 +2625,18 @@ void cWSSAnvil::LoadEndermanFromNBT(cEntityList & a_Entities, const cParsedNBT &
 		return;
 	}
 
+	// The block the enderman is carrying (spec 3.7).  Written by the serializer as the two shorts
+	// "carried" / "carriedData", and the same tags that /summon accepts in 1.12.2:
+	const int Carried = a_NBT.FindChildByName(a_TagIdx, "carried");
+	if (Carried > 0)
+	{
+		const int CarriedData = a_NBT.FindChildByName(a_TagIdx, "carriedData");
+		Monster->SetCarriedBlock(
+			static_cast<BLOCKTYPE>(a_NBT.GetShort(Carried)),
+			static_cast<NIBBLETYPE>((CarriedData > 0) ? a_NBT.GetShort(CarriedData) : 0)
+		);
+	}
+
 	a_Entities.emplace_back(std::move(Monster));
 }
 
