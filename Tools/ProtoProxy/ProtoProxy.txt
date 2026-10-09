@@ -7,25 +7,75 @@
 ProtoProxy
 ==========
 
-This is a project to create a proxy for the MineCraft protocol, allowing anyone to view the data sent over a network connection between a client and a server. This, in fact, performs a kind of Man-In-The-Middle (MITM) attack on the protocol by tapping in between the connection points and providing a decrypter and an encrypter for each.
+This is a project to create a proxy for the MineCraft protocol, allowing anyone to view the data sent over a
+network connection between a client and a server. This, in fact, performs a kind of Man-In-The-Middle (MITM)
+attack on the protocol by tapping in between the connection points and providing a decrypter and an encrypter
+for each.
 
-In order to catch the encryption parameters, the MC protocol needs to be understood at least a little bit at the beginning, when the cryptography parameters are exchanged.
-
-This project is currently Windows-only and I don't plan on making it multi-platform, although the effort needed for doing so should be minimal.
-
-The proxy only works on the localhost connection. It listens on port 25564 and expects the underlying MC server to run on port 25565. Ports can be changed by cmdline args: ProtoProxy <listen-port> <server-port>.
-
-You need to set the server *not* to verify usernames ("online-mode=false" in server.properties) in order to be able to connect through ProtoProxy - since the full server name, including the port, is used for verification, the client uses different servername than the server and thus the verification fails.
+In order to catch the encryption parameters, the MC protocol needs to be understood at least a little bit at the
+beginning, when the cryptography parameters are exchanged.
 
 
 
-ProtoProxy is not much dependent on the protocol - it will work with unknown packets, it just won't parse them into human-readable format.
-The latest protocol which has been tested is 1.7.9 (#5).
+How it works
+------------
 
+The proxy listens on a local port and connects to the real server. The client <-> proxy side stays in plaintext,
+so a vanilla client needs no modification. On the proxy <-> server side the proxy swallows the server's
+Encryption Request and answers with an Encryption Response containing an all-zero shared secret, RSA-encrypted
+with the public key the server just sent. Both sides then turn encryption on, and since the proxy knows the
+secret it can decrypt and re-encrypt everything in transit, log the packets in human-readable form, and forward
+them byte-for-byte otherwise.
+
+The tool uses BSD sockets on POSIX and Winsock on Windows, so it builds and runs on both; the rest of the
+repository builds it when BUILD_TOOLS is on.
+
+Because the handshake is rewritten to carry the port the proxy actually connects to, the server's username
+verification would fail. You therefore need to set the server *not* to verify usernames ("online-mode=false" in
+server.properties).
+
+Protocol compression is transparently handled the same way: the proxy reads the server's Set Compression packet,
+inflates the frames that follow, and applies the same framing to the client side, so the client sees exactly what
+the server sent.
+
+
+
+Running it
+----------
+
+	ProtoProxy <listen-port> <server-port>
+
+The proxy only works on the localhost connection. It listens on port 25564 and expects the underlying MC server
+to run on port 25565 unless the ports are given on the command line. Connect the client to the listen port.
+
+Every accepted connection gets its own log file, "Logs/Log_<time>_<socket>.log". The folder is created next to
+the current working directory. Block-entity NBT blobs are additionally saved as "<logfile>_nbt_<index>.bin" so
+that they can be inspected with an NBT tool.
+
+
+
+Protocol support
+----------------
+
+The proxy decodes protocol 340, i.e. Minecraft 1.12.2. Every packet layout in PacketLayout.cpp is transcribed
+from wiki.vg, "Protocol", revision 1313:
+
+	https://wiki.vg/index.php?title=Protocol&oldid=1313
+
+Chunk sections follow wiki.vg "Chunk Format", revision 8203, entity metadata follows "Entities"/"Entity Metadata
+Format", revision 4109, item stacks follow "Slot Data", revision 6528, and the NBT skipping follows "NBT".
+
+The tool is not dependent on the protocol to relay traffic - unknown packets are forwarded unchanged and hex
+dumped to the log - it just won't parse them into human-readable format. Decoding a packet whose layout doesn't
+fit its payload is reported as "<N> payload bytes left over, the proxy's layout is out of date" rather than
+guessed at, so a layout that has drifted away from the spec is visible in the log. Packets that carry no layout
+at all (NO_FIELDS in PacketLayout.cpp) are hex dumped instead.
+
+Packets whose fields span several wiki table rows are decoded as a single unit, so that the log stays readable:
+Teams, Title, World Border, Player List Item, Boss Bar, Entity Properties, Open Window, Tab-Complete, Use Entity,
+Explosion records, Multi Block Change records, Unlock Recipes, Advancements, the chunk data array and NBT. For
+chunk data, sky light is not flagged anywhere in the packet, so the section walk is run twice, once assuming sky
+light and once without, and the reading that accounts for the data array exactly is the one reported; the log
+line ends with "size check: matches" when it does.
 
 */
-
-
-
-
-

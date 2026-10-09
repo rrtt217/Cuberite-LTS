@@ -28,11 +28,13 @@ set(SHARED_SRC
 	../../src/mbedTLS++/RsaPrivateKey.cpp
 	../../src/LoggerListeners.cpp
 	../../src/Logger.cpp
+	../../src/StringCompression.cpp
 )
 set(SHARED_HDR
 	../../src/ByteBuffer.h
 	../../src/Globals.h
 	../../src/StringUtils.h
+	../../src/StringCompression.h
 	../../src/UUID.h
 	../../src/mbedTLS++/AesCfb128Decryptor.h
 	../../src/mbedTLS++/AesCfb128Encryptor.h
@@ -71,11 +73,17 @@ source_group("Shared\\OSSupport" FILES ${SHARED_OSS_SRC} ${SHARED_OSS_HDR})
 # Include the main source files:
 set(SOURCES
 	Connection.cpp
+	PacketFraming.cpp
+	PacketLayout.cpp
+	PayloadReader.cpp
 	ProtoProxy.cpp
 	Server.cpp
 )
 set(HEADERS
 	Connection.h
+	PacketFraming.h
+	PacketLayout.h
+	PayloadReader.h
 	Server.h
 )
 source_group("" FILES ${SOURCES} ${HEADERS})
