@@ -1975,6 +1975,20 @@ void cProtocol_1_9_0::WriteItem(cPacketizer & a_Pkt, const cItem & a_Item) const
 
 
 
+UInt32 cProtocol_1_9_0::BlockStateMetadataValue(BLOCKTYPE a_BlockType, NIBBLETYPE a_BlockMeta)
+{
+	// A 1.9 - 1.12 client resolves an OptBlockID value with its block state lookup, in which the block
+	// type occupies the low 12 bits and the metadata the bits above them.  Sending the chunk / block
+	// change packing instead (block type << 4 | metadata) makes a live client look up block
+	// (type << 4) as if it were a block type - e.g. dirt showed up as mossy cobblestone and a grass
+	// block as a dead bush (spec 3.7).  Block type 0 yields 0, the "no block" sentinel.
+	return (static_cast<UInt32>(a_BlockType) & 0xFFF) | (static_cast<UInt32>(a_BlockMeta & 0xF) << 12);
+}
+
+
+
+
+
 void cProtocol_1_9_0::WriteMobMetadata(cPacketizer & a_Pkt, const cMonster & a_Mob) const
 {
 	// Living entity metadata
@@ -2047,10 +2061,7 @@ void cProtocol_1_9_0::WriteMobMetadata(cPacketizer & a_Pkt, const cMonster & a_M
 			auto & Enderman = static_cast<const cEnderman &>(a_Mob);
 			a_Pkt.WriteBEUInt8(11);  // Index 11: Carried block
 			a_Pkt.WriteBEUInt8(METADATA_TYPE_BLOCKID);
-			UInt32 Carried = 0;
-			Carried |= static_cast<UInt32>(Enderman.GetCarriedBlock() << 4);
-			Carried |= Enderman.GetCarriedMeta();
-			a_Pkt.WriteVarInt32(Carried);
+			a_Pkt.WriteVarInt32(BlockStateMetadataValue(Enderman.GetCarriedBlock(), Enderman.GetCarriedMeta()));
 
 			a_Pkt.WriteBEUInt8(12);  // Index 12: Is screaming
 			a_Pkt.WriteBEUInt8(METADATA_TYPE_BOOL);

@@ -75,6 +75,12 @@ protected:
 	virtual UInt32 GetProtocolMobType(eMonsterType a_MobType) const override;
 	virtual Version GetProtocolVersion() const override;
 
+	/** Returns the value of a pre-1.13 "OptBlockID" entity metadata field for the given block (spec 3.7):
+	the block type in the low 12 bits and its metadata above them, which is how a 1.9 - 1.12 client
+	resolves the block state behind it.  0 means "no block".  This is deliberately NOT the
+	"block type << 4 | metadata" packing of the chunk data and block change packets. */
+	static UInt32 BlockStateMetadataValue(BLOCKTYPE a_BlockType, NIBBLETYPE a_BlockMeta);
+
 	virtual bool HandlePacket                       (cByteBuffer & a_ByteBuffer, UInt32 a_PacketType) override;
 	virtual void HandlePacketAnimation              (cByteBuffer & a_ByteBuffer) override;
 	virtual void HandlePacketBlockDig               (cByteBuffer & a_ByteBuffer) override;

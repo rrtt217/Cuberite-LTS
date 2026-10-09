@@ -646,10 +646,7 @@ void cProtocol_1_12::WriteMobMetadata(cPacketizer & a_Pkt, const cMonster & a_Mo
 			auto & Enderman = static_cast<const cEnderman &>(a_Mob);
 			a_Pkt.WriteBEUInt8(ENDERMAN_CARRIED_BLOCK);
 			a_Pkt.WriteBEUInt8(METADATA_TYPE_BLOCKID);
-			UInt32 Carried = 0;
-			Carried |= static_cast<UInt32>(Enderman.GetCarriedBlock() << 4);
-			Carried |= Enderman.GetCarriedMeta();
-			a_Pkt.WriteVarInt32(Carried);
+			a_Pkt.WriteVarInt32(BlockStateMetadataValue(Enderman.GetCarriedBlock(), Enderman.GetCarriedMeta()));
 
 			a_Pkt.WriteBEUInt8(ENDERMAN_SCREAMING);
 			a_Pkt.WriteBEUInt8(METADATA_TYPE_BOOL);
