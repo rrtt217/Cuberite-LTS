@@ -1,6 +1,7 @@
 #include "Globals.h"  // NOTE: MSVC stupidness requires this to be the same across all modules
 
 #include "EntityEffect.h"
+#include "EffectSpeedRules.h"
 #include "Player.h"
 #include "../Chunk.h"
 #include "../Mobs/Monster.h"
@@ -242,14 +243,14 @@ void cEntityEffectSpeed::OnActivate(cPawn & a_Target)
 	if (a_Target.IsMob())
 	{
 		cMonster * Mob = static_cast<cMonster*>(&a_Target);
-		Mob->SetRelativeWalkSpeed(Mob->GetRelativeWalkSpeed() + 0.2 * m_Intensity);
+		Mob->SetRelativeWalkSpeed(Mob->GetRelativeWalkSpeed() + SpeedMaxSpeedDelta(m_Intensity));
 	}
 	else if (a_Target.IsPlayer())
 	{
 		cPlayer * Player = static_cast<cPlayer*>(&a_Target);
-		Player->SetNormalMaxSpeed(Player->GetNormalMaxSpeed() + 0.2 * m_Intensity);
-		Player->SetSprintingMaxSpeed(Player->GetSprintingMaxSpeed() + 0.26 * m_Intensity);
-		Player->SetFlyingMaxSpeed(Player->GetFlyingMaxSpeed() + 0.2 * m_Intensity);
+		Player->SetNormalMaxSpeed(Player->GetNormalMaxSpeed() + SpeedMaxSpeedDelta(m_Intensity));
+		Player->SetSprintingMaxSpeed(Player->GetSprintingMaxSpeed() + SpeedSprintingMaxSpeedDelta(m_Intensity));
+		Player->SetFlyingMaxSpeed(Player->GetFlyingMaxSpeed() + SpeedFlyingMaxSpeedDelta(m_Intensity));
 	}
 }
 
@@ -262,14 +263,14 @@ void cEntityEffectSpeed::OnDeactivate(cPawn & a_Target)
 	if (a_Target.IsMob())
 	{
 		cMonster * Mob = static_cast<cMonster*>(&a_Target);
-		Mob->SetRelativeWalkSpeed(Mob->GetRelativeWalkSpeed() - 0.2 * m_Intensity);
+		Mob->SetRelativeWalkSpeed(Mob->GetRelativeWalkSpeed() - SpeedMaxSpeedDelta(m_Intensity));
 	}
 	else if (a_Target.IsPlayer())
 	{
 		cPlayer * Player = static_cast<cPlayer*>(&a_Target);
-		Player->SetNormalMaxSpeed(Player->GetNormalMaxSpeed() - 0.2 * m_Intensity);
-		Player->SetSprintingMaxSpeed(Player->GetSprintingMaxSpeed() - 0.26 * m_Intensity);
-		Player->SetFlyingMaxSpeed(Player->GetFlyingMaxSpeed() - 0.2 * m_Intensity);
+		Player->SetNormalMaxSpeed(Player->GetNormalMaxSpeed() - SpeedMaxSpeedDelta(m_Intensity));
+		Player->SetSprintingMaxSpeed(Player->GetSprintingMaxSpeed() - SpeedSprintingMaxSpeedDelta(m_Intensity));
+		Player->SetFlyingMaxSpeed(Player->GetFlyingMaxSpeed() - SpeedFlyingMaxSpeedDelta(m_Intensity));
 	}
 }
 
@@ -285,14 +286,14 @@ void cEntityEffectSlowness::OnActivate(cPawn & a_Target)
 	if (a_Target.IsMob())
 	{
 		cMonster * Mob = static_cast<cMonster*>(&a_Target);
-		Mob->SetRelativeWalkSpeed(Mob->GetRelativeWalkSpeed() - 0.15 * m_Intensity);
+		Mob->SetRelativeWalkSpeed(Mob->GetRelativeWalkSpeed() + SlownessMaxSpeedDelta(m_Intensity));
 	}
 	else if (a_Target.IsPlayer())
 	{
 		cPlayer * Player = static_cast<cPlayer*>(&a_Target);
-		Player->SetNormalMaxSpeed(Player->GetNormalMaxSpeed() - 0.15 * m_Intensity);
-		Player->SetSprintingMaxSpeed(Player->GetSprintingMaxSpeed() - 0.195 * m_Intensity);
-		Player->SetFlyingMaxSpeed(Player->GetFlyingMaxSpeed() - 0.15 * m_Intensity);
+		Player->SetNormalMaxSpeed(Player->GetNormalMaxSpeed() + SlownessMaxSpeedDelta(m_Intensity));
+		Player->SetSprintingMaxSpeed(Player->GetSprintingMaxSpeed() + SlownessSprintingMaxSpeedDelta(m_Intensity));
+		Player->SetFlyingMaxSpeed(Player->GetFlyingMaxSpeed() + SlownessFlyingMaxSpeedDelta(m_Intensity));
 	}
 }
 
@@ -305,14 +306,14 @@ void cEntityEffectSlowness::OnDeactivate(cPawn & a_Target)
 	if (a_Target.IsMob())
 	{
 		cMonster * Mob = static_cast<cMonster*>(&a_Target);
-		Mob->SetRelativeWalkSpeed(Mob->GetRelativeWalkSpeed() + 0.15 * m_Intensity);
+		Mob->SetRelativeWalkSpeed(Mob->GetRelativeWalkSpeed() - SlownessMaxSpeedDelta(m_Intensity));
 	}
 	else if (a_Target.IsPlayer())
 	{
 		cPlayer * Player = static_cast<cPlayer*>(&a_Target);
-		Player->SetNormalMaxSpeed(Player->GetNormalMaxSpeed() + 0.15 * m_Intensity);
-		Player->SetSprintingMaxSpeed(Player->GetSprintingMaxSpeed() + 0.195 * m_Intensity);
-		Player->SetFlyingMaxSpeed(Player->GetFlyingMaxSpeed() + 0.15 * m_Intensity);
+		Player->SetNormalMaxSpeed(Player->GetNormalMaxSpeed() - SlownessMaxSpeedDelta(m_Intensity));
+		Player->SetSprintingMaxSpeed(Player->GetSprintingMaxSpeed() - SlownessSprintingMaxSpeedDelta(m_Intensity));
+		Player->SetFlyingMaxSpeed(Player->GetFlyingMaxSpeed() - SlownessFlyingMaxSpeedDelta(m_Intensity));
 	}
 }
 

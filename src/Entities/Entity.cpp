@@ -2,6 +2,7 @@
 #include "Globals.h"  // NOTE: MSVC stupidness requires this to be the same across all modules
 
 #include "Entity.h"
+#include "EffectSpeedRules.h"
 #include "Player.h"
 #include "../BlockInfo.h"
 #include "../World.h"
@@ -523,7 +524,9 @@ bool cEntity::DoTakeDamage(TakeDamageInfo & a_TDI)
 						// increasing the max duration by 0.5 seconds each level.
 						// Ref: https://minecraft.wiki/w/Enchanting#Bane_of_Arthropods
 						int Duration = 20 + GetRandomProvider().RandInt(BaneOfArthropodsLevel * 10);  // Duration in ticks.
-						Monster->AddEntityEffect(cEntityEffect::effSlowness, Duration, 4);
+						// The enchantment inflicts Slowness IV, that is amplifier III:
+						// https://minecraft.wiki/w/Bane_of_Arthropods
+						Monster->AddEntityEffect(cEntityEffect::effSlowness, Duration, BANE_OF_ARTHROPODS_SLOWNESS_AMPLIFIER);
 
 						break;
 					}
