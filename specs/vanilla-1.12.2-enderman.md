@@ -162,6 +162,7 @@ Cuberite 落点：`cPawn::FindTeleportDestination(world, 3, tries, dest, minCorn
   - 「粗土」在 1.12.2 是 `E_BLOCK_DIRT` meta 1（与泥土、podzol 共块），meta 由可携带判定区分；「小花」= `E_BLOCK_DANDELION` + `E_BLOCK_FLOWER` meta 0–8（双击植物/大型花不可携带）；「雕刻南瓜」在 1.13 之前不是独立方块，即 `E_BLOCK_PUMPKIN`。
   - **不实现**（1.13+ 语义）：1.16.2 起的「不放在基岩上」（pre1）与「不放在实体上」（pre2）——故 1.12.2 可放在基岩上。
 - **死亡掉落**：掉落所拿方块的**丝触等效掉落物**（1.9/15w31a 起 ✅适用 1.12.2）——即持丝触钻石斧挖取该方块的掉落；对可携带列表而言**就是方块本身**（草方块→草方块而非泥土，菌丝/podzol 同理；Cuberite 的菌丝/泥土 handler 不认丝触，故列表内不走 handler——§6 偏差 6）。
+  - **创造模式击杀同样掉落**：vanilla Java「Mobs killed by the player in Creative still drop items, but most other entities do not」（[Minecraft Wiki — Creative](https://minecraft.wiki/w/Creative)，"Mobs" 节）。Cuberite 的 `cEntity::KilledBy` 原先对创造击杀**一律不掉落**，本分支修复为「怪（`IsMob()`）照掉、非生物实体仍不掉」（§6 偏差 9）。
 - **NBT**：`carried`（short）/`carriedData`（short）**读 + 写**（写既有，本分支补读）；`/summon` 的等价 `carriedBlockState` 即读回 `carried`。**方块元数据保留**——「拿仙人掌时 `age` 一律归 0」是 1.16.2/pre2 的平整化改动，1.12.2 不适用。
 - 「拿方块不 despawn」为 1.16 修复（MC-124812），**1.12.2 不适用，不实现**。
 - 骑乘（船/矿车）中**仍可**拿起与放置（英文 wiki「even when angered」「can still pick up and place blocks while sitting in a boat」）——与传送的骑乘限制不同。
@@ -219,6 +220,7 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 | 末影人 RunSpeed 回标定 10→2（罚站修复后，§3.8） | `Server/monsters.ini` | `feature/mobs-pathfinding-glide` |
 | 可携带列表判定纯函数、拿起/放置 tick、`carried` NBT 读取、死亡掉落 | `src/Mobs/EndermanBlockRules.h`、`src/Mobs/Enderman.*`、`WSSAnvil.cpp` | **本分支 `feature/mobs-enderman-block-carrying`（已完成）** |
 | `carried` metadata 取值编码修复（1.9–1.12）+ 索引订正 15→12 | `src/Protocol/Protocol_1_{9,10,11,12}.{h,cpp}` | **本分支（前置修复，§6 偏差 8）** |
+| 创造击杀掉落修复（怪照掉、非生物实体仍不掉，全怪适用） | `src/Entities/Entity.cpp`（`cEntity::KilledBy`） | **本分支（相关修复，§6 偏差 9）** |
 | 默认刷怪列表（主世界/末地）、下界候选列表 | `World.cpp`、`MobSpawner.cpp` | 后续 `feature/mobs-enderman-natural-spawning` |
 | 攻击伤害 7、经验 5、stare 音效、凝视 hitbox 化、末影螨 LOS 与珍珠来源 | 分散 | 后续小修分支 |
 | 弹射物临近预测（64 次尝试特例）、水瓶对末影人伤害 | `ArrowEntity`/药水效果侧 | 后续（§3.5/§3.6 特例） |
@@ -262,6 +264,7 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 6. **死亡掉落绕过方块 handler（对可携带列表）**：可携带列表内每一块的丝触掉落物都是它自己，而 Cuberite 的 `BlockMycelium` / `BlockDirt` handler **不认丝触**（菌丝→泥土、podzol→泥土，见 [BlockMycelium.h:21](src/Blocks/BlockMycelium.h#L21)、[BlockDirt.h:21](src/Blocks/BlockDirt.h#L21)），故列表内方块直接掉 `cItem(block, meta)`；只有经 NBT/summon 拿到的**列表外**方块才走 `cBlockHandler::For(...).ConvertToPickups(meta, 合成丝触钻石斧)`。历史条目「丝触钻石斧，但掉落实际取决于工具」中的工具依赖边角未复刻。
 7. **不实现**（均属 1.13+/1.16+ 语义）：放在基岩/实体上（1.16.2 pre1/pre2）、拿方块不 despawn（20w22a）、拿仙人掌 `age` 归 0（pre2）。1.12.2 保持可放基岩、照常 despawn、保留元数据。
 8. **carried metadata 取值编码（本分支修复）**：1.9–1.12 原先沿用了 chunk/BlockChange 的 `blockType << 4 | meta`（wiki.vg [Entity metadata](https://wikivg.booky.dev/Entity_metadata) 1.12.2 节也这么写），但**实机客户端**把 OptBlockID 当方块状态解析，`id<<4` 于是显示成别的方块（§3.7 实机证据）。修复 = 新增 `cProtocol_1_9_0::BlockStateMetadataValue`（`blockType & 0xFFF | (meta & 0xF) << 12`），[Protocol_1_9/1_10/1_11/1_12.cpp](src/Protocol/Protocol_1_9.cpp) 四处调用。**wiki.vg 与实机冲突时从实机**。meta 位仍〔待核〕（上一条）。1.13/1.14 的同类代码未改——那两版应发扁平化调色板 ID（`GetProtocolBlockType`），按 AGENTS「基线 1.8–1.12.2、不引更新版本行为」记为相关缺口。
+9. **创造击杀掉落（本分支修复，全怪适用）**：`cEntity::KilledBy` 原对「创造玩家击杀」**一律不掉落**（[Entity.cpp:890](src/Entities/Entity.cpp#L890) 的 `IsGameModeCreative` 短路），与 vanilla「Mobs killed by the player in Creative still drop items, but most other entities do not」相悖——**创造模式击杀携带方块的末影人不掉方块**这一实测偏差即由此而来。改为 `!IsCreativePlayerKill || IsMob()`：怪照掉、非生物实体保持不掉。注意这是**基类全局行为**（所有怪的所有掉落，不只是末影人的方块），故作为独立提交；XP 掉落路径未动。
 
 **〔待核〕数值汇总**：T2 的 9×11×9/16/17/1.5–2 s（英文 wiki Needs-testing）；T3 公式与 600gt 前置对 1.12.2 的适用性（公式为现行描述，1.0 历史条目仅证「白天会逃离」）；「内部光照等级」定义（以时间修正天光近似）；T3 眼睛取 +2 方块〔推测〕；受击尝试次数 1（en/zh 冲突从 zh）；速度锚点 0.23〔推测〕；水中伤害节拍；1.12.2 Easy/Hard 攻击力；1.12.2 下界刷怪权重；**搬方块偶数区域的具体偏移**（见上第 2 条）；**carried metadata 的 meta 位边界**（见上第 8 条）。
 
@@ -290,6 +293,7 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 - 追击跑速明显快于僵尸、能贴住急走的玩家（RunSpeed=2，属性比例 0.45/0.23；罚站修复后追击速度连续无 >1 s 停顿），脱战漫步略快（≈1.3 倍）；**打/凝视它之后立刻生效**，不需要等它「进入追击态」。
 - 搬方块：草地上生成的末影人几秒内拿起一块土/草方块（5%/tick）并显示手中方块（客户端 metadata）；平地上站很久也不拿（脚下地面不被采样）；拿起后再放下的目标格上方是空气、下方是完整方块，**无声**；杀掉携带方块的末影人掉落该方块（草方块掉草方块，不是泥土）；`/summon enderman ~ ~ ~ {carried:86s,carriedData:0s}` 读回后客户端即显示手中南瓜（1.12.2 的 NBT 形态是 `carried`/`carriedData` 两个 short，`carriedBlockState` 是 1.13+ 的名字，不在本分支范围）。
 - **显示正确性（协议编码，本分支修复）**：携带**草方块**时手上就是草方块、携带**泥土**时就是泥土——**不得**显示成枯萎灌木/苔石（§6 偏差 8）；`/summon` 一个**带 meta** 的可携带方块（如 `{carried:38s,carriedData:8s}` = 滨菊）应显示对应花色（meta 位边界的实机复核，§3.7）。
+- **创造模式击杀**：创造模式打死携带方块的末影人 → **方块照掉**（珍珠同理）；创造模式击杀**非生物实体**（矿车/船/展示框等）仍不掉落（§6 偏差 9）。
 
 ---
 

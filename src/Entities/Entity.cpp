@@ -887,12 +887,14 @@ void cEntity::KilledBy(TakeDamageInfo & a_TDI)
 		cRoot::Get()->GetPluginManager()->CallHookKilled(*this, a_TDI, emptystring);
 	}
 
-	// Drop loot, unless the attacker was a creative mode player:
-	if (
-		(a_TDI.Attacker == nullptr) ||
-		!a_TDI.Attacker->IsPlayer() ||
-		!static_cast<cPlayer *>(a_TDI.Attacker)->IsGameModeCreative()
-	)
+	// Drop loot, unless the attacker was a creative mode player: in Java Edition, mobs killed by a
+	// creative player still drop items, while most other entities do not (Minecraft Wiki, "Creative",
+	// section "Mobs" - spec 3.7):
+	const bool IsCreativePlayerKill =
+		(a_TDI.Attacker != nullptr) &&
+		a_TDI.Attacker->IsPlayer() &&
+		static_cast<cPlayer *>(a_TDI.Attacker)->IsGameModeCreative();
+	if (!IsCreativePlayerKill || IsMob())
 	{
 		cItems Drops;
 		GetDrops(Drops, a_TDI.Attacker);
