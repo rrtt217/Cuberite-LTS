@@ -34,8 +34,8 @@
 
 缺失（本规格覆盖）：
 
-1. **传送：完全没有**（`Enderman.cpp` 内 `TODO teleport to a safe location`）——本规格 §3.6。
-2. **自然刷怪被禁用**（`World.cpp` 主世界/末地默认列表剔除 enderman；`MobSpawner.cpp` 下界候选列表无 enderman）——§2。
+1. **传送：完全没有**（`Enderman.cpp` 内 `TODO teleport to a safe location`）——本规格 §3.6。**已落地 @ `339c795`。**
+2. **自然刷怪被禁用**（`World.cpp` 主世界/末地默认列表剔除 enderman；`MobSpawner.cpp` 下界候选列表无 enderman）——§2。**本分支 `feature/mobs-enderman-natural-spawning` 放开。**
 3. 已知偏差清单见 §6。
 
 ---
@@ -61,8 +61,8 @@
 - **主世界**：几乎全生物系稀刷（怪物类权重 10，组 1–4；1.12.2 无蘑菇岛限制之外的例外）。光照 ≤7（**1.12.2 时代**；「光照 0」是 1.18+ 变更）。可刷表面须有 ≥3 格空气（身高 2.9）。
 - **下界**：1.10 起在 nether wastes 刷（权重/组数 1.12.2〔待核〕；wiki 现行为组 4），光照 ≤7。
 - **末地**：唯一自然刷怪，组 4，光照 0（末地恒暗）。
-- Cuberite 落点：`World.cpp: InitializeAndLoadMobSpawningValues` 默认列表加回 enderman；`MobSpawner.cpp` 下界候选列表补 `mtEnderman`；`CanSpawnHere` 的 mtEnderman 分支已符合「≥3 格空气 + 光照 ≤7」。
-- **前置**：上游因「AI 不完整体验差」禁用（#3108、PR #4982）。先落 §3.6 传送，再放开刷怪（独立分支）。
+- Cuberite 落点（本分支）：`World.cpp: InitializeAndLoadMobSpawningValues` **三个维度**默认列表加回 enderman——**下界默认列表须同补**：`cMobSpawner::ChooseMobType` 把 ini 允许列表与群系候选列表**取交集**，缺一即不刷（规格前一版只记主世界/末地，本分支订正）；`MobSpawner.cpp` 下界候选段补 `mtEnderman`——该段对一切群系无条件插入，顺带修正了主世界「Overworld」段把末影人排除出沙漠/沙滩/海洋候选的老问题，恰合本节「除蘑菇岛外全生物系」规则（蘑菇岛在同函数前半段即 `return`，不受影响）；`CanSpawnHere` 的 mtEnderman 分支既有、已符合「≥3 格空气 + 光照 ≤7」，但同函数**新增**「末地天光恒按 0」：Cuberite 光照引擎不分维度、末地 chunk 天光为 15，不强置则「末地恒暗」只在世界时间为夜时成立。
+- **前置**：上游因「AI 不完整体验差」禁用（#3108、PR #4982）。§3.6 传送已落地 @ `339c795`，本分支放开刷怪。
 
 ---
 
@@ -221,7 +221,7 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 | 可携带列表判定纯函数、拿起/放置 tick、`carried` NBT 读取、死亡掉落 | `src/Mobs/EndermanBlockRules.h`、`src/Mobs/Enderman.*`、`WSSAnvil.cpp` | **本分支 `feature/mobs-enderman-block-carrying`（已完成）** |
 | `carried` metadata 取值编码修复（1.9–1.12）+ 索引订正 15→12 | `src/Protocol/Protocol_1_{9,10,11,12}.{h,cpp}` | **本分支（前置修复，§6 偏差 8）** |
 | 创造击杀掉落修复（怪照掉、非生物实体仍不掉，全怪适用） | `src/Entities/Entity.cpp`（`cEntity::KilledBy`） | **本分支（相关修复，§6 偏差 9）** |
-| 默认刷怪列表（主世界/末地）、下界候选列表 | `World.cpp`、`MobSpawner.cpp` | 后续 `feature/mobs-enderman-natural-spawning` |
+| 默认刷怪列表（主世界/下界/末地）、下界候选列表、末地恒暗天光 | `World.cpp`、`MobSpawner.cpp` | **本分支 `feature/mobs-enderman-natural-spawning`** |
 | 攻击伤害 7、经验 5、stare 音效、凝视 hitbox 化、末影螨 LOS 与珍珠来源 | 分散 | 后续小修分支 |
 | 弹射物临近预测（64 次尝试特例）、水瓶对末影人伤害 | `ArrowEntity`/药水效果侧 | 后续（§3.5/§3.6 特例） |
 
@@ -253,6 +253,9 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 	- `MoveToWayPoint` 尾部的速度施加段抽成 `cMonster::ApplySpeedToward`（距离归一化，对任意距离安全），跳跃块抽成 `cMonster::JumpToward`（与路点移动共用同一逻辑与常数，含跳跃冷却 tick 递减），`Tick` 在 `CALCULATING` 时以 `ApplySpeedToward` 滑向 `m_FinalDestination`；
 	- 滑移中**遇 1 格台阶会跳**（vanilla 寻路导航对 1 格台阶本就跳跃——路点移动已按此实现，滑移沿用同一行为）：跳跃目标钳制到**前方 1 格**（水平单位向量 ×1、Y 取最终目标）——跳跃的水平速度 `3.2×dx` 假设目标在 1 格内，直接滑向远目标会把怪水平弹出；滑移跳为**落地门控**（`cMonster::HopToward`，仅 `IsOnGround` + 目标更高即跳）：间隔 = 跳跃自身滞空时间——**成功跳上台阶的滞空约为落回本格的一半**（维护者实机指认的 vanilla 物理），两种情形各自跟随实际滞空、无额外地面停顿，落地即跳（vanilla 跳跃几乎没有延时）；固定 tick 冷却曾把两种滞空压成同一间隔（已弃）。路点移动不用 `HopToward`——保留其自身 20 tick 冷却与水中跳跃旁路（master 原文，零变化）；
 	- vanilla 的等效掩盖（近身对玩家持续闪现，本分支 T2）保留；随之 `RunSpeed` 从补偿值 10 回标定至属性比例 ≈2（§3.8）。
+11. **刷怪权重与相对密度缺失**：`ChooseMobType` 在候选集合内均匀随机，引擎无权重体系——「怪物类权重 10（稀刷）」无法表达，主世界敌对候选中末影人约占 1/8，显著高于 vanilla（怪物权重表归一后 ≈2%）。全怪共有的系统性偏差，另案。
+12. **分组数按引擎全局值**：规格组数主世界 1–4、下界/末地 4；Cuberite 引擎全局 `MaxNbOfSuccess = 4`（`Chunk.cpp`，仅狼/恶魂有覆写先例），末影人恰与规格一致，不加专属覆写。1.12.2 下界权重/组数仍〔待核〕。
+13. **存量世界的 ini 持久化**：`GetValueSet` 只为**缺失项**写回默认值，存量世界 `world*.ini` 的 `Monsters/Types` 早已落盘（不含 enderman）→ 新默认值仅对**新世界/新装服**生效；存量世界需在 ini 手工补 `enderman` 或删除该键。
 
 **搬方块分支（`feature/mobs-enderman-block-carrying`）偏差与待确认**：
 
@@ -281,6 +284,7 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 - `EndermanBlockRulesTest`（搬方块分支）：`IsEndermanHoldableBlock` 全列表 + 元数据区分（dirt 0/1/2、flower 0–8）与反例（石头/树苗/高草/巨型蘑菇/南瓜灯/大型花/越界元数据）；`EndermanCanPlaceBlockAt` 的空气+完整方块组合（含基岩=可放，1.12.2）；区域尺寸 4×3×4 / 2×2×2 与「垂直从脚下方块起算」（平坦地面拿不起）——锁定 §3.7。
 - （T1/T4 仅常数与调用；落点校验语义由 `FindTeleportDestination` 既有实现承载，改动风险低，无世界测试桩不强行覆盖。）
 - （搬方块的拿起/放置 tick、视线判定、NBT 读回、死亡掉落依赖 `cWorld`/`cChunk`/实体引擎，现有测试框架只编译孤立源文件，无法链接实体引擎，故不强行覆盖；验证以规格逐条核对 + 编译 + `ctest` 为准。）
+- （自然刷怪分支：改动为 ini 默认列表、`GetAllowedMobTypes` 候选集与 `CanSpawnHere` 维度光补丁，`GetAllowedMobTypes`/`CanSpawnHere` 需 `cChunk`/`cWorld`，孤立源文件测试框架无法链接实体引擎，不强行覆盖；验证以规格逐条核对 + 编译 + `ctest` 为准。落点链复核：ini `Types` → `StringToMobType("enderman")`→`mtEnderman`（`Monster.cpp` 映射表）→ `FamilyFromType=mfHostile`（进 `cMobSpawner` 敌对族）→ `ChooseMobType` 交集含之 → `CanSpawnHere` mtEnderman 分支。）
 - 罚站滑移（§6.10，`feature/mobs-pathfinding-glide`）：改动在 `cMonster::Tick` / `MoveToWayPoint` 控制流内，需要实体引擎（`cChunk`/`cWorld`）才有意义，现有测试框架只编译孤立源文件，无法链接实体引擎，故不强行覆盖；验证以规格逐条核对 + 编译 + `ctest` 为准（同 cEnderDragon 先例）。滑移跳跃与路点跳跃共用 `JumpToward`（同一代码路径，无独立分支）。
 
 行为核对（无 vanilla oracle，逐条对照本文）：
@@ -294,6 +298,7 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 - 搬方块：草地上生成的末影人几秒内拿起一块土/草方块（5%/tick）并显示手中方块（客户端 metadata）；平地上站很久也不拿（脚下地面不被采样）；拿起后再放下的目标格上方是空气、下方是完整方块，**无声**；杀掉携带方块的末影人掉落该方块（草方块掉草方块，不是泥土）；`/summon enderman ~ ~ ~ {carried:86s,carriedData:0s}` 读回后客户端即显示手中南瓜（1.12.2 的 NBT 形态是 `carried`/`carriedData` 两个 short，`carriedBlockState` 是 1.13+ 的名字，不在本分支范围）。
 - **显示正确性（协议编码，本分支修复）**：携带**草方块**时手上就是草方块、携带**泥土**时就是泥土——**不得**显示成枯萎灌木/苔石（§6 偏差 8）；`/summon` 一个**带 meta** 的可携带方块（如 `{carried:38s,carriedData:8s}` = 滨菊）应显示对应花色（meta 位边界的实机复核，§3.7）。
 - **创造模式击杀**：创造模式打死携带方块的末影人 → **方块照掉**（珍珠同理）；创造模式击杀**非生物实体**（矿车/船/展示框等）仍不掉落（§6 偏差 9）。
+- **自然刷怪（本分支）**：主世界夜晚/洞穴暗处（光照 ≤7）的刷怪周期中出现 1–4 只末影人（蘑菇岛没有）；末地在任何世界时间都能刷出（恒暗天光强置，组 ≤4）；下界暗处也能刷出；存量世界在 `world*.ini` 的 `Monsters/Types` 补 `enderman` 后行为相同（§6.13）。
 
 ---
 
@@ -301,6 +306,6 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 
 1. **本分支** `feature/mobs-enderman-teleportation`：§3.6 全部 + §6.1 修复 + 本规格文档。
 2. `feature/mobs-enderman-block-carrying` **（已完成）**：§3.7（可携带列表与区域纯函数 + 拿起/放置 tick + NBT 读回 + 死亡掉落）。
-3. `feature/mobs-enderman-natural-spawning`：§2（依赖 1）。
+3. `feature/mobs-enderman-natural-spawning` **（本分支）**：§2（依赖 1，已 @ `339c795` 落地）。
 4. 小修分支：§5 表末行（伤害/经验数值、stare 音、凝视判定精化、末影螨细节）。
 5. `mobGriefing` gamerule（若维护者下达）：搬方块的开关（§6 搬方块分支偏差 1）。

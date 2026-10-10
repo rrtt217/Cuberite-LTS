@@ -93,6 +93,13 @@ bool cMobSpawner::CanSpawnHere(cChunk * a_Chunk, Vector3i a_RelPos, eMonsterType
 	auto BlockBelow = a_Chunk->GetBlock(a_RelPos.addedY(-1));
 
 	SkyLight = a_Chunk->GetTimeAlteredLight(SkyLight);
+	if (a_Chunk->GetWorld()->GetDimension() == dimEnd)
+	{
+		// The End has no sun, its skylight must not count towards the spawn light (Minecraft Wiki, Enderman -
+		// Spawning: light level of 0 in the End; spec vanilla-1.12.2-enderman.md 2).  Without this, the
+		// generator-assigned full skylight would block End spawning during the world's "day":
+		SkyLight = 0;
+	}
 
 	switch (a_MobType)
 	{
@@ -479,6 +486,7 @@ std::set<eMonsterType> cMobSpawner::GetAllowedMobTypes(EMCSBiome a_Biome)
 
 	// Nether
 	ListOfSpawnables.insert(mtBlaze);
+	ListOfSpawnables.insert(mtEnderman);  // Spawns in the Nether since 1.10 / 16w20a (Minecraft Wiki, Enderman - Java Edition history)
 	ListOfSpawnables.insert(mtGhast);
 	ListOfSpawnables.insert(mtMagmaCube);
 	ListOfSpawnables.insert(mtWitherSkeleton);
