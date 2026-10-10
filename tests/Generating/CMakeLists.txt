@@ -345,9 +345,24 @@ add_test(
 
 
 
+# Block light value test:
+add_executable(BlockLightValueTest
+	BlockLightValueTest.cpp
+)
+target_link_libraries(BlockLightValueTest GeneratorTestingSupport)
+add_test(
+	NAME BlockLightValueTest
+	COMMAND BlockLightValueTest
+)
+
+
+
+
+
 # Put the projects into solution folders (MSVC):
 set_target_properties(
 	BasicGeneratorTest
+	BlockLightValueTest
 	ChorusTreeTest
 	ConnectorRotationTest
 	CubesetBlockEntitiesTest

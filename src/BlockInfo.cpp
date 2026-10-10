@@ -413,13 +413,13 @@ NIBBLETYPE cBlockInfo::GetLightValue(const BLOCKTYPE Block)
 	// Emissive blocks:
 	switch (Block)
 	{
-		case E_BLOCK_ACTIVE_COMPARATOR:    return 9;
 		case E_BLOCK_BEACON:               return 15;
 		case E_BLOCK_BREWING_STAND:        return 1;
 		case E_BLOCK_BROWN_MUSHROOM:       return 1;
 		case E_BLOCK_BURNING_FURNACE:      return 13;
 		case E_BLOCK_DRAGON_EGG:           return 1;
 		case E_BLOCK_ENDER_CHEST:          return 7;
+		case E_BLOCK_END_GATEWAY:          return 15;
 		case E_BLOCK_END_PORTAL:           return 15;
 		case E_BLOCK_END_PORTAL_FRAME:     return 1;
 		case E_BLOCK_END_ROD:              return 14;
@@ -431,7 +431,6 @@ NIBBLETYPE cBlockInfo::GetLightValue(const BLOCKTYPE Block)
 		case E_BLOCK_NETHER_PORTAL:        return 11;
 		case E_BLOCK_REDSTONE_LAMP_ON:     return 15;
 		case E_BLOCK_REDSTONE_ORE_GLOWING: return 9;
-		case E_BLOCK_REDSTONE_REPEATER_ON: return 9;
 		case E_BLOCK_REDSTONE_TORCH_ON:    return 7;
 		case E_BLOCK_SEA_LANTERN:          return 15;
 		case E_BLOCK_STATIONARY_LAVA:      return 15;
