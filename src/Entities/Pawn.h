@@ -3,6 +3,7 @@
 
 #include "Entity.h"
 #include "EntityEffect.h"
+#include "FireproofRules.h"
 
 // fwd cMonster
 class cMonster;
@@ -27,6 +28,11 @@ public:
 	virtual void Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk) override;
 	virtual void KilledBy(TakeDamageInfo & a_TDI) override;
 
+	/** Returns true if the pawn takes no damage from fire, lava or being on fire - because it is hardcoded
+	fireproof (a blaze, a magma cube, ...), because it carries a Fire Resistance effect, or because it is a
+	player in creative or spectator mode.  The decision itself is in "FireproofRules.h" in this folder.
+	@warning A subclass overriding this must keep consulting the hardcoded flag and the Fire Resistance
+	effect, otherwise a Fire Resistance potion silently stops protecting that entity type. */
 	virtual bool IsFireproof(void) const override;
 	virtual bool IsInvisible() const override;
 	virtual void HandleAir(void) override;

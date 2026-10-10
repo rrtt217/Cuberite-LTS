@@ -152,7 +152,16 @@ void cPawn::KilledBy(TakeDamageInfo & a_TDI)
 
 bool cPawn::IsFireproof(void) const
 {
-	return Super::IsFireproof() || HasEntityEffect(cEntityEffect::effFireResistance);
+	// The game modes only exist for players, so they are queried through the pawn interface here - that
+	// way cPlayer has no override left that could forget the Fire Resistance effect again (spec 3):
+	bool IsCreativeOrSpectator = false;
+	if (IsPlayer())
+	{
+		const cPlayer & Player = static_cast<const cPlayer &>(*this);
+		IsCreativeOrSpectator = Player.IsGameModeCreative() || Player.IsGameModeSpectator();
+	}
+
+	return IsFireproofFor(Super::IsFireproof(), HasEntityEffect(cEntityEffect::effFireResistance), IsCreativeOrSpectator);
 }
 
 

@@ -989,18 +989,10 @@ void cEntity::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 		}
 
 		// Handle magma block damage
-		if
-		(
-			IsOnGround() &&
-			(
-				(IsMob() && !static_cast<cPawn *>(this)->IsFireproof()) ||
-				(
-					IsPlayer() && !((static_cast<cPlayer *>(this))->IsGameModeCreative() || (static_cast<cPlayer *>(this))->IsGameModeSpectator())
-					&& !static_cast<cPlayer *>(this)->IsFireproof()
-					&& !static_cast<cPlayer *>(this)->HasEntityEffect(cEntityEffect::effFireResistance)
-				)
-			)
-		)
+		// Same condition as before, written once: cPawn::IsFireproof() now answers for a mob's and for a
+		// player's Fire Resistance effect and for the creative / spectator modes, so neither needs a
+		// separate query here.
+		if (IsOnGround() && (IsMob() || IsPlayer()) && !IsFireproof())
 		{
 			DetectMagma();
 		}

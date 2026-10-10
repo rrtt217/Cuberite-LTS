@@ -222,14 +222,10 @@ public:
 	/** Returns true if the player is in Spectator mode, either explicitly, or by inheriting from current world */
 	bool IsGameModeSpectator(void) const;
 
-	/** Returns true if the player is fireproof
-	Stops players burning in creative or spectator modes.
-	*/
-	virtual bool IsFireproof() const override
-	{
-		return (m_IsFireproof || IsGameModeCreative() || IsGameModeSpectator());
-
-	}
+	/** Fireproofing is answered by cPawn::IsFireproof, which covers the creative and spectator modes
+	together with the Fire Resistance effect.  Do not override it here again - an override that restates the
+	rule is what made Fire Resistance potions useless for players, see the spec
+	"vanilla-1.12.2-status-effect-fire-resistance.md" in the specs folder. */
 
 	/** Returns true if the player can be targeted by Mobs */
 	bool CanMobsTarget(void) const;

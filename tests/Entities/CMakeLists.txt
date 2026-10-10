@@ -10,3 +10,12 @@ add_test(
 	NAME EffectSpeedRulesTest
 	COMMAND EffectSpeedRulesTest
 )
+
+add_executable(FireproofRulesTest
+	FireproofRulesTest.cpp
+)
+target_link_libraries(FireproofRulesTest GeneratorTestingSupport)
+add_test(
+	NAME FireproofRulesTest
+	COMMAND FireproofRulesTest
+)

@@ -417,6 +417,9 @@ public:
 	/** Sets whether the entity is fireproof */
 	void SetIsFireproof(bool a_IsFireproof);
 
+	/** Returns whether the entity takes no damage from being on fire.
+	Overriding this for a pawn has to go through cPawn::IsFireproof instead, which also queries the Fire
+	Resistance effect - see the @warning there. */
 	virtual bool IsFireproof(void) const { return m_IsFireproof; }
 
 	/** Puts the entity on fire for the specified amount of ticks */

@@ -4000,7 +4000,7 @@ local Hash = cCryptoHash.sha1HexString("DataToHash")
 							Type = "boolean",
 						},
 					},
-					Notes = "Returns true if the entity takes no damage from being on fire.",
+					Notes = "Returns true if the entity takes no damage from being on fire. For a pawn this is true when the fireproof flag has been set (Monsters.ini), when it has a Fire Resistance effect, or when it is a player in creative or spectator mode.",
 				},
 				IsFloater =
 				{
@@ -10855,16 +10855,6 @@ a_Player:OpenWindow(Window);
 						},
 					},
 					Notes = "Returns true if the player is currently eating the item in their hand.",
-				},
-				IsFireproof =
-				{
-					Returns =
-					{
-						{
-							Type = "boolean",
-						},
-					},
-					Notes = "Returns true if a player is fireproof. This is when the flag has been explicitly set, or the player is in creative or spectator mode.",
 				},
 				IsFishing =
 				{
