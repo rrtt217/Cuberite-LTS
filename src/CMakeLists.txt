@@ -138,6 +138,7 @@ target_sources(
 	Server.h
 	SetChunkData.h
 	SettingsRepositoryInterface.h
+	SkyDarkness.h
 	SpawnPrepare.h
 	StatisticsManager.h
 	StringCompression.h

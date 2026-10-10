@@ -16,6 +16,7 @@
 #include "SetChunkData.h"
 #include "DeadlockDetect.h"
 #include "LineBlockTracer.h"
+#include "SkyDarkness.h"
 #include "UUID.h"
 #include "BlockInServerPluginInterface.h"
 
@@ -1310,12 +1311,13 @@ void cWorld::Tick(std::chrono::milliseconds a_Dt, std::chrono::milliseconds a_La
 	m_WorldAge += a_Dt;
 	m_WorldTickAge++;
 
+	// Updates the sky darkness based on current time of day and current weather, every tick - weather
+	// changes must affect the darkness even when the daylight cycle is disabled and time stands still:
+	UpdateSkyDarkness();
+
 	if (m_IsDaylightCycleEnabled)
 	{
 		m_WorldDate += a_Dt;
-
-		// Updates the sky darkness based on current time of day:
-		UpdateSkyDarkness();
 
 		// Broadcast time update every 64 ticks (3.2 seconds):
 		if ((m_WorldTickAge % 64_tick) == 0_tick)
@@ -2345,29 +2347,9 @@ void cWorld::TickQueuedTasks(void)
 
 void cWorld::UpdateSkyDarkness(void)
 {
-	const auto TIME_SUNSET = 12000_tick;
-	const auto TIME_NIGHT_START = 13187_tick;
-	const auto TIME_NIGHT_END = 22812_tick;
-	const auto TIME_SUNRISE = 23999_tick;
-	const auto TIME_SPAWN_DIVISOR = 148_tick;
-
-	const auto TempTime = GetTimeOfDay();
-	if (TempTime <= TIME_SUNSET)
-	{
-		m_SkyDarkness = 0;
-	}
-	else if (TempTime <= TIME_NIGHT_START)
-	{
-		m_SkyDarkness = static_cast<NIBBLETYPE>((TIME_NIGHT_START - TempTime) / TIME_SPAWN_DIVISOR);
-	}
-	else if (TempTime <= TIME_NIGHT_END)
-	{
-		m_SkyDarkness = 8;
-	}
-	else
-	{
-		m_SkyDarkness = static_cast<NIBBLETYPE>((TIME_SUNRISE - TempTime) / TIME_SPAWN_DIVISOR);
-	}
+	// Vanilla darkness: time-driven ramp 0 -> 11 -> 0 over dusk / night / dawn, plus the weather
+	// darkening (rain 3, thunderstorm 5), capped at 11, see SkyDarkness.h for the full spec:
+	m_SkyDarkness = CalcSkyDarkness(GetTimeOfDay(), GetWeather());
 }
 
 

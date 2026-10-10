@@ -359,6 +359,20 @@ add_test(
 
 
 
+# Sky darkness test:
+add_executable(SkyDarknessTest
+	SkyDarknessTest.cpp
+)
+target_link_libraries(SkyDarknessTest GeneratorTestingSupport)
+add_test(
+	NAME SkyDarknessTest
+	COMMAND SkyDarknessTest
+)
+
+
+
+
+
 # Put the projects into solution folders (MSVC):
 set_target_properties(
 	BasicGeneratorTest
@@ -371,6 +385,7 @@ set_target_properties(
 	PieceGeneratorBFSTree
 	PieceRotation
 	ReturnGatewayTest
+	SkyDarknessTest
 	StrongholdTest
 	StructureLocatorTest
 	PROPERTIES FOLDER Tests/Generating
