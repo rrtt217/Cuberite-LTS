@@ -19,3 +19,14 @@ add_test(
 	NAME EndermanBlockRulesTest
 	COMMAND EndermanBlockRulesTest
 )
+
+
+
+
+
+# Put the projects into solution folders (MSVC):
+set_target_properties(
+	EndermanBlockRulesTest
+	EndermanTeleportRulesTest
+	PROPERTIES FOLDER Tests/Mobs
+)

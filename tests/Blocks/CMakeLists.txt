@@ -10,3 +10,13 @@ add_test(
 	NAME ChorusRulesTest
 	COMMAND ChorusRulesTest
 )
+
+
+
+
+
+# Put the projects into solution folders (MSVC):
+set_target_properties(
+	ChorusRulesTest
+	PROPERTIES FOLDER Tests/Blocks
+)

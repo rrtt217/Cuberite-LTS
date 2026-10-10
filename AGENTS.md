@@ -189,8 +189,6 @@
   分组；**同一 FOLDER 在同一文件里有且仅有一个** `set_target_properties` 调用，覆盖该文件全部同类目标。
   新增目标 = 把目标名加进对应列表（`add_executable` 须写在该调用之前）；**不另开新调用**。
   文件原本缺分组调用的**补上**，不留例外。
-- 已知待归并（勿仿效）：`tests/Generating/CMakeLists.txt` 的 EndCityTest / EndCityLootTest 另开了调用；
-  `tests/Blocks/`、`tests/Entities/`、`tests/Mobs/` 缺分组调用——由独立小任务统一纠正。
 - 命名：**新测试**的目标名与 `add_test` 的 `NAME` 统一用 `<Feature>Test`（两者同名）。
   仓库并存上游遗留的 `<name>-exe` / `<name>-test` 旧风格（如 `Google-exe` / `Google-test`、
   `BoundingBox-exe` / `BoundingBox-test`）——**不仿效，也不批量改名**（避免无意义 churn）。

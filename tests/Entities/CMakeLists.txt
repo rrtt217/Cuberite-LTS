@@ -19,3 +19,14 @@ add_test(
 	NAME FireproofRulesTest
 	COMMAND FireproofRulesTest
 )
+
+
+
+
+
+# Put the projects into solution folders (MSVC):
+set_target_properties(
+	EffectSpeedRulesTest
+	FireproofRulesTest
+	PROPERTIES FOLDER Tests/Entities
+)

@@ -373,28 +373,6 @@ add_test(
 
 
 
-# Put the projects into solution folders (MSVC):
-set_target_properties(
-	BasicGeneratorTest
-	BlockLightValueTest
-	ChorusTreeTest
-	ConnectorRotationTest
-	CubesetBlockEntitiesTest
-	GeneratorTestingSupport
-	LoadablePieces
-	PieceGeneratorBFSTree
-	PieceRotation
-	ReturnGatewayTest
-	SkyDarknessTest
-	StrongholdTest
-	StructureLocatorTest
-	PROPERTIES FOLDER Tests/Generating
-)
-
-
-
-
-
 # End City test:
 add_executable(EndCityTest
 	EndCityTest.cpp
@@ -423,12 +401,22 @@ add_test(
 
 
 
+# Put the projects into solution folders (MSVC):
 set_target_properties(
+	BasicGeneratorTest
+	BlockLightValueTest
+	ChorusTreeTest
+	ConnectorRotationTest
+	CubesetBlockEntitiesTest
 	EndCityLootTest
-	PROPERTIES FOLDER Tests/Generating
-)
-
-set_target_properties(
 	EndCityTest
+	GeneratorTestingSupport
+	LoadablePieces
+	PieceGeneratorBFSTree
+	PieceRotation
+	ReturnGatewayTest
+	SkyDarknessTest
+	StrongholdTest
+	StructureLocatorTest
 	PROPERTIES FOLDER Tests/Generating
 )
