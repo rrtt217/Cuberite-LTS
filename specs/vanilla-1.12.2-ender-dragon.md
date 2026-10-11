@@ -191,7 +191,7 @@
 
 1. 停用通用怪物近战（`cEnderDragon::Attack` 返回 false），改在 `Tick` 里做接触判定。
 2. 每 tick 取与龙包围盒（16×8）相交的 `cPawn`；用“前方半宽、半高处”的近似头点（半径 3 格）区分头部/翅膀。
-3. 伤害取 wiki 的 **Normal** 值：头部 10、翅膀 5（Cuberite 无难度系统，恒为 Normal）。
+3. 伤害取 wiki 的 **Normal** 值：头部 10、翅膀 5（C++ 侧无难度系统，按 Normal 实现）。**注意**：Core（默认启用）的 `MobDamages` 会把以龙为攻击者的接触伤害覆盖为 `{6, 10, 15}`[世界难度]、**且不区分头/翅**（[core_worlds.lua:26](../Server/Plugins/Core/core_worlds.lua#L26)，经 [:61-77](../Server/Plugins/Core/core_worlds.lua#L61) 的 `OnTakeDamage` 钩子）——默认（easy）下头=翅=6，见「已知偏差」7。
 4. 命中走 `TakeDamage(dtMobAttack, ...)`，基础伤害逻辑会把目标抛起（玩家的 `KnockbackHeight = 8`）。
 5. 受击后 0.5s（10 tick）内不施加接触伤害（复用 `cMonster::m_TicksSinceLastDamaged`）。
 6. `Circling` 调用 `SetYawFromSpeed()`，让朝向跟随飞行方向（头部判定与客户端朝向依赖它）。
@@ -235,7 +235,7 @@
 5. 盘旋参数（外侧半径 48 / 内侧 20、高度 80、速度 8 格/秒、每 tick 5% 修正）是便于测试的初值，未经 vanilla 实测校准；
    柱子环本身按生成器默认半径 43 生成，两者都是可配置量。
 6. 接触伤害的头部/翅膀用**几何近似**（头点 = 前方半宽、半径 3 格），不是真实部件；抛起强度沿用基础击退，未按 vanilla 校准。
-7. Cuberite 没有难度设置，接触伤害恒取 **Normal**（头 10 / 翅膀 5）；vanilla 会按难度取 6/10/15 与 3.5/5/7.5。
+7. C++ 把接触伤害实现为恒取 **Normal**（头 10 / 翅膀 5），但 **Core（默认启用）会将其覆盖**：`MobDamages["cEnderDragon"] = {6, 10, 15}`[世界难度]，且**不区分头/翅**（[core_worlds.lua:26](../Server/Plugins/Core/core_worlds.lua#L26)）→ 默认（easy）头=翅=6、normal 均 10、hard 均 15；和平档 `Damages[0]` 为空、经 setter 归 0（〔待核〕，一并处置）。与 vanilla（头 6/10/15、翅 3.5/5/7.5，按难度）的差距在默认配置下大于设计预期；处置（接受 Core 覆盖 / 把龙移出 Core 表改由 C++ 按难度取值 / 保留表但细化头翅）留待维护者裁决。
 8. `Strafing` 只是朝目标飞行 3 秒后回绕，未实现 vanilla 的“进入 64 格即喷龙火球”；水晶被毁通过每 20 tick 的数量对比检测（最多 1 秒延迟）。
 9. `Perching` 的落点为出口祭坛中心柱顶（foot Y=67，对应生成器 fountain Y=62 + 柱顶 66 + 1）；`LandedBreath` 的 3 秒只有计时，没有龙息伤害云（AreaEffectCloud 未实现）；咆哮没有独立的声音/粒子。
 10. `Charging`（仅 BE）尚未实现（JE 本就没有该状态）。
