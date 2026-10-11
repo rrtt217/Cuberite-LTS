@@ -20,6 +20,15 @@ add_test(
 	COMMAND FireproofRulesTest
 )
 
+add_executable(HungerRulesTest
+	HungerRulesTest.cpp
+)
+target_link_libraries(HungerRulesTest GeneratorTestingSupport)
+add_test(
+	NAME HungerRulesTest
+	COMMAND HungerRulesTest
+)
+
 
 
 
@@ -28,5 +37,6 @@ add_test(
 set_target_properties(
 	EffectSpeedRulesTest
 	FireproofRulesTest
+	HungerRulesTest
 	PROPERTIES FOLDER Tests/Entities
 )

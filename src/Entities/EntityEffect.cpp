@@ -2,6 +2,7 @@
 
 #include "EntityEffect.h"
 #include "EffectSpeedRules.h"
+#include "HungerRules.h"
 #include "Player.h"
 #include "../Chunk.h"
 #include "../Mobs/Monster.h"
@@ -502,11 +503,45 @@ void cEntityEffectWither::OnTick(cPawn & a_Target)
 ////////////////////////////////////////////////////////////////////////////////
 // cEntityEffectSaturation:
 
+/** Applies one settlement of the Saturation effect to a player (spec 2): +1 hunger and +2 saturation
+per level, then clamps saturation to the food level. */
+static void ApplySaturationEffect(cPlayer & a_Target, short a_Intensity)
+{
+	int Hunger = a_Target.GetFoodLevel();
+	double Saturation = a_Target.GetFoodSaturationLevel();
+	const EffectHungerDelta Delta = SaturationEffectDelta(a_Intensity);
+	Hunger += Delta.Hunger;
+	Saturation += Delta.Saturation;
+	ClampFoodState(Hunger, Saturation);
+	a_Target.SetFoodLevel(Hunger);
+	a_Target.SetFoodSaturationLevel(Saturation);
+}
+
+
+
+
+
 void cEntityEffectSaturation::OnTick(cPawn & a_Target)
+{
+	// [needs-check] spec 5: 1.12.2 is modelled as "settle once on activation, then every tick".  Whether
+	// vanilla is exactly equivalent for a one-tick effect is not settled by the allowed sources; this also
+	// advances the duration counter, without which the effect would never expire (spec 1).
+	Super::OnTick(a_Target);
+
+	if (a_Target.IsPlayer())
+	{
+		ApplySaturationEffect(static_cast<cPlayer &>(a_Target), m_Intensity);
+	}
+}
+
+
+
+
+
+void cEntityEffectSaturation::OnActivate(cPawn & a_Target)
 {
 	if (a_Target.IsPlayer())
 	{
-		cPlayer & Target = static_cast<cPlayer &>(a_Target);
-		Target.SetFoodSaturationLevel(Target.GetFoodSaturationLevel() + (1 + m_Intensity));  // Increase saturation 1 per tick, adds 1 for every increase in level
+		ApplySaturationEffect(static_cast<cPlayer &>(a_Target), m_Intensity);
 	}
 }

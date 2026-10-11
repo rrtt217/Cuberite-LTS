@@ -547,6 +547,7 @@ public:
 	}
 
 	virtual void OnTick(cPawn & a_Target) override;
+	virtual void OnActivate(cPawn & a_Target) override;
 };
 
 
