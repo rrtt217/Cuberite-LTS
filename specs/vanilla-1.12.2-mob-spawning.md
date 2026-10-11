@@ -2,7 +2,7 @@
 
 来源（cleanroom 白名单，全部为 1.12 世代快照；minecraft.wiki 现行页描述的是 1.18+/1.21 行为，只用于类别归属与「何时变更」的判定）：
 
-- **主源** [Minecraft Wiki — Spawn（2017-06 快照，对应 1.12 世代）](https://web.archive.org/web/20170601/https://minecraft.gamepedia.com/Spawn) —— 本文 §2 调度、§3 上限、§4 群体、§5 通用落点、§11 难度、§13 清除 的**唯一机械表述**。取 `Spawn cycle` / `Mob cap` / `Pack spawning` / `Spawn conditions` / `Notes` / `Despawning` 六节。
+- **主源** [Minecraft Wiki — Spawn（2017-06 快照，对应 1.12 世代）](https://web.archive.org/web/20170601/https://minecraft.gamepedia.com/Spawn) —— 本文 §2 调度、§3 上限、§4 群体、§5 通用落点、§12 清除 的**唯一机械表述**。取 `Spawn cycle` / `Mob cap` / `Pack spawning` / `Spawn conditions` / `Notes` / `Despawning` 六节（难度条目另见 §1 的来源引用）。
 - [Minecraft Wiki — Spawn（2018-10 快照）](https://web.archive.org/web/20181003010302/https://minecraft.gamepedia.com/Spawn) —— 与上一快照交叉比对，用于确认 1.12→1.13 之间该节未被改写。
 - [Minecraft Wiki — Monster Spawner（2017-06 快照）](https://web.archive.org/web/20170601/https://minecraft.gamepedia.com/Monster_Spawner) —— §10 刷怪箱机制与 NBT 语义。
 - 单生物页（各取 `Spawning` 节；时间戳由 Wayback CDX 确认为 200 状态）：
@@ -66,7 +66,7 @@ Cuberite：**无游戏规则系统**（全仓无 `doMobSpawning` 符号，仅 `C
 
 **S1.3** 难度从任意档切到和平的瞬间，所有「和平下不允许生成」的怪物**立即从世界中移除**。
 来源：同 S1.2。
-Cuberite：**无难度系统**（无 `GetDifficulty`/`eDifficulty` 符号；进服包硬编码 `2`，`Protocol_1_8.cpp:834`；存档写 `Difficulty=2`，`WSSAnvil.cpp:96`）。→ GAP-10，阻塞 S1.2/S1.3/S5.4。
+Cuberite：**C++ 侧无难度状态**（无 `GetDifficulty`/`eDifficulty` 符号；进服包/重生字段恒写 `2`、登录末 Server Difficulty 包恒写 `1`，[Protocol_1_8.cpp:834/848/1289](../src/Protocol/Protocol_1_8.cpp)；level.dat 恒 `Difficulty=2`，[WSSAnvil.cpp:96](../src/WorldStorage/WSSAnvil.cpp)）。**Core 插件（默认启用）已在插件侧提供难度**：world.ini `[Difficulty] WorldDifficulty`、`/difficulty`（切 peaceful 时立即清除 `mfHostile` 怪，[difficulties.lua:16-26](../Server/Plugins/Core/difficulties.lua#L16)），和平挡刷另有 `OnSpawningMonster` 钩子（引擎挂点 [World.cpp:3929](../src/World.cpp#L3929)，自然生成走同一路径）。→ **S1.2 / S1.3 在默认安装下已生效**（按 `mfHostile` 族过滤；1.12.2「和平仍生成」清单里的怪在本仓库均未实现，或为 `mfNoSpawn` 如末影龙）；纯 C++ 仍缺，且 C++ 读不到该状态。剩余缺口归 **GAP-10**（收窄为「C++ 侧难度接入 + 与 Core 对账」）；**S5.4 与难度无关**，其缺口属 GAP-12。
 
 ---
 
@@ -272,9 +272,9 @@ Cuberite 现状（均为**实现级问题**，非规格偏差）：
 ## 11. 生成期放置与运行期入口（非自然生成，列作边界）
 
 以下入口**不得**套用 §5/§6 的落点条件：刷怪蛋、`/summon`、发射器、下界门、虫蚀方块、繁殖产仔、史莱姆分裂、闪电转化（猪→僵尸猪人、村民→女巫）、末影珍珠→末影螨。
-Cuberite 现状与此一致（`World::SpawnMob*` 不做任何校验）——**此为正确行为，勿在补齐 §5 时一并加检查**。
+Cuberite 现状与此一致（`World::SpawnMob*` 不做落点校验；生成否决仅经 `SpawnMobFinalize` 的插件钩子，见 S11.1）——**此为正确行为，勿在补齐 §5 时一并加检查**。
 
-**S11.1** `SpawnMobFinalize` 应保留「插件可否决生成」的语义。Cuberite 有两道钩子（`OnSpawningMonster`、`OnSpawningEntity`）✓。
+**S11.1** `SpawnMobFinalize` 应保留「插件可否决生成」的语义。Cuberite 有两道钩子（`OnSpawningMonster`、`OnSpawningEntity`）✓（`OnSpawningMonster` 挂于 [World.cpp:3929](../src/World.cpp#L3929)；Core 默认启用时即用它实现和平挡刷，作用于全部经此函数的路径）。
 
 ---
 
@@ -307,7 +307,7 @@ Cuberite **全部缺失**：唯一下线路径是「hostile + 所在区块无 cl
 | GAP-04/06/07/08/09/12 | pack 中心、偏置、权重、S5.2/S5.3/S5.4 | `feature/mobs-spawn-placement-rules` | GAP-01 |
 | GAP-07 + §7 | 群系 × 类别加权生成表 | `feature/mobs-biome-spawn-table` | GAP-01 |
 | §6 逐条 | 各生物附加条件 | `feature/mobs-spawn-conditions` | 上一条 |
-| GAP-10/11 | 难度系统、`doMobSpawning` | `feature/world-difficulty`、`feature/world-gamerules` | 规模 ≥ 本文任一分支，**应拆独立分支先行**（AGENTS.md §3） |
+| GAP-10/11 | C++ 侧难度接入（与 Core 对账）、`doMobSpawning` | `feature/world-difficulty`、`feature/world-gamerules` | 规模 ≥ 本文任一分支，**应拆独立分支先行**（AGENTS.md §3）；难度状态与和平语义已由 Core 提供（见 §1），该分支须与 Core 的 `[Difficulty] WorldDifficulty`、`MobDamages` 对账去重 |
 | GAP-17 | 下界要塞 / 海洋纪念碑 / 沼泽小屋及其生成点 | `feature/gen-nether-fortress` 等 | 同上 |
 
 ---
@@ -369,7 +369,7 @@ Cuberite：**全部未实现**（无婴儿/尸壳/鸡骑士路径；`mtZombieVil
 
 **S16.2** 主世界下界门方块每次方块刻有小概率在其下方门框生成僵尸猪人：Easy **1/2000**、Normal **2/2000**、Hard **3/2000**，**光照与玩家距离均不阻止**。
 来源：[Zombie_Pigman 快照](https://web.archive.org/web/20170125211808/https://minecraft.gamepedia.com/Zombie_Pigman)〔快照待复核〕。
-Cuberite：`Blocks/BlockPortal.h:45` 调 `SpawnMob`，**无该概率表、无难度依赖**。
+Cuberite：`Blocks/BlockPortal.h:45` 调 `SpawnMob`，**无该概率表**；Core 默认启用时该路径同样经 `SpawnMobFinalize` 的和平挡刷钩子（见 §1），C++ 自身仍无难度分档。
 
 **S16.3** 史莱姆区块判定：以 `seed + x²·0x4c1906 + x·0x5ac0db + z²·0x4307a7 + z·0x5f24f ^ 0x3ad8025f` 派生种子后 `nextInt(10) == 0`，x/z 按 32 位整型回绕。
 来源：[Slime 20170513082145](https://web.archive.org/web/20170513082145/https://minecraft.gamepedia.com/Slime)。
