@@ -47,7 +47,7 @@
 | 生命 | 40 | wiki infobox ✅已实现 |
 | 碰撞箱 | 0.6 宽 × 2.9 高 | ✅已实现 |
 | 行为 | 中立 | ✅（`PASSIVE` personality） |
-| 攻击力（Normal） | 7 | wiki infobox 现行 7（Easy 4.5 / Hard 10.5 为新版标度，1.12.2 的 Easy/Hard 数值〔待核〕）；当前实现 4.0，且 Cuberite 无难度缩放（上游 #1006） |
+| 攻击力（Normal） | 7 | wiki infobox 现行 7（Easy 4.5 / Hard 10.5 为新版标度，1.12.2 的 Easy/Hard 数值〔待核〕）；**有效值随难度**：`monsters.ini` 配 4.0（[Server/monsters.ini:59](../Server/monsters.ini#L59)），Core（默认启用）的 `MobDamages` 把以末影人为攻击者的近战伤害覆盖为 `{4, 7, 10}`[世界难度]（[core_worlds.lua:27](../Server/Plugins/Core/core_worlds.lua#L27)，经 [:61-77](../Server/Plugins/Core/core_worlds.lua#L61) 的 `OnTakeDamage` 钩子）→ 默认（easy）4、normal **7**；上游 [#1006](https://github.com/cuberite/cuberite/issues/1006) 的难度缩放缺口在默认安装下对本怪已被 Core 表覆盖 |
 | 移动速度 | 属性 0.3；**有攻击目标时 +0.15（=0.45）** | 中文 wiki [属性/速度](https://zh.minecraft.wiki/w/%E5%B1%9E%E6%80%A7/%E9%80%9F%E5%BA%A6)（基础值表 + "attacking" 修饰符表）。Cuberite 无属性系统（#4921），经 `monsters.ini` WalkSpeed/RunSpeed 倍率映射，见 §3.8 |
 | 掉落 | 0–1 珍珠，每级抢夺 +1 | ✅已实现 |
 | 经验 | 5 | 当前 6–8，偏差（§6） |
@@ -222,7 +222,7 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 | `carried` metadata 取值编码修复（1.9–1.12）+ 索引订正 15→12 | `src/Protocol/Protocol_1_{9,10,11,12}.{h,cpp}` | **本分支（前置修复，§6 偏差 8）** |
 | 创造击杀掉落修复（怪照掉、非生物实体仍不掉，全怪适用） | `src/Entities/Entity.cpp`（`cEntity::KilledBy`） | **本分支（相关修复，§6 偏差 9）** |
 | 默认刷怪列表（主世界/下界/末地）、下界候选列表、末地恒暗天光 | `World.cpp`、`MobSpawner.cpp` | **本分支 `feature/mobs-enderman-natural-spawning`** |
-| 攻击伤害 7、经验 5、stare 音效、凝视 hitbox 化、末影螨 LOS 与珍珠来源 | 分散 | 后续小修分支 |
+| 经验 5、stare 音效、凝视 hitbox 化、末影螨 LOS 与珍珠来源（**攻击伤害**：Normal 值已由 Core 难度表覆盖，剩 Easy/Hard 精确值与 C++/Core 真源合并，见 §1 与 §6.4） | 分散 | 后续小修分支 |
 | 弹射物临近预测（64 次尝试特例）、水瓶对末影人伤害 | `ArrowEntity`/药水效果侧 | 后续（§3.5/§3.6 特例） |
 
 ---
@@ -243,7 +243,7 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 1. 凝视判定为 5° 锥近似（规格为头部 hitbox 相交）；5-tick 驻留〔待核〕。
 2. 主动脱离追击计时不实现（新发现其 1.14+ 措辞已并入 T3 的 600gt 前置）。
 3. 末影螨敌视：1.12.2 应只针对珍珠来源 + 要求视线；现为「所有末影螨 + 无视线」。
-4. 攻击伤害 4（规格 Normal 7）与经验 6–8（规格 5）：数值修正牵涉难度问题（#1006），留小修分支。
+4. 经验 6–8（规格 5）留小修分支。攻击伤害已非固定 4：Core（默认启用）按世界难度把以末影人为攻击者的伤害覆盖为 `{4, 7, 10}`（[core_worlds.lua:27](../Server/Plugins/Core/core_worlds.lua#L27)）——**Normal 档即规格值 7**；`monsters.ini` 的 4.0 只在 Core 缺席（恒 4）或 easy 档（同值）下可见。两处数值的真源合并归 [mob-spawning §13](vanilla-1.12.2-mob-spawning.md) 的 GAP-10 对账。
 5. `entity.endermen.stare` 未播。
 6. 弹射物「弹开/穿过」边角（MC-79556）不实现；「弹射物临近 → 64 次尝试」特例需要弹道预测，另分支（§5 表末行）。
 7. 水瓶对末影人伤害（1.11/16w35a 起 1HP）Cuberite 未实现 → 「水瓶 → 64 次尝试」特例暂挂空。
@@ -295,8 +295,8 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 - 追击玩家目标时每 1.5–2 s 闪一次（**任何距离**）：远处跳近、近处绕玩家 ±4 随机跳（含身后）；追末影螨时不闪；近战缠斗中它会持续冲锋、偶尔闪现，**不应出现 >1 s 的原地罚站循环**，被 1 格台阶挡住时**落地即跳**（滑移跳跃落地门控：间隔 = 滞空时间，成功跳上≈落回本格的一半，§6.10）；
 - **首次与它对视（凝视挑衅）→ 它立即跳走一次**，随后**即便一直盯着它也会冲过来**；1.12.2 **无**站桩僵直、**无**对视期间持续跳（均为 1.14+ 行为/误读）；
 - 追击跑速明显快于僵尸、能贴住急走的玩家（RunSpeed=2，属性比例 0.45/0.23；罚站修复后追击速度连续无 >1 s 停顿），脱战漫步略快（≈1.3 倍）；**打/凝视它之后立刻生效**，不需要等它「进入追击态」。
-- 搬方块：草地上生成的末影人几秒内拿起一块土/草方块（5%/tick）并显示手中方块（客户端 metadata）；平地上站很久也不拿（脚下地面不被采样）；拿起后再放下的目标格上方是空气、下方是完整方块，**无声**；杀掉携带方块的末影人掉落该方块（草方块掉草方块，不是泥土）；`/summon enderman ~ ~ ~ {carried:86s,carriedData:0s}` 读回后客户端即显示手中南瓜（1.12.2 的 NBT 形态是 `carried`/`carriedData` 两个 short，`carriedBlockState` 是 1.13+ 的名字，不在本分支范围）。
-- **显示正确性（协议编码，本分支修复）**：携带**草方块**时手上就是草方块、携带**泥土**时就是泥土——**不得**显示成枯萎灌木/苔石（§6 偏差 8）；`/summon` 一个**带 meta** 的可携带方块（如 `{carried:38s,carriedData:8s}` = 滨菊）应显示对应花色（meta 位边界的实机复核，§3.7）。
+- 搬方块：草地上生成的末影人几秒内拿起一块土/草方块（5%/tick）并显示手中方块（客户端 metadata）；平地上站很久也不拿（脚下地面不被采样）；拿起后再放下的目标格上方是空气、下方是完整方块，**无声**；杀掉携带方块的末影人掉落该方块（草方块掉草方块，不是泥土）；**NBT 读回**（`carried`/`carriedData` 两个 short；`carriedBlockState` 是 1.13+ 的名字，不在本分支范围）**当前无 CLI 验证通路**：Core 的 `/summon` 只取 `<entityname> [x] [y] [z]`（[cmd_summon.lua](../Server/Plugins/Core/cmd_summon.lua) 读 `Split[2..5]`，多余 token 静默忽略、不解析 NBT）→ `/summon … {carried:86s,carriedData:0s}` 不会生效，此项标〔待核〕，待 `/summon` NBT 支持（登记于 [command-layer-roadmap §4](vanilla-1.12.2-command-layer-roadmap.md)）落地后补验。
+- **显示正确性（协议编码，本分支修复）**：携带**草方块**时手上就是草方块、携带**泥土**时就是泥土——**不得**显示成枯萎灌木/苔石（§6 偏差 8）；带 meta 的携带方块（如 `{carried:38s,carriedData:8s}` = 滨菊）应显示对应花色——该入口同样依赖 `/summon` NBT（当前不可用，见上），meta 位边界复核标〔待核〕（§3.7）。
 - **创造模式击杀**：创造模式打死携带方块的末影人 → **方块照掉**（珍珠同理）；创造模式击杀**非生物实体**（矿车/船/展示框等）仍不掉落（§6 偏差 9）。
 - **自然刷怪（本分支）**：主世界夜晚/洞穴暗处（光照 ≤7）的刷怪周期中出现 1–4 只末影人（蘑菇岛没有）；末地在任何世界时间都能刷出（恒暗天光强置，组 ≤4）；下界暗处也能刷出；存量世界在 `world*.ini` 的 `Monsters/Types` 补 `enderman` 后行为相同（§6.13）。
 
@@ -307,5 +307,5 @@ RunSpeed=2        ; 0.45/0.23≈1.96，属性比例；§6.10 寻路罚站修复�
 1. **本分支** `feature/mobs-enderman-teleportation`：§3.6 全部 + §6.1 修复 + 本规格文档。
 2. `feature/mobs-enderman-block-carrying` **（已完成）**：§3.7（可携带列表与区域纯函数 + 拿起/放置 tick + NBT 读回 + 死亡掉落）。
 3. `feature/mobs-enderman-natural-spawning` **（本分支）**：§2（依赖 1，已 @ `339c795` 落地）。
-4. 小修分支：§5 表末行（伤害/经验数值、stare 音、凝视判定精化、末影螨细节）。
+4. 小修分支：§5 表末行（经验数值、攻击伤害的真源合并与 Easy/Hard 精确值〔待核〕、stare 音、凝视判定精化、末影螨细节）。
 5. `mobGriefing` gamerule（若维护者下达）：搬方块的开关（§6 搬方块分支偏差 1）。
