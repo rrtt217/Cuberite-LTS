@@ -25,16 +25,21 @@ bool cWitherSkeleton::Attack(std::chrono::milliseconds a_Dt)
 [CaveSpider.cpp:44-45](../src/Mobs/CaveSpider.cpp) 恒 `effPoison, 7 * 20, amp 0`，同处留有 `// TODO: Easy = no poison, Medium = 7 seconds, Hard = 15 seconds`。
 规格（已核对）：[Cave Spider](https://minecraft.wiki/w/Cave_Spider) —— 简单 = 无毒、普通 = 7 秒、困难 = 15 秒。
 
-**阻塞原因（实测）**：本检出**没有难度系统**，没有任何可读的难度状态可依赖：
+**阻塞原因（分两层实测）**：
+
+**（一）C++ 侧没有可读的难度状态**（本分支落点在 `src/`，`cCaveSpider` 无从取用）：
 
 | 证据 | 事实 |
 |---|---|
 | [EnderDragon.cpp:35](../src/Mobs/EnderDragon.cpp) | 注释直书「Cuberite has no difficulty setting」 |
-| [Protocol_1_8.cpp:834](../src/Protocol/Protocol_1_8.cpp)、[:1289](../src/Protocol/Protocol_1_8.cpp)、[Protocol_1_9.cpp:2408](../src/Protocol/Protocol_1_9.cpp) | `// TODO: Difficulty (set to Normal)`，登录流程恒写 Normal |
-| [WSSAnvil.cpp:96](../src/WorldStorage/WSSAnvil.cpp) | 存档把 `Difficulty` **硬编码为 2** |
+| [Protocol_1_8.cpp:834](../src/Protocol/Protocol_1_8.cpp)、[:1289](../src/Protocol/Protocol_1_8.cpp)、[Protocol_1_9.cpp:2419](../src/Protocol/Protocol_1_9.cpp) | `// TODO: Difficulty (set to Normal)`，登录/重生包的难度字段恒写 2 |
+| [Protocol_1_8.cpp:848](../src/Protocol/Protocol_1_8.cpp)、[Protocol_1_9.cpp:2433](../src/Protocol/Protocol_1_9.cpp) | 登录末尾补发的 Server Difficulty 包恒写 `1`（Easy），同不读实际难度 |
+| [WSSAnvil.cpp:96](../src/WorldStorage/WSSAnvil.cpp) | level.dat（供地图工具）把 `Difficulty` **硬编码为 2** |
 | [BlockInfested.h:25](../src/Blocks/BlockInfested.h) | 同类待办「Add when difficulty is implemented」 |
 
-按 [AGENTS.md §3](../AGENTS.md)「前置依赖规模 ≥ 本功能本身 → 拆成独立分支先行合并」：难度系统要动设置项、存档、协议与各怪取值，远大于本分支 → **洞穴蜘蛛的 TODO 保持原样**，缺口登记在 [roadmap §5](vanilla-1.12.2-status-effects-roadmap.md)。
+**（二）插件侧已有难度系统，但不给 C++ 用**：Core 插件（默认启用）提供 world.ini `[Difficulty] WorldDifficulty` 状态、`/difficulty` 命令、13 个怪类的难度伤害表与和平挡刷（[core_worlds.lua](../Server/Plugins/Core/core_worlds.lua)、[difficulties.lua](../Server/Plugins/Core/difficulties.lua)；细节见 [roadmap §5](vanilla-1.12.2-status-effects-roadmap.md)）。注意 `MobDamages` 只覆盖这 13 类怪的**攻击伤害**，中毒时长不在其列；且它是 Lua 侧状态（`GetWorldDifficulty` 是插件内函数），`cCaveSpider` 无法读取 → 中毒时长仍无法按难度分档。
+
+按 [AGENTS.md §3](../AGENTS.md)「前置依赖规模 ≥ 本功能本身 → 拆成独立分支先行合并」：难度前置（把难度状态沉入 C++ 或加桥接 API）仍远大于本分支；落地时须与 Core 的 `[Difficulty] WorldDifficulty` 键与 `MobDamages` 表对账去重（避免同一行为两套真源）→ **洞穴蜘蛛的 TODO 保持原样**，缺口登记在 [roadmap §5](vanilla-1.12.2-status-effects-roadmap.md)。
 
 ## 3. 测试
 
