@@ -1,6 +1,7 @@
 #include "Globals.h"  // NOTE: MSVC stupidness requires this to be the same across all modules
 
 #include "EntityEffect.h"
+#include "EffectNumbers.h"
 #include "EffectSpeedRules.h"
 #include "HungerRules.h"
 #include "Player.h"
@@ -327,15 +328,15 @@ void cEntityEffectSlowness::OnDeactivate(cPawn & a_Target)
 
 void cEntityEffectInstantHealth::OnActivate(cPawn & a_Target)
 {
-	// Base amount = 6, doubles for every increase in intensity
-	int amount = static_cast<int>(6 * (1 << m_Intensity) * m_DistanceModifier);
+	// Base amount = 4, doubles for every increase in intensity
+	int Amount = static_cast<int>(InstantHealthAmount(m_Intensity) * m_DistanceModifier);
 
 	if (a_Target.IsMob() && static_cast<cMonster &>(a_Target).IsUndead())
 	{
-		a_Target.TakeDamage(dtPotionOfHarming, nullptr, amount, 0);  // TODO: Store attacker in a pointer-safe way, pass to TakeDamage
+		a_Target.TakeDamage(dtPotionOfHarming, nullptr, Amount, 0);  // TODO: Store attacker in a pointer-safe way, pass to TakeDamage
 		return;
 	}
-	a_Target.Heal(amount);
+	a_Target.Heal(Amount);
 }
 
 
@@ -348,14 +349,14 @@ void cEntityEffectInstantHealth::OnActivate(cPawn & a_Target)
 void cEntityEffectInstantDamage::OnActivate(cPawn & a_Target)
 {
 	// Base amount = 6, doubles for every increase in intensity
-	int amount = static_cast<int>(6 * (1 << m_Intensity) * m_DistanceModifier);
+	int Amount = static_cast<int>(InstantDamageAmount(m_Intensity) * m_DistanceModifier);
 
 	if (a_Target.IsMob() && static_cast<cMonster &>(a_Target).IsUndead())
 	{
-		a_Target.Heal(amount);
+		a_Target.Heal(Amount);
 		return;
 	}
-	a_Target.TakeDamage(dtPotionOfHarming, nullptr, amount, 0);  // TODO: Store attacker in a pointer-safe way, pass to TakeDamage
+	a_Target.TakeDamage(dtPotionOfHarming, nullptr, Amount, 0);  // TODO: Store attacker in a pointer-safe way, pass to TakeDamage
 }
 
 
@@ -399,7 +400,8 @@ void cEntityEffectHunger::OnTick(cPawn & a_Target)
 	if (a_Target.IsPlayer())
 	{
 		cPlayer & Target = static_cast<cPlayer &>(a_Target);
-		Target.AddFoodExhaustion(0.025 * (static_cast<double>(GetIntensity()) + 1.0));  // 0.5 per second = 0.025 per tick
+		// 0.005 exhaustion per tick per level = 0.1 per second at Hunger I
+		Target.AddFoodExhaustion(HUNGER_EXHAUSTION_PER_TICK_PER_LEVEL * (static_cast<double>(GetIntensity()) + 1.0));
 	}
 }
 

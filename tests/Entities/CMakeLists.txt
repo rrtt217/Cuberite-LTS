@@ -2,6 +2,15 @@ include_directories(${PROJECT_SOURCE_DIR}/src/)
 include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/lib/)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+add_executable(EffectNumbersTest
+	EffectNumbersTest.cpp
+)
+target_link_libraries(EffectNumbersTest GeneratorTestingSupport)
+add_test(
+	NAME EffectNumbersTest
+	COMMAND EffectNumbersTest
+)
+
 add_executable(EffectSpeedRulesTest
 	EffectSpeedRulesTest.cpp
 )
@@ -35,6 +44,7 @@ add_test(
 
 # Put the projects into solution folders (MSVC):
 set_target_properties(
+	EffectNumbersTest
 	EffectSpeedRulesTest
 	FireproofRulesTest
 	HungerRulesTest
