@@ -44,5 +44,6 @@
 ## 5. 已知偏差 / 风险
 
 - **本支最容易被低估的一条**：队伍不只是命令，还牵动**名牌渲染、 friendly fire、隐形可见性、聊天着色**。C++ 有字段不等于有应用点；实现前须逐条定位应用点（`SetTeam`/`UpdateTeam` 的调用方、`cTeam::AllowsFriendlyFire` 的读取方），找不到应用点的要在交付说明里列为「命令可用但行为未接」的偏差。
+- **实测发现（Core 侧 bug，实施本支时须处置）**：Core `cmd_scoreboard.lua` 的槽位映射含 `["count"] = cScoreboard.dsCount`（[cmd_scoreboard.lua:22](../Server/Plugins/Core/cmd_scoreboard.lua#L22)）——`dsCount` 是枚举哨兵而非槽位（[Scoreboard.h:205-209](../src/Scoreboard.h#L205)），`/scoreboard objectives setdisplay count <obj>` 在 Debug 下触发 `ASSERT(a_Slot < dsCount)`（[Scoreboard.cpp:456](../src/Scoreboard.cpp#L456)）、Release 下越界写 `m_Display[dsCount]`（数组大小即 `dsCount`：[Scoreboard.h:291](../src/Scoreboard.h#L291)、[Scoreboard.cpp:469](../src/Scoreboard.cpp#L469)）。本支改 `cmd_scoreboard.lua` 时须移除或修正该别名（1.12.2 无 `count` 槽）。
 - 与 rank/前缀体系（Core 的 `web_playerranks.lua`）叠加时谁先谁后未定 → 待 §2 核实 + 维护者定夺。
 - 与 **C1** 的 `team=` 参数互锁：本支未合并前，C1 不应声明支持 `team=`（在 C1 的参数表里标注「依赖 C6」）。

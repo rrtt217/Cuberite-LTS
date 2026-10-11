@@ -8,8 +8,8 @@ Resistance 是空转效果：类建了（[EntityEffect.cpp:211](../src/Entities/
 
 **管线现状（本分支的落点依据，全部实测）**：
 
-- `cEntity::DoTakeDamage`（[Entity.cpp:419](../src/Entities/Entity.cpp)）：插件钩子（:433）→ 护甲耐久损耗（:440-441）→ 攻击方加成（暴击 :466-473、锋利 :481-485、亡灵杀手 :486-506、节肢杀手 :507-533、火焰附加 :535-567、荆棘 :574-592）→ **`m_Health -= a_TDI.FinalDamage;`（:597）**。
-- **附带发现（记入 roadmap 待办，不在本分支修）**：`GetArmorCoverAgainst`（[Entity.cpp:789](../src/Entities/Entity.cpp)）的返回值**只**用于 `ApplyArmorDamage`（:440-441），护甲与保护附民的**减伤并未接入** —— `GetEnchantmentCoverAgainst`（[Entity.cpp:721](../src/Entities/Entity.cpp)）全仓库无调用点。故本分支的 Resistance 是本仓库**第一个真正生效的伤害减免**。
+- `cEntity::DoTakeDamage`（[Entity.cpp:420](../src/Entities/Entity.cpp#L420)）：插件钩子（[:434](../src/Entities/Entity.cpp#L434)，Core 扣护甲/附魔减伤即在此）→ 护甲耐久损耗（[:441-442](../src/Entities/Entity.cpp#L441)）→ 攻击方加成（暴击 :467-474、锋利 :482-486、亡灵杀手 :487-507、节肢杀手 :508-537、火焰附加 :538-571、荆棘 :585-596）→ **`m_Health -= a_TDI.FinalDamage;`（[:600](../src/Entities/Entity.cpp#L600)）**。
+- **附带发现（记入 roadmap 待办，不在本分支修）**：C++ 内 `GetArmorCoverAgainst`（[Entity.cpp:792](../src/Entities/Entity.cpp#L792)）的返回值**只**用于 `ApplyArmorDamage`（[:441-442](../src/Entities/Entity.cpp#L441)），C++ 侧的护甲/保护附魔**减伤并未接线**。但**默认启用的 Core 插件已在 `OnTakeDamage` 钩子内做减伤**（[core_worlds.lua:73-76](../Server/Plugins/Core/core_worlds.lua#L73)，对一切经钩子的伤害扣 `ArmorCover + EnchantmentCover`）——本分支的 Resistance 因此是**首个进入 C++ 管线的减伤**（而非首个生效的减伤）；其插入点（攻击方加成后、`m_Health -=` 前）在 Core 钩子之后，与 Core 的减伤**叠加**。
 
 ## 2. 行为规格（1.12.2）
 
@@ -31,8 +31,8 @@ Resistance 是空转效果：类建了（[EntityEffect.cpp:211](../src/Entities/
    // 不可减免来源返回 1.0；否则 std::clamp(1 - 0.2 * (amp + 1), 0.0, 1.0)
    ```
    常量 `RESISTANCE_REDUCTION_PER_LEVEL = 0.2`、`RESISTANCE_EXEMPT_DAMAGE_TYPES`（表驱动）。
-2. 插入点：`cEntity::DoTakeDamage` 中，**在攻击方加成之后、`m_Health -=`（[Entity.cpp:597](../src/Entities/Entity.cpp)）之前**，对 `a_TDI.FinalDamage` 应用乘数。
-   该位置在护甲耐久之后（护甲磨损不受 Resistance 影响 ✓）且在统计累计（:594 `DamageTaken`）之后 —— 若希望统计记录减免后的值，需把累计语句后移，**在本分支实现时用注释固化选择**。
+2. 插入点：`cEntity::DoTakeDamage` 中，**在攻击方加成之后、`m_Health -=`（[Entity.cpp:600](../src/Entities/Entity.cpp#L600)）之前**，对 `a_TDI.FinalDamage` 应用乘数（该位置在插件钩子 [:434](../src/Entities/Entity.cpp#L434) 之后——Core 默认启用时其减伤已先行扣除，先减后乘，见 §1 附带发现）。
+   该位置在护甲耐久之后（护甲磨损不受 Resistance 影响 ✓）且在统计累计（[:597](../src/Entities/Entity.cpp#L597) `DamageDealt`）之后 —— 若希望统计记录减免后的值，需把累计语句后移，**在本分支实现时用注释固化选择**。
 3. 与 S10（Absorption）的次序：**先 Resistance、后 Absorption**（减免是伤害计算，吸收是伤害分配）→ S10 会复用本分支新增的头文件与插入位置。
 
 ## 4. 测试
@@ -46,6 +46,6 @@ Resistance 是空转效果：类建了（[EntityEffect.cpp:211](../src/Entities/
 ## 5. 已知偏差
 
 - **[needs-check]** 免除来源集合的边界（本分支用保守集合）。
-- **[needs-check]** 减免与「护甲/保护附魔」的先后顺序：因本仓库尚无护甲减伤（§1 附带发现），顺序暂无从体现；护甲减伤补齐时需回归本文件。
-- **[needs-check]** Resistance 与 `m_InvulnerableTicks`（[Entity.cpp:427-431](../src/Entities/Entity.cpp)）无交互（后者是硬免疫，优先），已确认无冲突。
+- **[needs-check]** 减免与「护甲/保护附魔」的先后顺序：默认安装下 Core 的减伤在钩子内先扣（[core_worlds.lua:73-76](../Server/Plugins/Core/core_worlds.lua#L73)），本分支的 Resistance 在其后相乘（先减后乘）；C++ 侧补接线时需回归本文件核对次序。
+- **[needs-check]** Resistance 与 `m_InvulnerableTicks`（[Entity.cpp:428-432](../src/Entities/Entity.cpp#L428)）无交互（后者是硬免疫，优先），已确认无冲突。
 - 怪物侧 Resistance 同样生效（插在 `cEntity` 基类），vanilla 亦如此。
