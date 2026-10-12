@@ -28,6 +28,13 @@ Resolves issue #490
 Return the splitted strings as a stringvector. */
 extern AStringVector StringSplitWithQuotes(const AString & str, const AString & delim);
 
+/** Splits a command line into its arguments.
+Delimiters are single spaces; the empty-token behaviour is byte-identical to StringSplit(str, " ").
+A single- or double-quoted section anywhere inside a token keeps its spaces together and has the
+quotes stripped; a backslash escapes the following character verbatim. An unterminated quote simply
+extends to the end of the string. Returns the splitted strings as a stringvector. */
+extern AStringVector StringSplitCommandLine(const AString & a_Command);
+
 /** Join a list of strings with the given delimiter between entries. */
 AString StringJoin(const AStringVector & a_Strings, const AString & a_Delimiter);
 

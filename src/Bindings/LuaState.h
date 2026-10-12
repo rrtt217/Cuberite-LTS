@@ -42,6 +42,7 @@ extern "C"
 #include "LuaState_Typedefs.inc"
 
 // fwd:
+class cCommandOrigin;
 class cLuaServerHandle;
 class cLuaTCPLink;
 class cLuaUDPEndpoint;
@@ -614,6 +615,7 @@ public:
 	void Push(const AStringMap & a_Dictionary);
 	void Push(const AStringVector & a_Vector);
 	void Push(const char * a_Value);
+	void Push(const cCommandOrigin & a_Origin);
 	void Push(const cItem & a_Item);
 	void Push(const cNil & a_Nil);
 	void Push(const cRef & a_Ref);

@@ -15,6 +15,7 @@ class cBlockEntityWithItems;
 class cBrewingstandEntity;
 class cChunkDesc;
 class cClientHandle;
+class cCommandOrigin;
 class cCommandOutputCallback;
 class cCraftingGrid;
 class cCraftingRecipe;
@@ -194,11 +195,13 @@ public:
 		a_Split is the command string, split at the spaces.
 		a_Player is the player executing the command, nullptr in case of the console.
 		a_Command is the entire command string.
+		a_Origin describes the world and position the command originates from.
 		a_Output is the sink into which the additional text returned by the command handler should be sent; only used for console commands. */
 		virtual bool ExecuteCommand(
 			const AStringVector & a_Split,
 			cPlayer * a_Player,
 			const AString & a_Command,
+			const cCommandOrigin & a_Origin,
 			cCommandOutputCallback * a_Output = nullptr
 		) = 0;
 	};
@@ -379,7 +382,7 @@ public:
 	/** Executes the command split into a_Split, as if it was given on the console.
 	Returns true if executed. Output is sent to the a_Output callback
 	Exported in ManualBindings.cpp with a different signature. */
-	bool ExecuteConsoleCommand(const AStringVector & a_Split, cCommandOutputCallback & a_Output, const AString & a_Command);
+	bool ExecuteConsoleCommand(const AStringVector & a_Split, cCommandOutputCallback & a_Output, const AString & a_Command, const cCommandOrigin & a_Origin);
 
 	/** Appends all commands beginning with a_Text (case-insensitive) into a_Results.
 	If a_Player is not nullptr, only commands for which the player has permissions are added.

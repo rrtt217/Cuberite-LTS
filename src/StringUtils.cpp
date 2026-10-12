@@ -126,6 +126,77 @@ AStringVector StringSplitWithQuotes(const AString & str, const AString & delim)
 
 
 
+AStringVector StringSplitCommandLine(const AString & a_Command)
+{
+	// The delimiter set and the empty-token rule deliberately mirror StringSplit(a_Command, " "):
+	// every delimiter terminates the current token, even when it is empty, and the final token is
+	// appended only when it is non-empty or was explicitly started by a quote. cPluginManager and
+	// Core rely on that behaviour (e.g. the "Split[2] == \"\"" checks in cmd_tell.lua), so it must
+	// not be changed here.
+	AStringVector results;
+	AString current;
+	bool bTokenStarted = false;  // Set once a quote made the token explicit, so that "" yields an empty argument
+	bool bInQuote = false;
+	char QuoteChar = 0;
+	const size_t Length = a_Command.length();
+	for (size_t i = 0; i < Length; i++)
+	{
+		const char ch = a_Command[i];
+		if (ch == '\\')
+		{
+			// A backslash escapes the next character verbatim (\" -> ", \\ -> \):
+			if (i + 1 < Length)
+			{
+				i++;
+				current.push_back(a_Command[i]);
+				bTokenStarted = true;
+			}
+			else
+			{
+				// Trailing backslash is kept as-is:
+				current.push_back(ch);
+			}
+			continue;
+		}
+		if (bInQuote)
+		{
+			if (ch == QuoteChar)
+			{
+				bInQuote = false;
+			}
+			else
+			{
+				current.push_back(ch);
+			}
+			continue;
+		}
+		if ((ch == '"') || (ch == '\''))
+		{
+			bInQuote = true;
+			QuoteChar = ch;
+			bTokenStarted = true;
+			continue;
+		}
+		if (ch == ' ')
+		{
+			results.push_back(std::move(current));
+			current.clear();
+			bTokenStarted = false;
+			continue;
+		}
+		current.push_back(ch);
+	}
+	if (!current.empty() || bTokenStarted)
+	{
+		results.push_back(std::move(current));
+	}
+	return results;
+}
+
+
+
+
+
 AString StringJoin(const AStringVector & a_Strings, const AString & a_Delimeter)
 {
 	if (a_Strings.empty())

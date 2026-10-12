@@ -19,6 +19,7 @@ extern "C"
 #include "LuaJson.h"
 #include "../Entities/Entity.h"
 #include "../BlockEntities/BlockEntity.h"
+#include "../CommandOrigin.h"
 #include "../DeadlockDetect.h"
 #include "../UUID.h"
 
@@ -870,6 +871,17 @@ void cLuaState::Push(const char * a_Value)
 	ASSERT(IsValid());
 
 	tolua_pushstring(m_LuaState, a_Value);
+}
+
+
+
+
+
+void cLuaState::Push(const cCommandOrigin & a_Origin)
+{
+	ASSERT(IsValid());
+	auto c = new cCommandOrigin(a_Origin);
+	tolua_pushusertype_and_takeownership(m_LuaState, c, "cCommandOrigin");
 }
 
 

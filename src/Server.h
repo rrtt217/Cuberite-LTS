@@ -12,6 +12,7 @@
 #include "RCONServer.h"
 #include "OSSupport/IsThread.h"
 #include "OSSupport/Network.h"
+#include "CommandOrigin.h"
 
 #ifdef _MSC_VER
 	#pragma warning(push)
@@ -107,8 +108,9 @@ public:
 
 	/** Queues a console command for execution through the cServer class.
 	The command will be executed in the server tick thread.
-	The command's output will be written to the a_Output callback. */
-	void QueueExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallback & a_Output);
+	The command's output will be written to the a_Output callback.
+	a_Origin describes the world and position the command originates from. */
+	void QueueExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallback & a_Output, const cCommandOrigin & a_Origin);
 
 	/** Queues a lambda task onto the server tick thread, with the specified delay in ticks. */
 	void ScheduleTask(cTickTime a_DelayTicks, std::function<void(class cServer &)> a_Task);
@@ -206,8 +208,16 @@ private:
 	/** Number of players currently playing in the server. */
 	std::atomic_size_t m_PlayerCount;
 
+	/** A console command queued for execution on the server tick thread, together with its origin and output sink. */
+	struct sPendingCommand
+	{
+		AString m_Command;
+		cCommandOutputCallback * m_Output;
+		cCommandOrigin m_Origin;
+	};
+
 	cCriticalSection m_CSPendingCommands;
-	std::vector<std::pair<AString, cCommandOutputCallback *>> m_PendingCommands;
+	std::vector<sPendingCommand> m_PendingCommands;
 
 	int m_ClientViewDistance;  // The default view distance for clients; settable in Settings.ini
 
@@ -280,7 +290,7 @@ private:
 	cServer(void);
 
 	/** Executes the console command, sends output through the specified callback. */
-	void ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallback & a_Output);
+	void ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallback & a_Output, const cCommandOrigin & a_Origin);
 
 	/** Get the Forge mods registered for a given protocol, for modification */
 	AStringMap & RegisteredForgeMods(const UInt32 a_Protocol);

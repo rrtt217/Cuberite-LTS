@@ -531,7 +531,9 @@ void cRoot::QueueExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCall
 	}
 
 	LOG("Executing console command: \"%s\"", a_Cmd.c_str());
-	m_Server->ExecuteConsoleCommand(a_Cmd, a_Output);
+
+	// The console / RCON have no origin of their own; cServer resolves the default world for them:
+	m_Server->ExecuteConsoleCommand(a_Cmd, a_Output, cCommandOrigin());
 }
 
 

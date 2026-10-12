@@ -1,5 +1,101 @@
 return
 {
+	cCommandOrigin =
+	{
+		Desc = [[
+		Describes the execution context of a command: the world it runs in, the position it originates from
+		and the player that issued it (if any). A command handler receives it as its fourth parameter
+		({{cPluginManager|BindCommand}}). Relative coordinates and position-based target selectors are
+		resolved against this origin.</p>
+		<p>
+		The console and RCON use the default world, command blocks use their own block position and neither
+		has an executor; use {{cCommandOrigin|GetPlayer}} (or {{cCommandOrigin|HasPlayer}}) to tell whether
+		a player issued the command.]],
+		Functions =
+		{
+			GetPlayer =
+			{
+				Returns =
+				{
+					{
+						Name = "Player",
+						Type = "cPlayer",
+					},
+				},
+				Notes = "Returns the player that issued the command, or nil for the console, RCON and command blocks.",
+			},
+			GetPosition =
+			{
+				Returns =
+				{
+					{
+						Name = "Position",
+						Type = "Vector3d",
+					},
+				},
+				Notes = "Returns the position the command originates from.",
+			},
+			GetWorld =
+			{
+				Returns =
+				{
+					{
+						Name = "World",
+						Type = "cWorld",
+					},
+				},
+				Notes = "Returns the world the command originates from, or nil if it is not known.",
+			},
+			HasPlayer =
+			{
+				Returns =
+				{
+					{
+						Name = "HasPlayer",
+						Type = "boolean",
+					},
+				},
+				Notes = "Returns true if the command was issued by a player.",
+			},
+			constructor =
+			{
+				{
+					Params = {},
+					Returns =
+					{
+						{
+							Type = "cCommandOrigin",
+						},
+					},
+					Notes = "Creates an origin with no world, the position (0, 0, 0) and no executor.",
+				},
+				{
+					Params =
+					{
+						{
+							Name = "World",
+							Type = "cWorld",
+						},
+						{
+							Name = "Position",
+							Type = "Vector3d",
+						},
+						{
+							Name = "Player",
+							Type = "cPlayer",
+						},
+					},
+					Returns =
+					{
+						{
+							Type = "cCommandOrigin",
+						},
+					},
+					Notes = "Creates an origin from the specified world, position and executor (Player may be nil).",
+				},
+			},
+		},
+	},
 	cPlugin =
 	{
 		Desc = "cPlugin describes a Lua plugin. Each plugin has its own cPlugin object.",
@@ -206,7 +302,7 @@ cPluginManager.AddHook(cPluginManager.HOOK_CHAT, OnChatMessage);
 							Type = "boolean",
 						},
 					},
-					Notes = "Binds an in-game command with the specified callback function, permission and help string. By common convention, providing an empty string for HelpString will hide the command from the /help display. Returns true if successful, logs to console and returns no value on error. The callback uses the following signature: <pre class=\"prettyprint lang-lua\">function(Split, {{cPlayer|Player}})</pre> The Split parameter contains an array-table of the words that the player has sent, Player is the {{cPlayer}} object representing the player who sent the command. If the callback returns true, the command is assumed to have executed successfully; in all other cases the server sends a warning to the player that the command is unknown (this is so that subcommands can be implemented).",
+					Notes = "Binds an in-game command with the specified callback function, permission and help string. By common convention, providing an empty string for HelpString will hide the command from the /help display. Returns true if successful, logs to console and returns no value on error. The callback uses the following signature: <pre class=\"prettyprint lang-lua\">function(Split, {{cPlayer|Player}}, EntireCommand, {{cCommandOrigin|Origin}})</pre> The Split parameter contains an array-table of the words that the player has sent, Player is the {{cPlayer}} object representing the player who sent the command. If the callback returns true, the command is assumed to have executed successfully; in all other cases the server sends a warning to the player that the command is unknown (this is so that subcommands can be implemented).",
 				},
 				{
 					IsStatic = true,
@@ -235,7 +331,7 @@ cPluginManager.AddHook(cPluginManager.HOOK_CHAT, OnChatMessage);
 							Type = "boolean",
 						},
 					},
-					Notes = "Binds an in-game command with the specified callback function, permission and help string. By common convention, providing an empty string for HelpString will hide the command from the /help display. Returns true if successful, logs to console and returns no value on error. The callback uses the following signature: <pre class=\"prettyprint lang-lua\">function(Split, {{cPlayer|Player}})</pre> The Split parameter contains an array-table of the words that the player has sent, Player is the {{cPlayer}} object representing the player who sent the command. If the callback returns true, the command is assumed to have executed successfully; in all other cases the server sends a warning to the player that the command is unknown (this is so that subcommands can be implemented).",
+					Notes = "Binds an in-game command with the specified callback function, permission and help string. By common convention, providing an empty string for HelpString will hide the command from the /help display. Returns true if successful, logs to console and returns no value on error. The callback uses the following signature: <pre class=\"prettyprint lang-lua\">function(Split, {{cPlayer|Player}}, EntireCommand, {{cCommandOrigin|Origin}})</pre> The Split parameter contains an array-table of the words that the player has sent, Player is the {{cPlayer}} object representing the player who sent the command. If the callback returns true, the command is assumed to have executed successfully; in all other cases the server sends a warning to the player that the command is unknown (this is so that subcommands can be implemented).",
 				},
 			},
 			BindConsoleCommand =
@@ -264,7 +360,7 @@ cPluginManager.AddHook(cPluginManager.HOOK_CHAT, OnChatMessage);
 							IsOptional = true,
 						},
 					},
-					Notes = "Binds a console command with the specified callback function and help string. By common convention, providing an empty string for HelpString will hide the command from the \"help\" console command. Returns true if successful, logs to console and returns no value on error. The callback uses the following signature: <pre class=\"prettyprint lang-lua\">function(Split)</pre> The Split parameter contains an array-table of the words that the admin has typed. If the callback returns true, the command is assumed to have executed successfully; in all other cases the server issues a warning to the console that the command is unknown (this is so that subcommands can be implemented).",
+					Notes = "Binds a console command with the specified callback function and help string. By common convention, providing an empty string for HelpString will hide the command from the \"help\" console command. Returns true if successful, logs to console and returns no value on error. The callback uses the following signature: <pre class=\"prettyprint lang-lua\">function(Split, {{cPlayer|Player}}, EntireCommand, {{cCommandOrigin|Origin}})</pre> The Split parameter contains an array-table of the words that the admin has typed. If the callback returns true, the command is assumed to have executed successfully; in all other cases the server issues a warning to the console that the command is unknown (this is so that subcommands can be implemented).",
 				},
 				{
 					Params =
@@ -289,7 +385,7 @@ cPluginManager.AddHook(cPluginManager.HOOK_CHAT, OnChatMessage);
 							IsOptional = true,
 						},
 					},
-					Notes = "Binds a console command with the specified callback function and help string. By common convention, providing an empty string for HelpString will hide the command from the \"help\" console command. Returns true if successful, logs to console and returns no value on error. The callback uses the following signature: <pre class=\"prettyprint lang-lua\">function(Split)</pre> The Split parameter contains an array-table of the words that the admin has typed. If the callback returns true, the command is assumed to have executed successfully; in all other cases the server issues a warning to the console that the command is unknown (this is so that subcommands can be implemented).",
+					Notes = "Binds a console command with the specified callback function and help string. By common convention, providing an empty string for HelpString will hide the command from the \"help\" console command. Returns true if successful, logs to console and returns no value on error. The callback uses the following signature: <pre class=\"prettyprint lang-lua\">function(Split, {{cPlayer|Player}}, EntireCommand, {{cCommandOrigin|Origin}})</pre> The Split parameter contains an array-table of the words that the admin has typed. If the callback returns true, the command is assumed to have executed successfully; in all other cases the server issues a warning to the console that the command is unknown (this is so that subcommands can be implemented).",
 				},
 			},
 			CallPlugin =

@@ -10,6 +10,7 @@
 #include "../CommandOutput.h"
 
 #include "../IniFile.h"
+#include "../CommandOrigin.h"
 #include "../Entities/Player.h"
 
 
@@ -356,7 +357,7 @@ bool cPluginManager::CallHookChat(cPlayer & a_Player, AString & a_Message)
 	// Check if the message is a command (starts with a slash). If it is, we know that it wasn't recognised:
 	if (!a_Message.empty() && (a_Message[0] == '/'))
 	{
-		AStringVector Split(StringSplit(a_Message, " "));
+		AStringVector Split(StringSplitCommandLine(a_Message));
 		ASSERT(!Split.empty());  // This should not happen - we know there's at least one char in the message so the split needs to be at least one item long
 		a_Player.SendMessageInfo(fmt::format(FMT_STRING("Unknown command: \"{}\""), a_Message));
 		LOGINFO("Player %s issued an unknown command: \"%s\"", a_Player.GetName(), a_Message);
@@ -1255,7 +1256,7 @@ bool cPluginManager::CallHookWorldTick(cWorld & a_World, std::chrono::millisecon
 
 cPluginManager::CommandResult cPluginManager::HandleCommand(cPlayer & a_Player, const AString & a_Command, bool a_ShouldCheckPermissions)
 {
-	AStringVector Split(StringSplit(a_Command, " "));
+	AStringVector Split(StringSplitCommandLine(a_Command));
 	if (Split.empty())
 	{
 		return crUnknownCommand;
@@ -1298,7 +1299,13 @@ cPluginManager::CommandResult cPluginManager::HandleCommand(cPlayer & a_Player, 
 
 	ASSERT(cmd->second.m_Handler != nullptr);
 
-	if (!cmd->second.m_Handler->ExecuteCommand(Split, &a_Player, a_Command, nullptr))
+	// The command originates from the player's own world and position:
+	const cCommandOrigin Origin(a_Player.GetWorld(), a_Player.GetPosition(), &a_Player);
+
+	// a_Output is intentionally nullptr for player commands: Lua handlers send their feedback to the
+	// player directly (SendMessage() etc.), and their return string is only used for console output.
+	// Do not change this to a real callback without updating Core (see core_functions.lua).
+	if (!cmd->second.m_Handler->ExecuteCommand(Split, &a_Player, a_Command, Origin, nullptr))
 	{
 		return crError;
 	}
@@ -1585,7 +1592,7 @@ bool cPluginManager::IsConsoleCommandBound(const AString & a_Command)
 
 
 
-bool cPluginManager::ExecuteConsoleCommand(const AStringVector & a_Split, cCommandOutputCallback & a_Output, const AString & a_Command)
+bool cPluginManager::ExecuteConsoleCommand(const AStringVector & a_Split, cCommandOutputCallback & a_Output, const AString & a_Command, const cCommandOrigin & a_Origin)
 {
 	if (a_Split.empty())
 	{
@@ -1615,7 +1622,7 @@ bool cPluginManager::ExecuteConsoleCommand(const AStringVector & a_Split, cComma
 		return (res == crExecuted);
 	}
 
-	return cmd->second.m_Handler->ExecuteCommand(a_Split, nullptr, a_Command, &a_Output);
+	return cmd->second.m_Handler->ExecuteCommand(a_Split, nullptr, a_Command, a_Origin, &a_Output);
 }
 
 

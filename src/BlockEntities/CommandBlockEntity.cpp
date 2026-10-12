@@ -192,7 +192,16 @@ void cCommandBlockEntity::Execute()
 	{
 		cServer * Server = cRoot::Get()->GetServer();
 		LOGD("cCommandBlockEntity: Executing command %s", m_Command.c_str());
-		Server->QueueExecuteConsoleCommand(RealCommand, *new CommandBlockOutCb(this));
+
+		// A command block executes at its own block position; the exact offset is an approximation
+		// until verified against 1.12.2 (spec: speculated / to be verified). It has no executor
+		// (vanilla has no "@s" for a command block).
+		const cCommandOrigin Origin(
+			GetWorld(),
+			Vector3d(m_Pos.x + 0.5, m_Pos.y + 1, m_Pos.z + 0.5),
+			nullptr
+		);
+		Server->QueueExecuteConsoleCommand(RealCommand, *new CommandBlockOutCb(this), Origin);
 	}
 	else
 	{

@@ -36,6 +36,7 @@ function(enable_bindings_generation)
 		ChunkDef.h
 		ClientHandle.h
 		Color.h
+		CommandOrigin.h
 		CompositeChat.h
 		CraftingRecipes.h
 		Cuboid.h

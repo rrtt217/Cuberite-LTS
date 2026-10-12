@@ -26,6 +26,7 @@
 #include "../BoundingBox.h"
 #include "BuildInfo.h"
 #include "../ClientHandle.h"
+#include "../CommandOrigin.h"
 #include "../CommandOutput.h"
 #include "../CompositeChat.h"
 #include "../Entities/Player.h"
@@ -68,12 +69,16 @@ public:
 		const AStringVector & a_Split,
 		cPlayer * a_Player,
 		const AString & a_Command,
+		const cCommandOrigin & a_Origin,
 		cCommandOutputCallback * a_Output
 	) override
 	{
 		bool res = false;
 		AString s;
-		if (!m_Callback->Call(a_Split, a_Player, a_Command, cLuaState::Return, res, s))
+
+		// The origin is appended as the 4th Lua parameter; existing handlers that only declare
+		// (Split, Player, Command) keep working, because Lua ignores extra arguments.
+		if (!m_Callback->Call(a_Split, a_Player, a_Command, a_Origin, cLuaState::Return, res, s))
 		{
 			return false;
 		}
@@ -1504,11 +1509,11 @@ static int tolua_cPluginManager_ExecuteConsoleCommand(lua_State * tolua_S)
 	// Get the params:
 	AString Command;
 	L.GetStackValues(2, Command);
-	auto Split = StringSplit(Command, " ");
+	auto Split = StringSplitCommandLine(Command);
 
 	// Store the command output in a string:
 	cStringAccumCommandOutputCallback CommandOutput;
-	L.Push(cPluginManager::Get()->ExecuteConsoleCommand(Split, CommandOutput, Command));
+	L.Push(cPluginManager::Get()->ExecuteConsoleCommand(Split, CommandOutput, Command, cCommandOrigin()));
 	L.Push(CommandOutput.GetAccum());
 	return 2;
 }

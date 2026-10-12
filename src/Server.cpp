@@ -444,11 +444,11 @@ bool cServer::Command(cClientHandle & a_Client, AString & a_Cmd)
 
 
 
-void cServer::QueueExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallback & a_Output)
+void cServer::QueueExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallback & a_Output, const cCommandOrigin & a_Origin)
 {
 	// Put the command into a queue (Alleviates FS #363):
 	cCSLock Lock(m_CSPendingCommands);
-	m_PendingCommands.emplace_back(a_Cmd, &a_Output);
+	m_PendingCommands.push_back({a_Cmd, &a_Output, a_Origin});
 }
 
 
@@ -469,12 +469,20 @@ void cServer::ScheduleTask(cTickTime a_DelayTicks, std::function<void(cServer &)
 
 
 
-void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallback & a_Output)
+void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallback & a_Output, const cCommandOrigin & a_Origin)
 {
-	AStringVector split = StringSplit(a_Cmd, " ");
+	AStringVector split = StringSplitCommandLine(a_Cmd);
 	if (split.empty())
 	{
 		return;
+	}
+
+	// The console and RCON have no world of their own; vanilla runs their commands in the default world.
+	// Command blocks and other callers already provide a fully resolved origin:
+	cCommandOrigin Origin(a_Origin);
+	if (Origin.GetWorld() == nullptr)
+	{
+		Origin = cCommandOrigin(cRoot::Get()->GetDefaultWorld(), Origin.GetPosition(), Origin.GetPlayer());
 	}
 
 	// "stop" and "restart" are handled in cRoot::ExecuteConsoleCommand, our caller, due to its access to controlling variables
@@ -577,7 +585,7 @@ void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallbac
 		a_Output.Finished();
 		return;
 	}
-	else if (cPluginManager::Get()->ExecuteConsoleCommand(split, a_Output, a_Cmd))
+	else if (cPluginManager::Get()->ExecuteConsoleCommand(split, a_Output, a_Cmd, Origin))
 	{
 		a_Output.Finished();
 		return;
@@ -645,6 +653,7 @@ void cServer::BindBuiltInConsoleCommands(void)
 			const AStringVector & a_Split,
 			cPlayer * a_Player,
 			const AString & a_Command,
+			const cCommandOrigin & a_Origin,
 			cCommandOutputCallback * a_Output = nullptr
 		) override
 		{
@@ -750,7 +759,7 @@ void cServer::TickCommands(void)
 	// Execute any pending commands:
 	for (const auto & Command : PendingCommands)
 	{
-		ExecuteConsoleCommand(Command.first, *Command.second);
+		ExecuteConsoleCommand(Command.m_Command, *Command.m_Output, Command.m_Origin);
 	}
 }
 
