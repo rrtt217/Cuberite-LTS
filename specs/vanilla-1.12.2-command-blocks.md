@@ -21,7 +21,7 @@
 
 ## 2. 行为规格（1.12.2）
 
-来源：[Command block](https://minecraft.wiki/w/Command_block)。**注意**：该页描述的是现行版本（1.13 红石大修后的 UI/术语，如 Impulse/Chain/Repeat 按钮、Always Active）。1.12.2 的 GUI 文案与 NBT 字段名必须另找 1.12.2 时期来源核对（版本历史小节 + 合法客户端实测）；下列带 **†** 的条目为**推测**，实现前须核实。
+来源：[Command block](https://minecraft.wiki/w/Command_block)。**注意**：该页描述的是现行版本（1.13 红石大修后的 UI/术语，如 Impulse/Chain/Repeat 按钮、Always Active）。1.12.2 的 GUI 文案与 NBT 字段名必须另找 1.12.2 时期来源核对（版本历史小节 + 合法客户端实测）；下列带 **†** 的条目为**〔推测〕**，实现前须核实。
 
 1. **三型语义**：脉冲（激活执行一次）、链（被前一方块**触发**时执行）、循环（激活期间每 tick 执行）。
 2. **成功计数**：执行后置为该命令的成功计数；条件模式且后方方块未成功 → 置 0 且不执行。†（条件模式的 1.12.2 GUI 文案：`Conditional/Unconditional` + `Impulse/Stay loaded`）

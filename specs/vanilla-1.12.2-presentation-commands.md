@@ -10,7 +10,7 @@
 |---|---|---|---|
 | `/title` | 无 `cmd_title.lua` | `cClientHandle::SendSetTitle`（[ClientHandle.h:222](../src/ClientHandle.h#L222)）、`SendTitleTimes`（[:232](../src/ClientHandle.h#L232)），已文档化（[APIDesc.lua:1857](../Server/Plugins/APIDump/APIDesc.lua#L1857)、[:1952](../Server/Plugins/APIDump/APIDesc.lua#L1952)） | **API 齐，缺命令** |
 | `/particle` | 无 | `cWorld::BroadcastParticleEffect`（[World.h:182-183](../src/World.h#L182)，两个重载：带/不带 `std::array<int,2>` 附加数据） | **API 齐，缺命令** |
-| `/playsound` `/stopsound` | 无 | 需定位 sound 下发函数（本文件**未**核实其导出形态，实现前先查 [APIDesc.lua](../Server/Plugins/APIDump/APIDesc.lua) 的 `cClientHandle` 段） | **API 待核** |
+| `/playsound` `/stopsound` | 无 | 需定位 sound 下发函数（本文件**未**核实其导出形态，实现前先查 [APIDesc.lua](../Server/Plugins/APIDump/APIDesc.lua) 的 `cClientHandle` 段） | **〔待核〕** |
 
 即：**这不是「要新建架构」的缺口，而是 Core 少写了几个 `cmd_*.lua`。**
 

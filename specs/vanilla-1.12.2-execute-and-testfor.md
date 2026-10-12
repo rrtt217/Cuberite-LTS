@@ -25,8 +25,8 @@
 6. **成功计数回传命令方块**：版本历史 `1.8 → 14w08a`「The success value of an executed command is now passed back to the command block it was run from」。
 7. **版本边界**：`1.13 → 17w45a` 起 `/execute` 被整体重做（`as/at/run/if/unless`）→ 本 fork **不**得实现 1.13+ 子命令（[AGENTS.md §9](../AGENTS.md)）。
 
-**未核实（实现前必须补来源，标为推测）**：
-- `^`（insertion/局部坐标）在 1.12.2 是否可用 → **推测：不可用**（现行页面把 caret 记为 1.13+ 引入，但未逐条核对）。本分支只实现 `~` 与绝对坐标。
+**未核实（实现前必须补来源，标为〔推测〕）**：
+- `^`（insertion/局部坐标）在 1.12.2 是否可用 → **〔推测〕：不可用**（现行页面把 caret 记为 1.13+ 引入，但未逐条核对）。本分支只实现 `~` 与绝对坐标。
 - `/testfor` 与 `/testforblock` 的 1.12.2 精确语法与错误文案 → 需 [Commands/testfor](https://minecraft.wiki/w/Commands/testfor)、[Commands/testforblock](https://minecraft.wiki/w/Commands/testforblock) 的历史修订（本轮未取）。
 - 方块参数的写法（数字 ID / `minecraft:sand` / 名称 + 数据值）在 1.12.2 的确切集合。
 - 多目标时**成功计数的定义**（选中数？每个目标各 1？）→ 与 C3 §2.2 一同核实。

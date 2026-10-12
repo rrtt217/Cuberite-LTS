@@ -9,13 +9,13 @@
 | 1 | Core `/scoreboard` 只实现 `objectives` 与 `players`；**没有 `teams` 子命令** | [cmd_scoreboard.lua:42](../Server/Plugins/Core/cmd_scoreboard.lua#L42) 的用法串自陈只支持 `add, remove, list, setdisplay, modify`；全文 `grep -n teams` 零命中 | `/scoreboard teams add\|remove\|join\|leave\|empty\|list\|option` |
 | 2 | C++ 侧队伍 API **完整存在**，纯属「没人调」 | [Scoreboard.h:125](../src/Scoreboard.h#L125) `cTeam`（`AddPlayer`/`RemovePlayer`/`HasPlayer`/`Reset`/前后缀/`SetFriendlyFire`/`SetCanSeeFriendlyInvisible`）、`RegisterTeam` [:231](../src/Scoreboard.h#L231)、`RemoveTeam` [:234](../src/Scoreboard.h#L234)、`GetTeam` [:237](../src/Scoreboard.h#L237)、`ForEachTeam` [:269](../src/Scoreboard.h#L269)、`QueryPlayerTeam` [:257](../src/Scoreboard.h#L257) | 命令侧封装即可 |
 | 3 | 玩家 ↔ 队伍已有通路 | [Player.h:243-254](../src/Entities/Player.h#L243)（`GetTeam`/`SetTeam`/`UpdateTeam`） | 加入/退出即时反映到名牌 |
-| 4 | 显示槽位只有三个：`dsList` / `dsSidebar` / `dsName` | [Scoreboard.h:203-210](../src/Scoreboard.h#L203) | 与 1.12.2 的 `list` / `sidebar` / `belowname` 对应（**推测**：1.12.2 正是这三个；现行 wiki 还有 `sidebar.team.<color>` 属 1.8–1.12 的彩色侧边栏？→ 待核实） |
-| 5 | 聊天前后缀取自 rank 而非队伍 | [ClientHandle.cpp:1560-1562](../src/ClientHandle.cpp#L1560) 用 `cPlayer::GetPrefix/GetSuffix`（实现见 [Player.cpp:1674/1683](../src/Entities/Player.cpp#L1674)） | 队伍前后缀应作用于名牌与聊天（1.12.2 行为，待核实具体叠加顺序） |
-| 6 | 记分板已落盘 | [ScoreboardSerializer.cpp:20](../src/WorldStorage/ScoreboardSerializer.cpp#L20)（每世界 `scoreboard.dat`） | 队伍是否随存？→ **待核实**（该序列化器的字段集合本轮未读） |
+| 4 | 显示槽位只有三个：`dsList` / `dsSidebar` / `dsName` | [Scoreboard.h:203-210](../src/Scoreboard.h#L203) | 与 1.12.2 的 `list` / `sidebar` / `belowname` 对应（**〔推测〕**：1.12.2 正是这三个；现行 wiki 还有 `sidebar.team.<color>` 属 1.8–1.12 的彩色侧边栏？→ 〔待核〕） |
+| 5 | 聊天前后缀取自 rank 而非队伍 | [ClientHandle.cpp:1560-1562](../src/ClientHandle.cpp#L1560) 用 `cPlayer::GetPrefix/GetSuffix`（实现见 [Player.cpp:1674/1683](../src/Entities/Player.cpp#L1674)） | 队伍前后缀应作用于名牌与聊天（1.12.2 行为，具体叠加顺序〔待核〕） |
+| 6 | 记分板已落盘 | [ScoreboardSerializer.cpp:20](../src/WorldStorage/ScoreboardSerializer.cpp#L20)（每世界 `scoreboard.dat`） | 队伍是否随存？→ **〔待核〕**（该序列化器的字段集合本轮未读；核法——读 `ScoreboardSerializer` 的字段集合） |
 
 **结论**：C6 的主体是「Core 缺命令」而非「C++ 缺能力」，因此与 C1/C5 同属插件侧分支；只有 §5（前后缀应用）与 §4（槽位）可能触及 `src/`。
 
-## 2. 行为规格（**待核实**，本轮未取来源页）
+## 2. 行为规格（**〔待核〕**，本轮未取来源页）
 
 1.12.2 的 `/scoreboard teams option` 键集合、各键取值、颜色码格式、`collisionRule` 是否已在 1.12.2 存在、`empty` 与 `leave` 的差别、`join` 省略目标时的默认行为——**本文件一律不给具体清单**（[AGENTS.md §2.3](../AGENTS.md) 禁止凭记忆写）。开工前先取：
 
