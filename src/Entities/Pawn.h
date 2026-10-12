@@ -58,7 +58,10 @@ public:
 	// tolua_begin
 
 	/** Applies an entity effect.
-	Checks with plugins if they allow the addition.
+	Checks with plugins if they allow the addition, then rejects the effect outright if this pawn is
+	immune to it (the rules are in "EffectImmunityRules.h": undead mobs are immune to Regeneration and
+	Poison, wither skeletons additionally to Wither, spiders and cave spiders to Poison, and the wither
+	and the ender dragon to everything).
 	If the effect is already active, the two are combined according to the 1.12.2 rules in
 	"EffectCombineRules.h" (a stronger effect replaces, a weaker one is ignored, an equally strong one only
 	extends the active effect's remaining time).

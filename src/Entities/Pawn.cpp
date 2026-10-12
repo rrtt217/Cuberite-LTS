@@ -4,6 +4,7 @@
 #include "Pawn.h"
 #include "Player.h"
 #include "EffectCombineRules.h"
+#include "EffectImmunityRules.h"
 #include "../BlockInfo.h"
 #include "../World.h"
 #include "../Bindings/PluginManager.h"
@@ -200,6 +201,27 @@ void cPawn::AddEntityEffect(cEntityEffect::eType a_EffectType, int a_Duration, s
 	{
 		// A plugin disallows the addition, bail out.
 		return;
+	}
+
+	// An immune entity rejects the effect as a whole - it does not enter the map and its icon is not
+	// broadcast.  The rules themselves are in "EffectImmunityRules.h" (spec 2):
+	{
+		eMonsterType MobType = mtInvalidType;
+		bool IsUndead = false;
+		bool IsBoss = false;
+
+		if (IsMob())
+		{
+			cMonster & Mob = static_cast<cMonster &>(*this);
+			MobType = Mob.GetMobType();
+			IsUndead = Mob.IsUndead();
+			IsBoss = IsBossImmuneToAllEffects(MobType);
+		}
+
+		if (!IsEffectApplicable(a_EffectType, MobType, IsUndead, IsBoss))
+		{
+			return;
+		}
 	}
 
 	// No need to add empty effects:

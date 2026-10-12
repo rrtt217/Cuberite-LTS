@@ -3,10 +3,31 @@
 #include "EntityEffect.h"
 #include "EffectNumbers.h"
 #include "EffectSpeedRules.h"
+#include "EffectImmunityRules.h"
 #include "HungerRules.h"
 #include "Player.h"
 #include "../Chunk.h"
 #include "../Mobs/Monster.h"
+
+
+
+
+
+/** Returns whether a_Type may be applied to a_Target according to the immunity table in
+"EffectImmunityRules.h".  The effects' OnTick overrides use this to assert that an immune mob never got
+the effect in the first place; the actual rejection happens once, in cPawn::AddEntityEffect (spec 3). */
+[[maybe_unused]] static bool TargetAcceptsEffect(cPawn & a_Target, cEntityEffect::eType a_Type)
+{
+	if (!a_Target.IsMob())
+	{
+		// Only mobs are immune to an effect in 1.12.2; a player is neither undead nor a boss:
+		return IsEffectApplicable(a_Type, mtInvalidType, false, false);
+	}
+
+	cMonster & Mob = static_cast<cMonster &>(a_Target);
+	const eMonsterType MobType = Mob.GetMobType();
+	return IsEffectApplicable(a_Type, MobType, Mob.IsUndead(), IsBossImmuneToAllEffects(MobType));
+}
 
 
 
@@ -370,10 +391,10 @@ void cEntityEffectRegeneration::OnTick(cPawn & a_Target)
 {
 	Super::OnTick(a_Target);
 
-	if (a_Target.IsMob() && static_cast<cMonster &>(a_Target).IsUndead())
-	{
-		return;
-	}
+	// Undead mobs are immune to Regeneration, so this effect is never applied to them: cPawn::AddEntityEffect
+	// rejects it through the immunity table in "EffectImmunityRules.h".  Assert that guarantee instead of
+	// branching a second time here, which would let the table and this tick drift apart unnoticed:
+	ASSERT(TargetAcceptsEffect(a_Target, cEntityEffect::effRegeneration));
 
 	// Regen frequency = 50 ticks, divided by potion level (Regen II = 25 ticks)
 	int frequency = std::max(1, FloorC(50.0 / static_cast<double>(m_Intensity + 1)));
@@ -450,20 +471,10 @@ void cEntityEffectPoison::OnTick(cPawn & a_Target)
 {
 	Super::OnTick(a_Target);
 
-	if (a_Target.IsMob())
-	{
-		cMonster & Target = static_cast<cMonster &>(a_Target);
-
-		// Doesn't effect undead mobs, spiders
-		if (
-			Target.IsUndead() ||
-			(Target.GetMobType() == mtSpider) ||
-			(Target.GetMobType() == mtCaveSpider)
-		)
-		{
-			return;
-		}
-	}
+	// Undead mobs, spiders and cave spiders are immune to Poison and never receive it: cPawn::AddEntityEffect
+	// rejects it through the immunity table in "EffectImmunityRules.h".  Assert that guarantee instead of
+	// branching a second time here, which would let the table and this tick drift apart unnoticed:
+	ASSERT(TargetAcceptsEffect(a_Target, cEntityEffect::effPoison));
 
 	// Poison frequency = 25 ticks, divided by potion level (Poison II = 12 ticks)
 	int frequency = std::max(1, FloorC(25.0 / static_cast<double>(m_Intensity + 1)));
@@ -488,6 +499,11 @@ void cEntityEffectPoison::OnTick(cPawn & a_Target)
 void cEntityEffectWither::OnTick(cPawn & a_Target)
 {
 	Super::OnTick(a_Target);
+
+	// Wither skeletons (and the two bosses, which are immune to everything) are immune to Wither and never
+	// receive it: cPawn::AddEntityEffect rejects it through the immunity table in "EffectImmunityRules.h".
+	// Assert that guarantee, so the table and this tick cannot drift apart unnoticed:
+	ASSERT(TargetAcceptsEffect(a_Target, cEntityEffect::effWither));
 
 	// Damage frequency = 40 ticks, divided by effect level (Wither II = 20 ticks)
 	int frequency = std::max(1, FloorC(40.0 / static_cast<double>(m_Intensity + 1)));

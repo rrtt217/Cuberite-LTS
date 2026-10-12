@@ -54,3 +54,4 @@
 - **[needs-check]** 创造/旁观模式下效果是否应被服务端拒绝：本 spec 判定「不应拒绝」（vanilla 会显示图标），故本分支不做游戏模式豁免；需实机确认伤害吸收路径后另议。
 - **[needs-check]** 「凋灵免疫所有效果」在 1.12.2 的完整清单（现代 wiki 的免疫段含 1.14+ 新增条目，已按 1.12.2 存在的效果裁剪）。
 - 免疫生效后，原本依赖「图标已上」的插件行为可能变化 → 记入交付说明（属修复，非回归）。
+- **前置缺口（本分支不修）**：`cWitherSkeleton` 未覆写 `IsUndead()`（[WitherSkeleton.h](../src/Mobs/WitherSkeleton.h)；仓库内仅 `Skeleton` / `Zombie` / `ZombiePigman` / `ZombieVillager` / `Wither` 覆写），故本分支落地后凋灵骷髅**仍不会**因「不死族」而免疫 Regeneration / Poison——它的 Wither 免疫由免疫表的 `mtWitherSkeleton` 行独立保证。按 [AGENTS.md](../AGENTS.md) §3「可绕过的相关缺口」处理：不在本分支实现（补 `IsUndead()` 会把瞬间治疗反转、Smite、亡灵特有目标选择等一并改掉，属独立任务），建议后续单独下达。

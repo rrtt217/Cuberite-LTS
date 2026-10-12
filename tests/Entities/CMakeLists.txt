@@ -11,6 +11,15 @@ add_test(
 	COMMAND EffectCombineRulesTest
 )
 
+add_executable(EffectImmunityRulesTest
+	EffectImmunityRulesTest.cpp
+)
+target_link_libraries(EffectImmunityRulesTest GeneratorTestingSupport)
+add_test(
+	NAME EffectImmunityRulesTest
+	COMMAND EffectImmunityRulesTest
+)
+
 add_executable(EffectNumbersTest
 	EffectNumbersTest.cpp
 )
@@ -54,6 +63,7 @@ add_test(
 # Put the projects into solution folders (MSVC):
 set_target_properties(
 	EffectCombineRulesTest
+	EffectImmunityRulesTest
 	EffectNumbersTest
 	EffectSpeedRulesTest
 	FireproofRulesTest
