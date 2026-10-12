@@ -100,6 +100,11 @@ public:
 	void SetIntensity(short a_Intensity)                { m_Intensity        = a_Intensity;        }
 	void SetDistanceModifier(double a_DistanceModifier) { m_DistanceModifier = a_DistanceModifier; }
 
+	/** Advances the number of ticks this effect has been active for.  The remaining time of an effect is
+	GetDuration() - GetTicks(), and extending an effect without restarting it means raising GetDuration()
+	by the same amount (see "EffectCombineRules.h" in this folder). */
+	void AddTicks(int a_Ticks)                          { m_Ticks            += a_Ticks;           }
+
 	/** Called on each tick.
 	By default increases the m_Ticks, descendants may override to provide additional processing. */
 	virtual void OnTick(cPawn & a_Target);

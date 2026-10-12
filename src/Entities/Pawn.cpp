@@ -3,6 +3,7 @@
 
 #include "Pawn.h"
 #include "Player.h"
+#include "EffectCombineRules.h"
 #include "../BlockInfo.h"
 #include "../World.h"
 #include "../Bindings/PluginManager.h"
@@ -206,13 +207,56 @@ void cPawn::AddEntityEffect(cEntityEffect::eType a_EffectType, int a_Duration, s
 	{
 		return;
 	}
-	a_Duration = static_cast<int>(a_Duration * a_DistanceModifier);
 
-	// If we already have the effect, we have to deactivate it or else it will act cumulatively
+	// A negative duration is a caller error; treat it as "already over" rather than as a negative remaining
+	// time, which would keep the effect alive until the elapsed ticks happened to catch up anyway (spec 4):
+	a_Duration = std::max(0, a_Duration);
+
+	// a_DistanceModifier only scales the potency of instantaneous effects now; the sources that decay an
+	// effect with the distance (splash potions) have already scaled the duration before calling this
+	// function, so that one parameter no longer carries two meanings (spec 1.1 and 3):
+
+	// If we already have the effect, combine the new one with it instead of replacing it blindly:
 	auto ExistingEffect = m_EntityEffects.find(a_EffectType);
 	if (ExistingEffect != m_EntityEffects.end())
 	{
-		ExistingEffect->second->OnDeactivate(*this);
+		cEntityEffect * Active = ExistingEffect->second.get();
+
+		// An instantaneous effect (potion of healing / harming / saturation) is not a lasting effect that
+		// could be combined - every application has to run its OnActivate immediately - so it always
+		// replaces the stored one.  Everything else follows the 1.12.2 combination rules:
+		const EffectCombine Decision = IsInstantEffect(a_EffectType) ? EffectCombine::Replace : DecideCombine(
+			Active->GetIntensity(), Active->GetDuration() - Active->GetTicks(), Active->GetTicks(),
+			a_Intensity, a_Duration
+		);
+
+		switch (Decision)
+		{
+			case EffectCombine::Ignore:
+			{
+				// The active effect is stronger, or just as strong and not shorter; it is left completely
+				// untouched, including its already elapsed ticks:
+				return;
+			}
+			case EffectCombine::ExtendDuration:
+			{
+				// Keep the ticks the effect has already run for and only raise its remaining time.  The
+				// clients are told the new remaining time, which is what they count down from:
+				Active->SetDuration(ExtendedTotalDuration(Active->GetTicks(), a_Duration));
+				m_World->BroadcastEntityEffect(*this, a_EffectType, Active->GetIntensity(), a_Duration);
+				return;
+			}
+			case EffectCombine::Replace:
+			{
+				// Erase the active effect from the map before deactivating it: OnDeactivate may broadcast
+				// metadata (the invisibility effect does), and those broadcasts must see the state
+				// without the old effect:
+				auto Replaced = std::move(ExistingEffect->second);
+				m_EntityEffects.erase(ExistingEffect);
+				Replaced->OnDeactivate(*this);
+				break;
+			}
+		}
 	}
 
 	auto Res = m_EntityEffects.emplace(a_EffectType, cEntityEffect::CreateEntityEffect(a_EffectType, a_Duration, a_Intensity, a_DistanceModifier));

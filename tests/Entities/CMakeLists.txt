@@ -2,6 +2,15 @@ include_directories(${PROJECT_SOURCE_DIR}/src/)
 include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/lib/)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+add_executable(EffectCombineRulesTest
+	EffectCombineRulesTest.cpp
+)
+target_link_libraries(EffectCombineRulesTest GeneratorTestingSupport)
+add_test(
+	NAME EffectCombineRulesTest
+	COMMAND EffectCombineRulesTest
+)
+
 add_executable(EffectNumbersTest
 	EffectNumbersTest.cpp
 )
@@ -44,6 +53,7 @@ add_test(
 
 # Put the projects into solution folders (MSVC):
 set_target_properties(
+	EffectCombineRulesTest
 	EffectNumbersTest
 	EffectSpeedRulesTest
 	FireproofRulesTest

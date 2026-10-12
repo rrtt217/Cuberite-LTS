@@ -9710,7 +9710,7 @@ a_Player:OpenWindow(Window);
 							Type = "number",
 						},
 					},
-					Notes = "Applies an entity effect. Checks with plugins if they allow the addition. EffectIntensity is the level of the effect (0 = Potion I, 1 = Potion II, etc). DistanceModifier is the scalar multiplied to the potion duration (only applies to splash potions).",
+					Notes = "Applies an entity effect. Checks with plugins if they allow the addition. If the effect is already active it is combined with the new one: a stronger effect replaces it, a weaker one is ignored, and an equally strong one only extends the active effect's remaining time. EffectIntensity is the level of the effect (0 = Potion I, 1 = Potion II, etc). DistanceModifier scales the potency of instantaneous effects (only splash potions decay with distance); it does NOT scale the duration, so EffectDurationTicks must already include any distance decay.",
 				},
 				ClearEntityEffects =
 				{

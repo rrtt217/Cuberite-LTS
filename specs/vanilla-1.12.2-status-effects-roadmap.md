@@ -75,7 +75,7 @@
 | 护甲 / 保护附魔的**减伤**（C++ 内侧未接入） | 实测：C++ 内 `GetArmorCoverAgainst` 的返回值只用于护甲耐久（[Entity.cpp:440-441](../src/Entities/Entity.cpp#L440)）。**该减伤已由 Core 插件（默认启用）在 `OnTakeDamage` 钩子内实现**：对所有经钩子的伤害扣 `ArmorCover + EnchantmentCover`（[core_worlds.lua:73-76](../Server/Plugins/Core/core_worlds.lua#L73)；钩子位于 [Entity.cpp:434](../src/Entities/Entity.cpp#L434)，在暴击/附魔加成之前）。S9 的 Resistance 插入点（攻击方加成之后、`m_Health -=` 之前）在钩子之后，与 Core 减伤叠加；C++ 侧补接线时需回归 S8/S9/S10 的插入次序（Core 减伤先于暴击/锋利加成，S8/S9 的 `[needs-check]` 次序判定须把这一点纳入） |
 | 攻击冷却驱动的伤害倍率 | 全仓库无 `m_DamageCooldown`/`GetDamageCooldown`，属战斗系统缺口 |
 | 河豚 Poison/Nausea 等级、龙息云伤害模型、`/effect` 无限时长语义 | 需 1.12.2 oracle 或更精确的允许来源，见各 spec `[needs-check]` |
-| 玩家 NBT 呼吸附魔夜视（[Entity.cpp:1872](../src/Entities/Entity.cpp)）是否应存在 | 允许来源未直接佐证 1.12.2 呼吸附魔是否给夜视；S5 只修「`DistanceModifier=0` 使时长归零」这一确定性错误 |
+| 玩家 NBT 呼吸附魔夜视（[Entity.cpp:1875](../src/Entities/Entity.cpp)）是否应存在 | **已由允许来源结清**：[Respiration](https://minecraft.wiki/w/Respiration) 的 History 段记载 Java 版 1.13 / 18w08b 才「no longer grants enhanced vision underwater」→ 1.12.2 有该行为，S5 保留并修好它。仍待 oracle 的只是「用 Night Vision 效果近似 + `200 tick / amplifier 5`」这一实现取值 |
 
 ## 6. 本次审计撤回的一条初判
 

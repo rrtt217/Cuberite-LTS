@@ -1866,7 +1866,13 @@ void cEntity::HandleAir(void)
 
 		if (RespirationLevel > 0)
 		{
-			static_cast<cPawn *>(this)->AddEntityEffect(cEntityEffect::effNightVision, 200, 5, 0);
+			// Respiration does grant enhanced vision underwater up to 1.12.2; it only stopped doing so in
+			// 1.13 / 18w08b ("Respiration no longer grants enhanced vision underwater",
+			// https://minecraft.wiki/w/Respiration#History).  Vanilla renders that as an underwater
+			// fog / lighting change in the client rather than as the Night Vision effect, so this Night
+			// Vision approximation - and its 200 ticks at amplifier 5 - still awaits an in-game check
+			// against a 1.12.2 oracle (TODO(needs-check)):
+			static_cast<cPawn *>(this)->AddEntityEffect(cEntityEffect::effNightVision, 200, 5);
 		}
 
 		if (m_AirLevel <= 0)

@@ -2,22 +2,9 @@
 
 #include "SplashPotionEntity.h"
 #include "AreaEffectCloud.h"
+#include "EffectCombineRules.h"
 #include "Pawn.h"
 #include "../EffectID.h"
-
-
-
-
-
-/** Returns whether the given status effect is applied instantly (so its potency, not duration, scales). */
-static bool IsInstantEffect(cEntityEffect::eType a_Type)
-{
-	return (
-		(a_Type == cEntityEffect::effInstantHealth) ||
-		(a_Type == cEntityEffect::effInstantDamage) ||
-		(a_Type == cEntityEffect::effSaturation)
-	);
-}
 
 
 
@@ -84,7 +71,12 @@ void cSplashPotionEntity::Splash(Vector3d a_HitPos)
 		double Reduction = -0.25 * SplashDistance + 1.0;  // y = -0.25x + 1, where x is the distance from the player. Approximation for potion splash.
 		Reduction = std::max(Reduction, 0.0);
 
-		static_cast<cPawn &>(a_Entity).AddEntityEffect(m_EntityEffectType, m_EntityEffect.GetDuration(), m_EntityEffect.GetIntensity(), Reduction);
+		// The distance decay shortens the effect as much as it weakens it.  cPawn::AddEntityEffect only
+		// applies the modifier to the potency of instantaneous effects, so the duration has to be scaled
+		// here (spec 3):
+		const int Duration = ApplyDurationMultiplier(m_EntityEffect.GetDuration(), Reduction);
+
+		static_cast<cPawn &>(a_Entity).AddEntityEffect(m_EntityEffectType, Duration, m_EntityEffect.GetIntensity(), Reduction);
 		return false;
 	});
 

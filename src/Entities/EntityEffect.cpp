@@ -230,7 +230,7 @@ std::unique_ptr<cEntityEffect> cEntityEffect::CreateEntityEffect(cEntityEffect::
 void cEntityEffect::OnTick(cPawn & a_Target)
 {
 	// Reduce the effect's duration
-	++m_Ticks;
+	AddTicks(1);
 }
 
 

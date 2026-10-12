@@ -59,8 +59,13 @@ public:
 
 	/** Applies an entity effect.
 	Checks with plugins if they allow the addition.
+	If the effect is already active, the two are combined according to the 1.12.2 rules in
+	"EffectCombineRules.h" (a stronger effect replaces, a weaker one is ignored, an equally strong one only
+	extends the active effect's remaining time).
 	a_EffectIntensity is the level of the effect (0 = Potion I, 1 = Potion II, etc).
-	a_DistanceModifier is the scalar multiplied to the potion duration (only applies to splash potions).
+	a_DistanceModifier scales the potency of instantaneous effects (only splash potions decay with
+	distance).  It does NOT scale the duration - a_Duration must already contain any distance decay, which
+	the source of the effect (a splash potion) applies itself.
 	*/
 	void AddEntityEffect(cEntityEffect::eType a_EffectType, int a_EffectDurationTicks, short a_EffectIntensity, double a_DistanceModifier = 1);
 
