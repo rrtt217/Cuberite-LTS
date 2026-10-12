@@ -1,6 +1,6 @@
 [submodule "Server/Plugins/Core"]
 	path = Server/Plugins/Core
-	url = https://github.com/cuberite/Core.git
+	url = https://github.com/rrtt217/Core.git
 [submodule "Server/Plugins/ProtectionAreas"]
 	path = Server/Plugins/ProtectionAreas
 	url = https://github.com/cuberite/ProtectionAreas.git
