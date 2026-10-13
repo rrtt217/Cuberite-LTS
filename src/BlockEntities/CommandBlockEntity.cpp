@@ -356,11 +356,11 @@ void cCommandBlockEntity::Execute()
 			}
 		}
 
-		virtual void CommandExecuted(bool a_Success) override
+		virtual void CommandExecuted(int a_SuccessCount) override
 		{
-			// Deviation (b): the success count is approximated as 1 on success and 0 on failure
-			// (spec section 2.2):
-			m_CmdBlock->SetResult(a_Success ? 1 : 0);
+			// Vanilla Java 1.12.2 stores the command's affected-object count here, and the
+			// comparator reflects the last executed command (spec sections 2.2 and 2.13):
+			m_CmdBlock->SetResult(a_SuccessCount);
 		}
 	};
 

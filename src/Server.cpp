@@ -485,12 +485,12 @@ void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallbac
 		Origin = cCommandOrigin(cRoot::Get()->GetDefaultWorld(), Origin.GetPosition(), Origin.GetPlayer());
 	}
 
-	// Tell the output callback whether the command succeeded, before Finished() - the callback is
-	// allowed to delete itself there. Command blocks turn this into their success count
-	// (spec section 2.2; success counts as 1, failure as 0 - the accepted deviation (b)):
-	auto Finish = [&a_Output](bool a_Success)
+	// Tell the output callback the command's success count, before Finished() - the callback is
+	// allowed to delete itself there. Command blocks store it as their SuccessCount
+	// (vanilla Java 1.12.2: the number of affected objects, spec sections 2.2 and 2.13):
+	auto Finish = [&a_Output](int a_SuccessCount)
 	{
-		a_Output.CommandExecuted(a_Success);
+		a_Output.CommandExecuted(a_SuccessCount);
 		a_Output.Finished();
 	};
 
@@ -500,7 +500,7 @@ void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallbac
 	if (split[0] == "help")
 	{
 		PrintHelp(split, a_Output);
-		Finish(true);
+		Finish(1);
 		return;
 	}
 	else if (split[0] == "reload")
@@ -514,21 +514,21 @@ void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallbac
 		{
 			cPluginManager::Get()->ReloadPlugins();
 		}
-		Finish(true);
+		Finish(1);
 		return;
 	}
 	else if (split[0] == "reloadplugins")
 	{
 		cPluginManager::Get()->ReloadPlugins();
 		a_Output.OutLn("Plugins reloaded");
-		Finish(true);
+		Finish(1);
 		return;
 	}
 	else if (split[0] == "reloadweb")
 	{
 		cRoot::Get()->GetWebAdmin()->Reload();
 		a_Output.OutLn("WebAdmin configuration reloaded");
-		Finish(true);
+		Finish(1);
 		return;
 	}
 	else if (split[0] == "load")
@@ -542,7 +542,7 @@ void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallbac
 		{
 			a_Output.OutLn("Usage: load <PluginFolder>");
 		}
-		Finish(true);
+		Finish(1);
 		return;
 	}
 	else if (split[0] == "unload")
@@ -556,7 +556,7 @@ void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallbac
 		{
 			a_Output.OutLn("Usage: unload <PluginFolder>");
 		}
-		Finish(true);
+		Finish(1);
 		return;
 	}
 	if (split[0] == "destroyentities")
@@ -576,7 +576,7 @@ void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallbac
 			}
 		);
 		a_Output.OutLn("Destroyed all entities");
-		Finish(true);
+		Finish(1);
 		return;
 	}
 
@@ -584,24 +584,30 @@ void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallbac
 	else if (split[0].compare("chunkstats") == 0)
 	{
 		cRoot::Get()->LogChunkStats(a_Output);
-		Finish(true);
+		Finish(1);
 		return;
 	}
 
 	else if (split[0].compare("luastats") == 0)
 	{
 		a_Output.OutLn(cLuaStateTracker::GetStats());
-		Finish(true);
+		Finish(1);
 		return;
 	}
-	else if (cPluginManager::Get()->ExecuteConsoleCommand(split, a_Output, a_Cmd, Origin))
+	else
 	{
-		Finish(true);
-		return;
+		// A plugin handler may report the command's success count as the third Lua return value;
+		// default to 1 (a plain success) when it does not.
+		int successCount = 1;
+		if (cPluginManager::Get()->ExecuteConsoleCommand(split, a_Output, a_Cmd, Origin, &successCount))
+		{
+			Finish(successCount);
+			return;
+		}
 	}
 
 	a_Output.OutLn("Unknown command, type 'help' for all commands.");
-	Finish(false);
+	Finish(0);
 }
 
 
@@ -663,9 +669,16 @@ void cServer::BindBuiltInConsoleCommands(void)
 			cPlayer * a_Player,
 			const AString & a_Command,
 			const cCommandOrigin & a_Origin,
-			cCommandOutputCallback * a_Output = nullptr
+			cCommandOutputCallback * a_Output = nullptr,
+			int * a_SuccessCount = nullptr
 		) override
 		{
+			UNUSED(a_Split);
+			UNUSED(a_Player);
+			UNUSED(a_Command);
+			UNUSED(a_Origin);
+			UNUSED(a_Output);
+			UNUSED(a_SuccessCount);
 			return false;
 		}
 	};

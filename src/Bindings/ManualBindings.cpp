@@ -70,21 +70,32 @@ public:
 		cPlayer * a_Player,
 		const AString & a_Command,
 		const cCommandOrigin & a_Origin,
-		cCommandOutputCallback * a_Output
+		cCommandOutputCallback * a_Output,
+		int * a_SuccessCount
 	) override
 	{
 		bool res = false;
 		AString s;
 
+		// A handler may return a third value: the command's success count. Vanilla Java 1.12.2 stores
+		// the number of affected objects as the command block's SuccessCount (spec section 2.2/2.13).
+		// cOptionalParam leaves this at 1 when the handler returns only (handled, message).
+		int successCount = 1;
+
 		// The origin is appended as the 4th Lua parameter; existing handlers that only declare
 		// (Split, Player, Command) keep working, because Lua ignores extra arguments.
-		if (!m_Callback->Call(a_Split, a_Player, a_Command, a_Origin, cLuaState::Return, res, s))
+		if (!m_Callback->Call(a_Split, a_Player, a_Command, a_Origin, cLuaState::Return, res, s,
+			cLuaState::cOptionalParam<int>(successCount)))
 		{
 			return false;
 		}
 		if (res && (a_Output != nullptr) && !s.empty())
 		{
 			a_Output->Out(s);
+		}
+		if (a_SuccessCount != nullptr)
+		{
+			*a_SuccessCount = successCount;
 		}
 		return res;
 	}

@@ -1592,7 +1592,20 @@ bool cPluginManager::IsConsoleCommandBound(const AString & a_Command)
 
 
 
-bool cPluginManager::ExecuteConsoleCommand(const AStringVector & a_Split, cCommandOutputCallback & a_Output, const AString & a_Command, const cCommandOrigin & a_Origin)
+/** Stores the success count for a caller that is interested in it. */
+static void SetSuccessCount(int * a_Dest, int a_SuccessCount)
+{
+	if (a_Dest != nullptr)
+	{
+		*a_Dest = a_SuccessCount;
+	}
+}
+
+
+
+
+
+bool cPluginManager::ExecuteConsoleCommand(const AStringVector & a_Split, cCommandOutputCallback & a_Output, const AString & a_Command, const cCommandOrigin & a_Origin, int * a_SuccessCount)
 {
 	if (a_Split.empty())
 	{
@@ -1606,7 +1619,12 @@ bool cPluginManager::ExecuteConsoleCommand(const AStringVector & a_Split, cComma
 		// Still notify the plugins (so that plugins such as Aliases can intercept unknown commands).
 		CommandResult res = crBlocked;
 		CallHookExecuteCommand(nullptr, a_Split, a_Command, res);
-		return (res == crExecuted);
+		if (res != crExecuted)
+		{
+			return false;
+		}
+		SetSuccessCount(a_SuccessCount, 1);  // A plugin intercepted and ran it; no count is reported.
+		return true;
 	}
 
 	if (cmd->second.m_Plugin == nullptr)
@@ -1619,10 +1637,15 @@ bool cPluginManager::ExecuteConsoleCommand(const AStringVector & a_Split, cComma
 	CommandResult res = crBlocked;
 	if (CallHookExecuteCommand(nullptr, a_Split, a_Command, res))
 	{
-		return (res == crExecuted);
+		if (res != crExecuted)
+		{
+			return false;
+		}
+		SetSuccessCount(a_SuccessCount, 1);
+		return true;
 	}
 
-	return cmd->second.m_Handler->ExecuteCommand(a_Split, nullptr, a_Command, a_Origin, &a_Output);
+	return cmd->second.m_Handler->ExecuteCommand(a_Split, nullptr, a_Command, a_Origin, &a_Output, a_SuccessCount);
 }
 
 

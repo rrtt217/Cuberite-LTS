@@ -30,11 +30,23 @@ public:
 	/** Called when the command processing has been finished */
 	virtual void Finished() {}
 
-	/** Called before Finished() with whether the command succeeded.
-	Command blocks turn this into their success count (spec section 2.2). Defaults to a no-op. */
+	/** Called before Finished() with whether the command was handled (legacy hook).
+	Command blocks turn this into their success count (spec section 2.2). Defaults to a no-op.
+	Subclasses that know the actual count should override the int overload instead; a subclass
+	that overrides only this one still gets called, through the int overload's default. */
 	virtual void CommandExecuted(bool a_Success)
 	{
 		UNUSED(a_Success);
+	}
+
+	/** Called before Finished() with the command's success count.
+	Vanilla Java 1.12.2 stores the number of affected objects as the command block's SuccessCount
+	(spec sections 2.2 and 2.13); a plain success is 1 and a
+	failure is 0. The default forwards to the legacy bool overload, so existing subclasses keep
+	working unchanged. */
+	virtual void CommandExecuted(int a_SuccessCount)
+	{
+		CommandExecuted(a_SuccessCount > 0);
 	}
 } ;
 
