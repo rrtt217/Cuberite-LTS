@@ -96,11 +96,15 @@ public:  // tolua_export
 
 private:
 
+	friend class cChunk;  // cChunk::RunQueuedCommandBlocks() executes the block from cChunk::Tick()
+
 	/** Executes the associated command */
 	void Execute();
 
-	/** Notifies the chain command block this block faces, if any (it runs on its next tick) */
-	void TriggerFacingChainBlock();
+	/** Notifies the chain command block facing a_Pos, if any (it runs on its own next tick).
+	Static and position-based so that it does not touch a command block that may have been destroyed
+	by its own command. */
+	static void TriggerFacingChainBlockAt(cWorld * a_World, Vector3i a_Pos);
 
 	bool m_ShouldExecute;
 

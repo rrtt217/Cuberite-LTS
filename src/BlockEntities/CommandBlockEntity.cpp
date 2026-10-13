@@ -255,7 +255,6 @@ void cCommandBlockEntity::CopyFrom(const cBlockEntity & a_Src)
 bool cCommandBlockEntity::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 {
 	UNUSED(a_Dt);
-	UNUSED(a_Chunk);
 
 	const auto Type = CommandBlockTypeFromBlockType(GetBlockType());
 	if (Type == eCommandBlockType::Repeat)
@@ -265,19 +264,22 @@ bool cCommandBlockEntity::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 		{
 			return false;
 		}
-
-		Execute();
-		return true;
 	}
-
 	// Impulse and chain blocks run once per activation:
-	if (!m_ShouldExecute)
+	else if (!m_ShouldExecute)
 	{
 		return false;
 	}
+	else
+	{
+		m_ShouldExecute = false;
+	}
 
-	m_ShouldExecute = false;
-	Execute();
+	// Do not run the command here: this is called while cChunk::Tick() iterates the chunk's block
+	// entities, and the command may add or remove them. Register with the chunk instead; it runs the
+	// block right after that loop and before the redstone simulation, so a comparator reading the
+	// success count later in this same tick sees the new value (spec: strict C, section 3.1):
+	a_Chunk.QueueCommandBlockExecution(GetRelPos());
 	return true;
 }
 
@@ -289,6 +291,72 @@ void cCommandBlockEntity::SendTo(cClientHandle & a_Client)
 {
 	a_Client.SendUpdateBlockEntity(*this);
 }
+
+
+
+
+
+namespace
+{
+
+class CommandBlockOutCb :
+	public cLogCommandOutputCallback
+{
+	cWorld * m_World;
+	Vector3i m_Pos;
+
+	/** Runs a_Callback on the command block at our position, if it is still a command block.
+	The command may destroy its own block, so never keep the pointer. */
+	template <typename Fn>
+	void DoWithBlock(Fn && a_Callback)
+	{
+		m_World->DoWithBlockEntityAt(m_Pos, [&](cBlockEntity & a_BlockEntity)
+		{
+			const auto Type = a_BlockEntity.GetBlockType();
+			if (
+				(Type == E_BLOCK_COMMAND_BLOCK) ||
+				(Type == E_BLOCK_CHAIN_COMMAND_BLOCK) ||
+				(Type == E_BLOCK_REPEATING_COMMAND_BLOCK)
+			)
+			{
+				a_Callback(static_cast<cCommandBlockEntity &>(a_BlockEntity));
+			}
+			return true;
+		});
+	}
+
+public:
+	CommandBlockOutCb(cWorld * a_World, Vector3i a_Pos) :
+		m_World(a_World),
+		m_Pos(a_Pos)
+	{
+	}
+
+	virtual void Out(const AString & a_Text) override
+	{
+		DoWithBlock([&](cCommandBlockEntity & a_CmdBlock)
+		{
+			// Only store the output when the block is tracking it (TrackOutput):
+			if (a_CmdBlock.GetTrackOutput())
+			{
+				a_CmdBlock.SetLastOutput(cClientHandle::FormatChatPrefix(m_World->ShouldUseChatPrefixes(), "SUCCESS", cChatColor::Green, cChatColor::White) + a_Text);
+			}
+		});
+	}
+
+	virtual void CommandExecuted(int a_SuccessCount) override
+	{
+		// Vanilla Java 1.12.2 stores the command's affected-object count here, and the
+		// comparator reflects the last executed command (spec sections 2.2 and 2.13):
+		DoWithBlock([&](cCommandBlockEntity & a_CmdBlock)
+		{
+			a_CmdBlock.SetResult(a_SuccessCount);
+		});
+	}
+};
+
+
+}  // anonymous namespace
 
 
 
@@ -339,30 +407,6 @@ void cCommandBlockEntity::Execute()
 		return;
 	}
 
-	class CommandBlockOutCb :
-		public cLogCommandDeleteSelfOutputCallback
-	{
-		cCommandBlockEntity * m_CmdBlock;
-
-	public:
-		CommandBlockOutCb(cCommandBlockEntity * a_CmdBlock) : m_CmdBlock(a_CmdBlock) {}
-
-		virtual void Out(const AString & a_Text) override
-		{
-			// Only store the output when the block is tracking it (TrackOutput):
-			if (m_CmdBlock->GetTrackOutput())
-			{
-				m_CmdBlock->SetLastOutput(cClientHandle::FormatChatPrefix(m_CmdBlock->GetWorld()->ShouldUseChatPrefixes(), "SUCCESS", cChatColor::Green, cChatColor::White) + a_Text);
-			}
-		}
-
-		virtual void CommandExecuted(int a_SuccessCount) override
-		{
-			// Vanilla Java 1.12.2 stores the command's affected-object count here, and the
-			// comparator reflects the last executed command (spec sections 2.2 and 2.13):
-			m_CmdBlock->SetResult(a_SuccessCount);
-		}
-	};
 
 	AString RealCommand = m_Command;
 
@@ -382,6 +426,8 @@ void cCommandBlockEntity::Execute()
 	)
 	{
 		cServer * Server = cRoot::Get()->GetServer();
+		cWorld * World = GetWorld();
+		const Vector3i Pos = m_Pos;  // Capture before running: the command may destroy this block.
 		LOGD("cCommandBlockEntity: Executing command %s", m_Command.c_str());
 
 		// A command block executes at its own block position; the exact offset is an approximation
@@ -392,29 +438,38 @@ void cCommandBlockEntity::Execute()
 			Vector3d(m_Pos.x + 0.5, m_Pos.y + 1, m_Pos.z + 0.5),
 			nullptr
 		);
-		Server->QueueExecuteConsoleCommand(RealCommand, *new CommandBlockOutCb(this), Origin);
+
+		// Reset the success count; the command reports the real one through the output callback:
+		m_Result = 0;
+
+		// Run the command right here. cChunk::Tick calls this from within cChunkMap::Tick, so this is
+		// the world thread with the chunkmap lock already held: the only lock order is world -> plugin,
+		// and a comparator reads the fresh success count later in this same tick (spec section 3.1):
+		CommandBlockOutCb Output(World, Pos);
+		Server->ExecuteConsoleCommand(RealCommand, Output, Origin);
 
 		// Vanilla notifies the chain command block this block faces; the chain block then runs on its
-		// next tick here (vanilla runs the whole chain in the same tick - see the spec):
-		TriggerFacingChainBlock();
+		// next tick here (vanilla runs the whole chain in the same tick - see the spec). Position-based,
+		// because the command may have destroyed this block:
+		TriggerFacingChainBlockAt(World, Pos);
 	}
 	else
 	{
 		SetLastOutput(cClientHandle::FormatChatPrefix(GetWorld()->ShouldUseChatPrefixes(), "FAILURE", cChatColor::Rose, cChatColor::White) + "Adminstration commands can not be executed");
 		LOGD("cCommandBlockEntity: Prevented execution of administration command %s", m_Command.c_str());
-	}
 
-	// TODO 2014-01-18 xdot: Update the signal strength.
-	m_Result = 0;
+		// A command that cannot run stores no success (spec section 2.2):
+		m_Result = 0;
+	}
 }
 
 
 
 
 
-void cCommandBlockEntity::TriggerFacingChainBlock()
+void cCommandBlockEntity::TriggerFacingChainBlockAt(cWorld * a_World, Vector3i a_Pos)
 {
-	if (m_World == nullptr)
+	if (a_World == nullptr)
 	{
 		return;
 	}
@@ -422,13 +477,13 @@ void cCommandBlockEntity::TriggerFacingChainBlock()
 	// Read the current metadata - it can change through the GUI:
 	BLOCKTYPE Type;
 	NIBBLETYPE Meta;
-	if (!m_World->GetBlockTypeMeta(m_Pos, Type, Meta))
+	if (!a_World->GetBlockTypeMeta(a_Pos, Type, Meta))
 	{
 		return;
 	}
 
-	const Vector3i Target = m_Pos + CommandBlockFacingOffset(Meta);
-	m_World->DoWithBlockEntityAt(Target, [](cBlockEntity & a_BlockEntity)
+	const Vector3i Target = a_Pos + CommandBlockFacingOffset(Meta);
+	a_World->DoWithBlockEntityAt(Target, [](cBlockEntity & a_BlockEntity)
 	{
 		if (a_BlockEntity.GetBlockType() != E_BLOCK_CHAIN_COMMAND_BLOCK)
 		{

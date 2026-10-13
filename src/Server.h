@@ -112,6 +112,13 @@ public:
 	a_Origin describes the world and position the command originates from. */
 	void QueueExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallback & a_Output, const cCommandOrigin & a_Origin);
 
+	/** Executes the console command immediately, on the calling thread, sending the output through the
+	specified callback.
+	Command blocks call this from their world's thread, where the chunkmap lock is already held, so that
+	a comparator reading the success count later in the same tick sees the new value. Other callers
+	(console, RCON) use QueueExecuteConsoleCommand() so that they run on the server tick thread. */
+	void ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallback & a_Output, const cCommandOrigin & a_Origin);
+
 	/** Queues a lambda task onto the server tick thread, with the specified delay in ticks. */
 	void ScheduleTask(cTickTime a_DelayTicks, std::function<void(class cServer &)> a_Task);
 
@@ -288,9 +295,6 @@ private:
 
 
 	cServer(void);
-
-	/** Executes the console command, sends output through the specified callback. */
-	void ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallback & a_Output, const cCommandOrigin & a_Origin);
 
 	/** Get the Forge mods registered for a given protocol, for modification */
 	AStringMap & RegisteredForgeMods(const UInt32 a_Protocol);

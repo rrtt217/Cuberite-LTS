@@ -16,6 +16,7 @@
 #include "Item.h"
 #include "Noise/Noise.h"
 #include "Root.h"
+#include "BlockEntities/CommandBlockEntity.h"
 #include "Entities/Player.h"
 #include "BlockArea.h"
 #include "Bindings/PluginManager.h"
@@ -702,6 +703,11 @@ void cChunk::Tick(std::chrono::milliseconds a_Dt)
 		m_IsDirty = KeyPair.second->Tick(a_Dt, *this) | m_IsDirty;
 	}
 
+	// Run the command blocks that registered above. They must not run inside that loop - a command may
+	// add or remove block entities - and running them before the redstone simulation below lets a
+	// comparator read the fresh success count in this same tick (see the strict C spec):
+	RunQueuedCommandBlocks();
+
 	for (auto itr = m_Entities.begin(); itr != m_Entities.end();)
 	{
 		// Do not tick mobs that are detached from the world. They're either scheduled for teleportation or for removal.
@@ -758,6 +764,45 @@ void cChunk::Tick(std::chrono::milliseconds a_Dt)
 
 	// Check blocks after everything else to apply at least one round of queued ticks (i.e. cBlockHandler::Check) this tick:
 	CheckBlocks();
+}
+
+
+
+
+
+void cChunk::QueueCommandBlockExecution(const Vector3i & a_RelPos)
+{
+	m_QueuedCommandBlocks.emplace_back(a_RelPos);
+}
+
+
+
+
+
+void cChunk::RunQueuedCommandBlocks(void)
+{
+	// Take a copy of the list: a command may register (or destroy) another command block while it runs,
+	// and re-iterating would risk an endless chain.
+	auto Positions = m_QueuedCommandBlocks;
+	m_QueuedCommandBlocks.clear();
+	for (const auto & RelPos : Positions)
+	{
+		DoWithBlockEntityAt(RelPos, [](cBlockEntity & a_BlockEntity)
+		{
+			const auto Type = a_BlockEntity.GetBlockType();
+			if (
+				(Type != E_BLOCK_COMMAND_BLOCK) &&
+				(Type != E_BLOCK_CHAIN_COMMAND_BLOCK) &&
+				(Type != E_BLOCK_REPEATING_COMMAND_BLOCK)
+			)
+			{
+				// The block changed since it registered.
+				return false;
+			}
+			static_cast<cCommandBlockEntity &>(a_BlockEntity).Execute();
+			return false;
+		});
+	}
 }
 
 

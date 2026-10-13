@@ -248,6 +248,13 @@ public:
 	/** Calls the callback for the block entity at the specified coords; returns false if there's no block entity at those coords, and whatever the callback returns if found. */
 	bool DoWithBlockEntityAt(Vector3i a_Position, cBlockEntityCallback a_Callback);  // Lua-acessible
 
+	/** Registers a command block (by chunk-relative position) for execution later in this tick.
+	Command blocks must not run while Tick() iterates the block entities, because a command may add or
+	remove them; Tick() runs the registered blocks after that loop and before the redstone simulation,
+	so a comparator reading the success count later in the same tick sees the new value
+	(see the strict C spec). */
+	void QueueCommandBlockExecution(const Vector3i & a_RelPos);
+
 	/** Use block entity on coordinate.
 	returns true if the use was successful, return false to use the block as a "normal" block */
 	bool UseBlockEntity(cPlayer * a_Player, int a_X, int a_Y, int a_Z);  // [x, y, z] in world block coords
@@ -502,6 +509,9 @@ private:
 	std::vector<OwnedEntity> m_Entities;
 	cBlockEntities m_BlockEntities;
 
+	/** Command blocks registered by QueueCommandBlockExecution(), drained by RunQueuedCommandBlocks() */
+	std::vector<Vector3i> m_QueuedCommandBlocks;
+
 	/** Number of times the chunk has been requested to stay (by various cChunkStay objects); if zero, the chunk can be unloaded */
 	unsigned m_StayCount;
 
@@ -551,6 +561,9 @@ private:
 
 	/** Ticks several random blocks in the chunk. */
 	void TickBlocks(void);
+
+	/** Runs the command blocks registered by QueueCommandBlockExecution() and clears the list. */
+	void RunQueuedCommandBlocks(void);
 
 	/** Adds snow to the top of snowy biomes and hydrates farmland / fills cauldrons in rainy biomes */
 	void ApplyWeatherToTop(void);
