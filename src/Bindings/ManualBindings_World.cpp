@@ -1778,7 +1778,7 @@ void cManualBindings::BindWorld(lua_State * tolua_S)
 			tolua_function(tolua_S, "DoWithBlockEntityAt",          DoWithBlockEntityAt<cBlockEntity>);
 			tolua_function(tolua_S, "DoWithBrewingstandAt",         DoWithBlockEntityAt<cBrewingstandEntity, E_BLOCK_BREWING_STAND>);
 			tolua_function(tolua_S, "DoWithChestAt",                DoWithBlockEntityAt<cChestEntity, E_BLOCK_CHEST, E_BLOCK_TRAPPED_CHEST>);
-			tolua_function(tolua_S, "DoWithCommandBlockAt",         DoWithBlockEntityAt<cCommandBlockEntity, E_BLOCK_COMMAND_BLOCK>);
+			tolua_function(tolua_S, "DoWithCommandBlockAt",         DoWithBlockEntityAt<cCommandBlockEntity, E_BLOCK_COMMAND_BLOCK, E_BLOCK_CHAIN_COMMAND_BLOCK, E_BLOCK_REPEATING_COMMAND_BLOCK>);
 			tolua_function(tolua_S, "DoWithDispenserAt",            DoWithBlockEntityAt<cDispenserEntity, E_BLOCK_DISPENSER>);
 			tolua_function(tolua_S, "DoWithDropSpenserAt",          DoWithBlockEntityAt<cDropSpenserEntity, E_BLOCK_DISPENSER, E_BLOCK_DROPPER>);
 			tolua_function(tolua_S, "DoWithDropperAt",              DoWithBlockEntityAt<cDropperEntity, E_BLOCK_DROPPER>);

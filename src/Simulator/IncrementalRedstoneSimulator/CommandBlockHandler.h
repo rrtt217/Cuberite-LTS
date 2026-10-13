@@ -2,6 +2,7 @@
 #pragma once
 
 #include "../../BlockEntities/CommandBlockEntity.h"
+#include "../../BlockEntities/CommandBlockRules.h"
 
 
 
@@ -23,19 +24,28 @@ namespace CommandBlockHandler
 	static void Update(cChunk & a_Chunk, cChunk &, Vector3i a_Position, BLOCKTYPE a_BlockType, NIBBLETYPE a_Meta, const PowerLevel Power)
 	{
 		// LOGD("Evaluating commander the cmdblck (%d %d %d)", a_Position.x, a_Position.y, a_Position.z);
+		UNUSED(a_Meta);
 
 		const auto Previous = DataForChunk(a_Chunk).ExchangeUpdateOncePowerData(a_Position, Power);
-		if ((Previous != 0) || (Power == 0))
-		{
-			// If we're already powered or received an update of no power, don't activate
-			return;
-		}
+		const auto Type = CommandBlockTypeFromBlockType(a_BlockType);
+		const bool Powered = (Power != 0);
 
-		a_Chunk.DoWithBlockEntityAt(a_Position, [](cBlockEntity & a_BlockEntity)
+		a_Chunk.DoWithBlockEntityAt(a_Position, [&](cBlockEntity & a_BlockEntity)
 		{
-			ASSERT(a_BlockEntity.GetBlockType() == E_BLOCK_COMMAND_BLOCK);
+			auto & CommandBlock = static_cast<cCommandBlockEntity &>(a_BlockEntity);
+			CommandBlock.SetPowered(Powered);
 
-			static_cast<cCommandBlockEntity &>(a_BlockEntity).Activate();
+			// Repeating blocks run from their own Tick for as long as they are powered:
+			if (Type == eCommandBlockType::Repeat)
+			{
+				return false;
+			}
+
+			// Impulse and chain blocks run once per activation (rising edge):
+			if (Powered && (Previous == 0))
+			{
+				CommandBlock.Activate();
+			}
 			return false;
 		});
 	}

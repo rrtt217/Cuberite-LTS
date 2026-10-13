@@ -485,13 +485,22 @@ void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallbac
 		Origin = cCommandOrigin(cRoot::Get()->GetDefaultWorld(), Origin.GetPosition(), Origin.GetPlayer());
 	}
 
+	// Tell the output callback whether the command succeeded, before Finished() - the callback is
+	// allowed to delete itself there. Command blocks turn this into their success count
+	// (spec section 2.2; success counts as 1, failure as 0 - the accepted deviation (b)):
+	auto Finish = [&a_Output](bool a_Success)
+	{
+		a_Output.CommandExecuted(a_Success);
+		a_Output.Finished();
+	};
+
 	// "stop" and "restart" are handled in cRoot::ExecuteConsoleCommand, our caller, due to its access to controlling variables
 
 	// "help" and "reload" are to be handled by Cuberite, so that they work no matter what
 	if (split[0] == "help")
 	{
 		PrintHelp(split, a_Output);
-		a_Output.Finished();
+		Finish(true);
 		return;
 	}
 	else if (split[0] == "reload")
@@ -505,21 +514,21 @@ void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallbac
 		{
 			cPluginManager::Get()->ReloadPlugins();
 		}
-		a_Output.Finished();
+		Finish(true);
 		return;
 	}
 	else if (split[0] == "reloadplugins")
 	{
 		cPluginManager::Get()->ReloadPlugins();
 		a_Output.OutLn("Plugins reloaded");
-		a_Output.Finished();
+		Finish(true);
 		return;
 	}
 	else if (split[0] == "reloadweb")
 	{
 		cRoot::Get()->GetWebAdmin()->Reload();
 		a_Output.OutLn("WebAdmin configuration reloaded");
-		a_Output.Finished();
+		Finish(true);
 		return;
 	}
 	else if (split[0] == "load")
@@ -533,7 +542,7 @@ void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallbac
 		{
 			a_Output.OutLn("Usage: load <PluginFolder>");
 		}
-		a_Output.Finished();
+		Finish(true);
 		return;
 	}
 	else if (split[0] == "unload")
@@ -547,7 +556,7 @@ void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallbac
 		{
 			a_Output.OutLn("Usage: unload <PluginFolder>");
 		}
-		a_Output.Finished();
+		Finish(true);
 		return;
 	}
 	if (split[0] == "destroyentities")
@@ -567,7 +576,7 @@ void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallbac
 			}
 		);
 		a_Output.OutLn("Destroyed all entities");
-		a_Output.Finished();
+		Finish(true);
 		return;
 	}
 
@@ -575,24 +584,24 @@ void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallbac
 	else if (split[0].compare("chunkstats") == 0)
 	{
 		cRoot::Get()->LogChunkStats(a_Output);
-		a_Output.Finished();
+		Finish(true);
 		return;
 	}
 
 	else if (split[0].compare("luastats") == 0)
 	{
 		a_Output.OutLn(cLuaStateTracker::GetStats());
-		a_Output.Finished();
+		Finish(true);
 		return;
 	}
 	else if (cPluginManager::Get()->ExecuteConsoleCommand(split, a_Output, a_Cmd, Origin))
 	{
-		a_Output.Finished();
+		Finish(true);
 		return;
 	}
 
 	a_Output.OutLn("Unknown command, type 'help' for all commands.");
-	a_Output.Finished();
+	Finish(false);
 }
 
 

@@ -29,7 +29,10 @@
 **C1 状态**：已实现并推送（Core 侧 `8913d93212cf3fb4d7236437c1b06a83fa08e3f1`，父仓库同步 `.gitmodules` 的 `url` 与 gitlink），待维护者评审。
 实现范围与〔待核〕项见 [C1 §4/§7](vanilla-1.12.2-command-target-selectors.md)。
 | C2 | `feature/command-context-and-splitting` | [command-context-and-splitting](vanilla-1.12.2-command-context-and-splitting.md) | P0 | — | `src/` | 执行上下文（世界/位置/执行者）+ 引号切分 + 玩家命令输出回传 |
-| C3 | `feature/command-blocks-parity` | [command-blocks](vanilla-1.12.2-command-blocks.md) | P1 | C2 | `src/` | 成功计数/比较器/`TrackOutput`/链与循环方块/改名显示 |
+
+**C2 状态**：已实现，经维护者同意后按 C1 的线性方式（`--ff-only`）合并进本地 `master`（`8af5d03`，**尚未推送**）。
+验收：风格 / 编译 / ctest（47/47）/ `CheckBindingsDependencies` 全绿；门 6 因 6 个**与本分支无关的既有**未文档化符号（`cEnderCrystal.HasRespawnBeam` 等，基线 `master` 同样触发）未全绿，见交付说明。
+| C3 | `feature/command-blocks-parity` | [command-blocks](vanilla-1.12.2-command-blocks.md) | P1 | C2 | `src/` | 成功计数/比较器/`TrackOutput`/链与循环方块/改名显示/编辑界面下发 |
 | C4 | `feature/core-execute-commands` | [execute-and-testfor](vanilla-1.12.2-execute-and-testfor.md) | P1 | C1, C2, C3 | Core + `src/` | `/execute`、`/testfor`、`/testforblock`（1.12.2 形态） |
 | C5 | `feature/core-presentation-commands` | [presentation-commands](vanilla-1.12.2-presentation-commands.md) | P2 | C1 | Core | `/title` `/particle` `/playsound` `/stopsound`（合并的小命令组） |
 | C6 | `feature/core-scoreboard-teams` | [scoreboard-teams](vanilla-1.12.2-scoreboard-teams.md) | P2 | C1 | Core | `/scoreboard teams` 子命令 + setdisplay 槽位 |

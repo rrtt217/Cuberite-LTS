@@ -29,6 +29,13 @@ public:
 
 	/** Called when the command processing has been finished */
 	virtual void Finished() {}
+
+	/** Called before Finished() with whether the command succeeded.
+	Command blocks turn this into their success count (spec section 2.2). Defaults to a no-op. */
+	virtual void CommandExecuted(bool a_Success)
+	{
+		UNUSED(a_Success);
+	}
 } ;
 
 

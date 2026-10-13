@@ -47,7 +47,9 @@ namespace Explodinator
 		switch (Block)
 		{
 			case E_BLOCK_BEDROCK:
+			case E_BLOCK_CHAIN_COMMAND_BLOCK:
 			case E_BLOCK_COMMAND_BLOCK:
+			case E_BLOCK_REPEATING_COMMAND_BLOCK:
 			case E_BLOCK_END_GATEWAY:
 			case E_BLOCK_END_PORTAL:
 			case E_BLOCK_END_PORTAL_FRAME: return 1080000.09f;

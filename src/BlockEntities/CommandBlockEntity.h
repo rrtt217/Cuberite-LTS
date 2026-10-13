@@ -39,6 +39,42 @@ public:  // tolua_export
 
 	void SetResult(const NIBBLETYPE a_Result);
 
+	/** Sets whether the last output should be stored in the block entity */
+	void SetTrackOutput(bool a_TrackOutput);
+
+	/** Returns whether the last output is being stored */
+	bool GetTrackOutput(void) const;
+
+	/** Sets whether the block runs without a redstone signal ("Always Active") */
+	void SetAuto(bool a_Auto);
+
+	/** Returns whether the block runs without a redstone signal */
+	bool IsAuto(void) const;
+
+	/** Sets whether the block is currently powered by redstone */
+	void SetPowered(bool a_Powered);
+
+	/** Returns whether the block is currently powered by redstone */
+	bool IsPowered(void) const;
+
+	/** Sets whether the condition of a conditional block was met on the last activation */
+	void SetConditionMet(bool a_ConditionMet);
+
+	/** Returns whether the condition of a conditional block was met on the last activation */
+	bool IsConditionMet(void) const;
+
+	/** Sets whether loops must not run the same block twice in one tick */
+	void SetUpdateLastExecution(bool a_UpdateLastExecution);
+
+	/** Returns whether loops must not run the same block twice in one tick */
+	bool GetUpdateLastExecution(void) const;
+
+	/** Sets the tick in which this (chain) block last executed */
+	void SetLastExecution(Int64 a_LastExecution);
+
+	/** Returns the tick in which this (chain) block last executed */
+	Int64 GetLastExecution(void) const;
+
 	// tolua_begin
 
 	/** Sets the command block to execute a command in the next tick */
@@ -63,6 +99,9 @@ private:
 	/** Executes the associated command */
 	void Execute();
 
+	/** Notifies the chain command block this block faces, if any (it runs on its next tick) */
+	void TriggerFacingChainBlock();
+
 	bool m_ShouldExecute;
 
 	AString m_Command;
@@ -70,4 +109,22 @@ private:
 	AString m_LastOutput;
 
 	NIBBLETYPE m_Result;
+
+	/** Whether the last output is stored in LastOutput */
+	bool m_TrackOutput;
+
+	/** Whether the block runs without a redstone signal ("Always Active") */
+	bool m_Auto;
+
+	/** Whether the block is currently powered by redstone */
+	bool m_Powered;
+
+	/** Whether the condition of a conditional block was met on the last activation */
+	bool m_ConditionMet;
+
+	/** Whether loops must not run the same block twice in one tick */
+	bool m_UpdateLastExecution;
+
+	/** The tick in which this (chain) block last executed */
+	Int64 m_LastExecution;
 } ;  // tolua_export

@@ -2,6 +2,8 @@
 #pragma once
 
 #include "../../Blocks/BlockComparator.h"
+#include "../../BlockEntities/CommandBlockEntity.h"
+#include "../../BlockEntities/CommandBlockRules.h"
 
 
 
@@ -52,6 +54,13 @@ namespace RedstoneComparatorHandler
 			auto BlockEntityWithItems = dynamic_cast<cBlockEntityWithItems *>(&a_BlockEntity);
 			if (BlockEntityWithItems == nullptr)
 			{
+				// Non-container block entities may still carry a comparator signal, such as the
+				// command block's success count (spec 3.2):
+				auto CommandBlock = dynamic_cast<cCommandBlockEntity *>(&a_BlockEntity);
+				if (CommandBlock != nullptr)
+				{
+					SignalStrength = CommandBlockComparatorSignal(CommandBlock->GetResult());
+				}
 				return false;
 			}
 

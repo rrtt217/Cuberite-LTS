@@ -17,6 +17,7 @@ target_sources(
 	ItemChest.h
 	ItemChorusFruit.h
 	ItemCloth.h
+	ItemCommandBlock.h
 	ItemComparator.h
 	ItemCookedFish.h
 	ItemDefaultItem.h

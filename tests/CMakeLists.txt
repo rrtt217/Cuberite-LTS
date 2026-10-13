@@ -4,6 +4,7 @@ endif()
 
 add_compile_definitions(TEST_GLOBALS)
 
+add_subdirectory(BlockEntities)
 add_subdirectory(BlockTypeRegistry)
 add_subdirectory(BoundingBox)
 add_subdirectory(ByteBuffer)

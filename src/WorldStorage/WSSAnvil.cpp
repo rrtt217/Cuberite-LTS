@@ -1,5 +1,6 @@
 #include "Globals.h"
 #include "WSSAnvil.h"
+#include "CommandBlockNBT.h"
 #include "NBTChunkSerializer.h"
 #include "EnchantmentSerializer.h"
 #include "NamespaceSerializer.h"
@@ -636,7 +637,9 @@ OwnedBlockEntity cWSSAnvil::LoadBlockEntityFromNBT(const cParsedNBT & a_NBT, int
 		case E_BLOCK_BED:                return LoadBedFromNBT             (a_NBT, a_Tag, a_BlockType, a_BlockMeta, a_Pos);
 		case E_BLOCK_BREWING_STAND:      return LoadBrewingstandFromNBT    (a_NBT, a_Tag, a_BlockType, a_BlockMeta, a_Pos);
 		case E_BLOCK_CHEST:              return LoadChestFromNBT           (a_NBT, a_Tag, a_BlockType, a_BlockMeta, a_Pos);
-		case E_BLOCK_COMMAND_BLOCK:      return LoadCommandBlockFromNBT    (a_NBT, a_Tag, a_BlockType, a_BlockMeta, a_Pos);
+		case E_BLOCK_CHAIN_COMMAND_BLOCK:
+		case E_BLOCK_COMMAND_BLOCK:
+		case E_BLOCK_REPEATING_COMMAND_BLOCK:  return LoadCommandBlockFromNBT    (a_NBT, a_Tag, a_BlockType, a_BlockMeta, a_Pos);
 		case E_BLOCK_DISPENSER:          return LoadDispenserFromNBT       (a_NBT, a_Tag, a_BlockType, a_BlockMeta, a_Pos);
 		case E_BLOCK_DROPPER:            return LoadDropperFromNBT         (a_NBT, a_Tag, a_BlockType, a_BlockMeta, a_Pos);
 		case E_BLOCK_ENCHANTMENT_TABLE:  return LoadEnchantingTableFromNBT (a_NBT, a_Tag, a_BlockType, a_BlockMeta, a_Pos);
@@ -1068,33 +1071,25 @@ OwnedBlockEntity cWSSAnvil::LoadChestFromNBT(const cParsedNBT & a_NBT, int a_Tag
 OwnedBlockEntity cWSSAnvil::LoadCommandBlockFromNBT(const cParsedNBT & a_NBT, int a_TagIdx, BLOCKTYPE a_BlockType, NIBBLETYPE a_BlockMeta, Vector3i a_Pos)
 {
 	// Check if the data has a proper type:
-	static const AStringVector expectedTypes({ "Control", "minecraft:command_block" });
+	static const AStringVector expectedTypes({ "Control", "command_block", "minecraft:command_block" });
 	if (!CheckBlockEntityType(a_NBT, a_TagIdx, expectedTypes, a_Pos))
 	{
 		return nullptr;
 	}
 
+	sCommandBlockData Data;
+	ReadCommandBlockNBT(a_NBT, a_TagIdx, Data);
+
 	auto CmdBlock = std::make_unique<cCommandBlockEntity>(a_BlockType, a_BlockMeta, a_Pos, m_World);
-
-	int currentLine = a_NBT.FindChildByName(a_TagIdx, "Command");
-	if (currentLine >= 0)
-	{
-		CmdBlock->SetCommand(a_NBT.GetString(currentLine));
-	}
-
-	currentLine = a_NBT.FindChildByName(a_TagIdx, "SuccessCount");
-	if (currentLine >= 0)
-	{
-		CmdBlock->SetResult(static_cast<NIBBLETYPE>(a_NBT.GetInt(currentLine)));
-	}
-
-	currentLine = a_NBT.FindChildByName(a_TagIdx, "LastOutput");
-	if (currentLine >= 0)
-	{
-		CmdBlock->SetLastOutput(a_NBT.GetString(currentLine));
-	}
-
-	// TODO 2014-01-18 xdot: Figure out what TrackOutput is and parse it.
+	CmdBlock->SetCommand(Data.m_Command);
+	CmdBlock->SetResult(static_cast<NIBBLETYPE>(Data.m_SuccessCount));
+	CmdBlock->SetLastOutput(Data.m_LastOutput);
+	CmdBlock->SetTrackOutput(Data.m_TrackOutput);
+	CmdBlock->SetPowered(Data.m_Powered);
+	CmdBlock->SetAuto(Data.m_Auto);
+	CmdBlock->SetConditionMet(Data.m_ConditionMet);
+	CmdBlock->SetUpdateLastExecution(Data.m_UpdateLastExecution);
+	CmdBlock->SetLastExecution(Data.m_LastExecution);
 
 	return CmdBlock;
 }

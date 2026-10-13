@@ -13,6 +13,7 @@
 #include "BlockEntities/BeaconEntity.h"
 #include "BlockEntities/ChestEntity.h"
 #include "BlockEntities/CommandBlockEntity.h"
+#include "BlockEntities/CommandBlockRules.h"
 #include "BlockEntities/SignEntity.h"
 #include "UI/InventoryWindow.h"
 #include "UI/CraftingWindow.h"
@@ -1039,7 +1040,7 @@ void cClientHandle::HandleBeaconSelection(unsigned a_PrimaryEffect, unsigned a_S
 
 
 
-void cClientHandle::HandleCommandBlockBlockChange(Vector3i a_BlockPos, const AString & a_NewCommand)
+void cClientHandle::HandleCommandBlockBlockChange(Vector3i a_BlockPos, const AString & a_NewCommand, bool a_TrackOutput, const AString & a_Mode, bool a_Conditional, bool a_Automatic, bool a_ApplyModes)
 {
 	if (a_NewCommand.empty())
 	{
@@ -1054,15 +1055,58 @@ void cClientHandle::HandleCommandBlockBlockChange(Vector3i a_BlockPos, const ASt
 	}
 
 	cWorld * World = m_Player->GetWorld();
-	if (World->AreCommandBlocksEnabled())
-	{
-		World->SetCommandBlockCommand(a_BlockPos, a_NewCommand);
-		SendChat("Successfully set command block command", mtSuccess);
-	}
-	else
+	if (!World->AreCommandBlocksEnabled())
 	{
 		SendChat("Command blocks are not enabled on this server", mtFailure);
+		return;
 	}
+
+	// The block type (impulse / chain / repeating) and the conditional flag are carried by the block
+	// itself; the 1.9+ MC|AutoCmd packet reports them through "Mode" and "Is conditional":
+	BLOCKTYPE BlockType = E_BLOCK_AIR;
+	NIBBLETYPE Meta = 0;
+	if (a_ApplyModes && World->GetBlockTypeMeta(a_BlockPos, BlockType, Meta) && IsCommandBlockType(BlockType))
+	{
+		const BLOCKTYPE NewBlockType = CommandBlockBlockTypeFromType(CommandBlockTypeFromMode(a_Mode));
+
+		NIBBLETYPE NewMeta = static_cast<NIBBLETYPE>(Meta & 0x7);
+		if (a_Conditional)
+		{
+			NewMeta |= 0x8;
+		}
+
+		if (NewBlockType != BlockType)
+		{
+			// Changing the type replaces the block, and with it the block entity, so the command and
+			// the settings below are applied afterwards:
+			World->SetBlock(a_BlockPos, NewBlockType, NewMeta);
+		}
+		else if (NewMeta != Meta)
+		{
+			World->SetBlockMeta(a_BlockPos, NewMeta);
+		}
+	}
+
+	World->SetCommandBlockCommand(a_BlockPos, a_NewCommand);
+
+	// apply TrackOutput (all versions) and, for the 1.9+ MC|AutoCmd packet, "Always Active":
+	World->DoWithBlockEntityAt(a_BlockPos, [&](cBlockEntity & a_BlockEntity)
+	{
+		if (!IsCommandBlockType(a_BlockEntity.GetBlockType()))
+		{
+			return false;
+		}
+
+		auto & CommandBlock = static_cast<cCommandBlockEntity &>(a_BlockEntity);
+		CommandBlock.SetTrackOutput(a_TrackOutput);
+		if (a_ApplyModes)
+		{
+			CommandBlock.SetAuto(a_Automatic);
+		}
+		return true;
+	});
+
+	SendChat("Successfully set command block command", mtSuccess);
 }
 
 

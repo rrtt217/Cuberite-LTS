@@ -1625,7 +1625,9 @@ void cProtocol_1_8_0::SendUpdateBlockEntity(cBlockEntity & a_BlockEntity)
 		}
 
 		case E_BLOCK_MOB_SPAWNER:       Action = 1;  break;  // Update mob spawner spinny mob thing
-		case E_BLOCK_COMMAND_BLOCK:     Action = 2;  break;  // Update command block text
+		case E_BLOCK_CHAIN_COMMAND_BLOCK:
+		case E_BLOCK_COMMAND_BLOCK:
+		case E_BLOCK_REPEATING_COMMAND_BLOCK:  Action = 2;  break;  // Update command block text
 		case E_BLOCK_BEACON:            Action = 3;  break;  // Update beacon entity
 		case E_BLOCK_HEAD:              Action = 4;  break;  // Update mobhead entity
 		case E_BLOCK_FLOWER_POT:        Action = 5;  break;  // Update flower pot
@@ -2843,7 +2845,8 @@ void cProtocol_1_8_0::HandleVanillaPluginMessage(cByteBuffer & a_ByteBuffer, con
 				HANDLE_READ(a_ByteBuffer, ReadBool, bool, TrackOutput);
 
 				// Editing a command-block:
-				m_Client->HandleCommandBlockBlockChange({BlockX, BlockY, BlockZ}, Command);
+				// The pre-1.9 packet carries no mode / conditional / automatic fields:
+				m_Client->HandleCommandBlockBlockChange({BlockX, BlockY, BlockZ}, Command, TrackOutput, "", false, false, false);
 				return;
 			}
 			case 0x01:
@@ -3124,12 +3127,17 @@ void cProtocol_1_8_0::WriteBlockEntity(cFastNBTWriter & a_Writer, const cBlockEn
 			// Nothing!
 			break;
 		}
+		case E_BLOCK_CHAIN_COMMAND_BLOCK:
 		case E_BLOCK_COMMAND_BLOCK:
+		case E_BLOCK_REPEATING_COMMAND_BLOCK:
 		{
 			auto & CommandBlockEntity = static_cast<const cCommandBlockEntity &>(a_BlockEntity);
-			a_Writer.AddByte("TrackOutput", 1);  // Neither I nor the MC wiki has any idea about this
+			a_Writer.AddByte("TrackOutput", CommandBlockEntity.GetTrackOutput() ? 1 : 0);
 			a_Writer.AddInt("SuccessCount", CommandBlockEntity.GetResult());
 			a_Writer.AddString("Command", CommandBlockEntity.GetCommand());
+			a_Writer.AddByte("powered", CommandBlockEntity.IsPowered() ? 1 : 0);
+			a_Writer.AddByte("auto", CommandBlockEntity.IsAuto() ? 1 : 0);
+			a_Writer.AddByte("conditionMet", CommandBlockEntity.IsConditionMet() ? 1 : 0);
 			// You can set custom names for windows in Vanilla
 			// For a command block, this would be the 'name' prepended to anything it outputs into global chat
 			// MCS doesn't have this, so just leave it @ '@'. (geddit?)

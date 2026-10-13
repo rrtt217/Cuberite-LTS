@@ -463,7 +463,9 @@ void cProtocol_1_11_0::SendUpdateBlockEntity(cBlockEntity & a_BlockEntity)
 		}
 
 		case E_BLOCK_MOB_SPAWNER:       Action = 1;  break;  // Update mob spawner spinny mob thing
-		case E_BLOCK_COMMAND_BLOCK:     Action = 2;  break;  // Update command block text
+		case E_BLOCK_CHAIN_COMMAND_BLOCK:
+		case E_BLOCK_COMMAND_BLOCK:
+		case E_BLOCK_REPEATING_COMMAND_BLOCK:  Action = 2;  break;  // Update command block text
 		case E_BLOCK_BEACON:            Action = 3;  break;  // Update beacon entity
 		case E_BLOCK_HEAD:              Action = 4;  break;  // Update mobhead entity
 		case E_BLOCK_FLOWER_POT:        Action = 5;  break;  // Update flower pot

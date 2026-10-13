@@ -1261,7 +1261,7 @@ void cProtocol_1_9_0::HandleVanillaPluginMessage(cByteBuffer & a_ByteBuffer, std
 		HANDLE_READ(a_ByteBuffer, ReadBool, bool, Conditional);
 		HANDLE_READ(a_ByteBuffer, ReadBool, bool, Automatic);
 
-		m_Client->HandleCommandBlockBlockChange({BlockX, BlockY, BlockZ}, Command);
+		m_Client->HandleCommandBlockBlockChange({BlockX, BlockY, BlockZ}, Command, TrackOutput, Mode, Conditional, Automatic, true);
 	}
 	else if (a_Channel == "PickItem")
 	{

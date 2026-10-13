@@ -22,6 +22,7 @@
 #include "ItemChest.h"
 #include "ItemChorusFruit.h"
 #include "ItemCloth.h"
+#include "ItemCommandBlock.h"
 #include "ItemComparator.h"
 #include "ItemCookedFish.h"
 #include "ItemDefaultItem.h"
@@ -168,7 +169,7 @@ namespace
 	constexpr cSimplePlaceableItemHandler   ItemCauldronHandler                        (E_ITEM_CAULDRON, E_BLOCK_CAULDRON);;
 	constexpr cItemArmorHandler             ItemChainBootsHandler                      (E_ITEM_CHAIN_BOOTS);
 	constexpr cItemArmorHandler             ItemChainChestplateHandler                 (E_ITEM_CHAIN_CHESTPLATE);
-	constexpr cDefaultItemHandler           ItemChainCommandBlockHandler               (E_BLOCK_CHAIN_COMMAND_BLOCK);
+	constexpr cItemCommandBlockHandler      ItemChainCommandBlockHandler               (E_BLOCK_CHAIN_COMMAND_BLOCK);
 	constexpr cItemArmorHandler             ItemChainHelmetHandler                     (E_ITEM_CHAIN_HELMET);
 	constexpr cItemArmorHandler             ItemChainLeggingsHandler                   (E_ITEM_CHAIN_LEGGINGS);
 	constexpr cItemChestHandler             ItemChestHandler                           (E_BLOCK_CHEST);
@@ -188,7 +189,7 @@ namespace
 	constexpr cDefaultItemHandler           ItemCobblestoneWallHandler                 (E_BLOCK_COBBLESTONE_WALL);
 	constexpr cDefaultItemHandler           ItemCobwebHandler                          (E_BLOCK_COBWEB);
 	constexpr cDefaultItemHandler           ItemCocoaPodHandler                        (E_BLOCK_COCOA_POD);
-	constexpr cDefaultItemHandler           ItemCommandBlockHandler                    (E_BLOCK_COMMAND_BLOCK);
+	constexpr cItemCommandBlockHandler      ItemCommandBlockHandler                    (E_BLOCK_COMMAND_BLOCK);
 	constexpr cItemComparatorHandler        ItemComparatorHandler                      (E_ITEM_COMPARATOR);
 	constexpr cDefaultItemHandler           ItemCompassHandler                         (E_ITEM_COMPASS);
 	constexpr cDefaultItemHandler           ItemConcreteBlockHandler                   (E_BLOCK_CONCRETE);
@@ -471,7 +472,7 @@ namespace
 	constexpr cItemTorchHandler             ItemRedstoneTorchHandler                   (E_BLOCK_REDSTONE_TORCH_ON);
 	constexpr cDefaultItemHandler           ItemRedstoneTorchOffBlockHandler           (E_BLOCK_REDSTONE_TORCH_OFF);
 	constexpr cDefaultItemHandler           ItemRedstoneWireHandler                    (E_BLOCK_REDSTONE_WIRE);
-	constexpr cDefaultItemHandler           ItemRepeatingCommandBlockHandler           (E_BLOCK_REPEATING_COMMAND_BLOCK);
+	constexpr cItemCommandBlockHandler      ItemRepeatingCommandBlockHandler           (E_BLOCK_REPEATING_COMMAND_BLOCK);
 	constexpr cItemRottenFleshHandler       ItemRottenFleshHandler                     (E_ITEM_ROTTEN_FLESH);
 	constexpr cDefaultItemHandler           ItemSaddleHandler                          (E_ITEM_SADDLE);
 	constexpr cDefaultItemHandler           ItemSandHandler                            (E_BLOCK_SAND);

@@ -11,6 +11,7 @@
 #include "../StringCompression.h"
 #include "../UUID.h"
 #include "FastNBT.h"
+#include "CommandBlockNBT.h"
 
 #include "../BlockEntities/BannerEntity.h"
 #include "../BlockEntities/BeaconEntity.h"
@@ -217,7 +218,9 @@ public:
 			case E_BLOCK_BED:               AddBedEntity            (static_cast<cBedEntity *>            (a_Entity)); break;
 			case E_BLOCK_BREWING_STAND:     AddBrewingstandEntity   (static_cast<cBrewingstandEntity *>   (a_Entity)); break;
 			case E_BLOCK_CHEST:             AddChestEntity          (static_cast<cChestEntity *>          (a_Entity), a_Entity->GetBlockType()); break;
-			case E_BLOCK_COMMAND_BLOCK:     AddCommandBlockEntity   (static_cast<cCommandBlockEntity *>   (a_Entity)); break;
+			case E_BLOCK_CHAIN_COMMAND_BLOCK:
+			case E_BLOCK_COMMAND_BLOCK:
+			case E_BLOCK_REPEATING_COMMAND_BLOCK: AddCommandBlockEntity   (static_cast<cCommandBlockEntity *>   (a_Entity)); break;
 			case E_BLOCK_DISPENSER:         AddDispenserEntity      (static_cast<cDispenserEntity *>      (a_Entity)); break;
 			case E_BLOCK_DROPPER:           AddDropperEntity        (static_cast<cDropperEntity *>        (a_Entity)); break;
 			case E_BLOCK_ENCHANTMENT_TABLE: AddEnchantingTableEntity(static_cast<cEnchantingTableEntity *>(a_Entity)); break;
@@ -588,10 +591,18 @@ public:
 	{
 		mWriter.BeginCompound("");
 			AddBasicTileEntity(a_CmdBlock, "Control");
-			mWriter.AddString("Command",      a_CmdBlock->GetCommand());
-			mWriter.AddInt   ("SuccessCount", a_CmdBlock->GetResult());
-			mWriter.AddString("LastOutput",   a_CmdBlock->GetLastOutput());
-			mWriter.AddByte  ("TrackOutput",  1);  // TODO 2014-01-18 xdot: Figure out what TrackOutput is and save it.
+
+			sCommandBlockData Data;
+			Data.m_Command = a_CmdBlock->GetCommand();
+			Data.m_SuccessCount = a_CmdBlock->GetResult();
+			Data.m_LastOutput = a_CmdBlock->GetLastOutput();
+			Data.m_TrackOutput = a_CmdBlock->GetTrackOutput();
+			Data.m_Powered = a_CmdBlock->IsPowered();
+			Data.m_Auto = a_CmdBlock->IsAuto();
+			Data.m_ConditionMet = a_CmdBlock->IsConditionMet();
+			Data.m_UpdateLastExecution = a_CmdBlock->GetUpdateLastExecution();
+			Data.m_LastExecution = a_CmdBlock->GetLastExecution();
+			WriteCommandBlockNBT(mWriter, Data);
 		mWriter.EndCompound();
 	}
 

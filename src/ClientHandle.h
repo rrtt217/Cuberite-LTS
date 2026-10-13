@@ -324,8 +324,10 @@ public:  // tolua_export
 	void HandleChat(const AString & a_Message);
 
 	/** Called when the protocol receives a message, indicating that the player set a new
-	command in the command block UI, for a block-based commandblock. */
-	void HandleCommandBlockBlockChange(Vector3i a_BlockPos, const AString & a_NewCommand);
+	command in the command block UI, for a block-based commandblock.
+	a_Mode is the MC|AutoCmd "Mode" field (the selected block type); a_ApplyModes is false for the
+	pre-1.9 MC|AdvCmd packet, which carries no type / conditional / automatic fields. */
+	void HandleCommandBlockBlockChange(Vector3i a_BlockPos, const AString & a_NewCommand, bool a_TrackOutput, const AString & a_Mode, bool a_Conditional, bool a_Automatic, bool a_ApplyModes);
 
 	/** Called when the protocol receives a message, indicating that the player set a new
 	command in the command block UI, for an entity-based commandblock (minecart?). */

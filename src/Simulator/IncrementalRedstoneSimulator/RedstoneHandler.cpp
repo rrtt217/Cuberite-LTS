@@ -71,10 +71,12 @@
 			case E_BLOCK_STONE_BUTTON:                                                         \
 			case E_BLOCK_WOODEN_BUTTON:            return RedstoneToggleHandler::Callback;     \
 			case E_BLOCK_BLOCK_OF_REDSTONE:        return RedstoneBlockHandler::Callback;      \
+			case E_BLOCK_CHAIN_COMMAND_BLOCK:      return CommandBlockHandler::Callback;       \
 			case E_BLOCK_COMMAND_BLOCK:            return CommandBlockHandler::Callback;       \
 			case E_BLOCK_HOPPER:                   return HopperHandler::Callback;             \
 			case E_BLOCK_NOTE_BLOCK:               return NoteBlockHandler::Callback;          \
 			case E_BLOCK_REDSTONE_WIRE:            return RedstoneWireHandler::Callback;       \
+			case E_BLOCK_REPEATING_COMMAND_BLOCK:  return CommandBlockHandler::Callback;       \
 			case E_BLOCK_TNT:                      return TNTHandler::Callback;                \
 			case E_BLOCK_TRAPPED_CHEST:            return TrappedChestHandler::Callback;       \
 			case E_BLOCK_TRIPWIRE_HOOK:            return TripwireHookHandler::Callback;       \

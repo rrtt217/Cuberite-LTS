@@ -3594,7 +3594,12 @@ bool cWorld::SetCommandBlockCommand(int a_BlockX, int a_BlockY, int a_BlockZ, co
 {
 	return DoWithBlockEntityAt({ a_BlockX, a_BlockY, a_BlockZ }, [&](cBlockEntity & a_BlockEntity)
 	{
-		if (a_BlockEntity.GetBlockType() != E_BLOCK_COMMAND_BLOCK)
+		const auto BlockType = a_BlockEntity.GetBlockType();
+		if (
+			(BlockType != E_BLOCK_COMMAND_BLOCK) &&
+			(BlockType != E_BLOCK_CHAIN_COMMAND_BLOCK) &&
+			(BlockType != E_BLOCK_REPEATING_COMMAND_BLOCK)
+		)
 		{
 			return false;
 		}

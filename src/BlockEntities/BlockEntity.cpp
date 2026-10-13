@@ -87,7 +87,10 @@ OwnedBlockEntity cBlockEntity::CreateByBlockType(const BLOCKTYPE a_BlockType, co
 		case E_BLOCK_BED:               return std::make_unique<cBedEntity            >(a_BlockType, a_BlockMeta, a_Pos, a_World);
 		case E_BLOCK_BREWING_STAND:     return std::make_unique<cBrewingstandEntity   >(a_BlockType, a_BlockMeta, a_Pos, a_World);
 		case E_BLOCK_CHEST:             return std::make_unique<cChestEntity          >(a_BlockType, a_BlockMeta, a_Pos, a_World);
-		case E_BLOCK_COMMAND_BLOCK:     return std::make_unique<cCommandBlockEntity   >(a_BlockType, a_BlockMeta, a_Pos, a_World);
+		case E_BLOCK_CHAIN_COMMAND_BLOCK:
+		case E_BLOCK_COMMAND_BLOCK:
+		case E_BLOCK_REPEATING_COMMAND_BLOCK:
+			return std::make_unique<cCommandBlockEntity>(a_BlockType, a_BlockMeta, a_Pos, a_World);
 		case E_BLOCK_DISPENSER:         return std::make_unique<cDispenserEntity      >(a_BlockType, a_BlockMeta, a_Pos, a_World);
 		case E_BLOCK_DROPPER:           return std::make_unique<cDropperEntity        >(a_BlockType, a_BlockMeta, a_Pos, a_World);
 		case E_BLOCK_ENCHANTMENT_TABLE: return std::make_unique<cEnchantingTableEntity>(a_BlockType, a_BlockMeta, a_Pos, a_World);
@@ -134,8 +137,10 @@ bool cBlockEntity::IsBlockEntityBlockType(const BLOCKTYPE a_BlockType)
 		case E_BLOCK_BEACON:
 		case E_BLOCK_BED:
 		case E_BLOCK_BREWING_STAND:
+		case E_BLOCK_CHAIN_COMMAND_BLOCK:
 		case E_BLOCK_CHEST:
 		case E_BLOCK_COMMAND_BLOCK:
+		case E_BLOCK_REPEATING_COMMAND_BLOCK:
 		case E_BLOCK_DISPENSER:
 		case E_BLOCK_DROPPER:
 		case E_BLOCK_ENCHANTMENT_TABLE:
