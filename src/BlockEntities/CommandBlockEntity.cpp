@@ -12,6 +12,7 @@
 #include "../Server.h"  // ExecuteConsoleCommand()
 #include "../ChatColor.h"
 #include "../World.h"
+#include "../Chunk.h"
 #include "../ClientHandle.h"
 #include "../Entities/Player.h"
 
@@ -299,6 +300,29 @@ void cCommandBlockEntity::SendTo(cClientHandle & a_Client)
 namespace
 {
 
+/** Runs a_Callback on the command block at a_Pos, if there is one there.
+Unlike cWorld::DoWithBlockEntityAt(), this does not queue the block entity for a resend to every client:
+a command block's output and success count change on every execution, so re-broadcasting them makes an
+open command block GUI reset its options on every tick and the player can never save it. */
+template <typename Fn>
+bool DoWithCommandBlockAt(cWorld & a_World, Vector3i a_Pos, Fn && a_Callback)
+{
+	return a_World.DoWithChunkAt(a_Pos, [&](cChunk & a_Chunk)
+	{
+		const auto BlockEntity = a_Chunk.GetBlockEntity(a_Pos);
+		if ((BlockEntity == nullptr) || !IsCommandBlockType(BlockEntity->GetBlockType()))
+		{
+			return false;
+		}
+		a_Callback(static_cast<cCommandBlockEntity &>(*BlockEntity));
+		return true;
+	});
+}
+
+
+
+
+
 class CommandBlockOutCb :
 	public cLogCommandOutputCallback
 {
@@ -310,19 +334,7 @@ class CommandBlockOutCb :
 	template <typename Fn>
 	void DoWithBlock(Fn && a_Callback)
 	{
-		m_World->DoWithBlockEntityAt(m_Pos, [&](cBlockEntity & a_BlockEntity)
-		{
-			const auto Type = a_BlockEntity.GetBlockType();
-			if (
-				(Type == E_BLOCK_COMMAND_BLOCK) ||
-				(Type == E_BLOCK_CHAIN_COMMAND_BLOCK) ||
-				(Type == E_BLOCK_REPEATING_COMMAND_BLOCK)
-			)
-			{
-				a_Callback(static_cast<cCommandBlockEntity &>(a_BlockEntity));
-			}
-			return true;
-		});
+		DoWithCommandBlockAt(*m_World, m_Pos, a_Callback);
 	}
 
 public:
@@ -379,18 +391,9 @@ void cCommandBlockEntity::Execute()
 	if (m_World->GetBlockTypeMeta(m_Pos, MetaType, Meta) && CommandBlockIsConditional(Meta))
 	{
 		bool BehindSucceeded = false;
-		m_World->DoWithBlockEntityAt(m_Pos - CommandBlockFacingOffset(Meta), [&](cBlockEntity & a_BlockEntity)
+		DoWithCommandBlockAt(*m_World, m_Pos - CommandBlockFacingOffset(Meta), [&](cCommandBlockEntity & a_Behind)
 		{
-			const auto BehindType = a_BlockEntity.GetBlockType();
-			if (
-				(BehindType == E_BLOCK_COMMAND_BLOCK) ||
-				(BehindType == E_BLOCK_CHAIN_COMMAND_BLOCK) ||
-				(BehindType == E_BLOCK_REPEATING_COMMAND_BLOCK)
-			)
-			{
-				BehindSucceeded = (static_cast<cCommandBlockEntity &>(a_BlockEntity).GetResult() > 0);
-			}
-			return true;
+			BehindSucceeded = (a_Behind.GetResult() > 0);
 		});
 
 		if (!CommandBlockShouldExecute(true, true, BehindSucceeded))
@@ -483,15 +486,14 @@ void cCommandBlockEntity::TriggerFacingChainBlockAt(cWorld * a_World, Vector3i a
 	}
 
 	const Vector3i Target = a_Pos + CommandBlockFacingOffset(Meta);
-	a_World->DoWithBlockEntityAt(Target, [](cBlockEntity & a_BlockEntity)
+	DoWithCommandBlockAt(*a_World, Target, [](cCommandBlockEntity & a_BlockEntity)
 	{
 		if (a_BlockEntity.GetBlockType() != E_BLOCK_CHAIN_COMMAND_BLOCK)
 		{
-			return false;
+			return;
 		}
 
-		static_cast<cCommandBlockEntity &>(a_BlockEntity).Activate();
-		return true;
+		a_BlockEntity.Activate();
 	});
 }
 

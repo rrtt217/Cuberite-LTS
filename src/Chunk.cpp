@@ -17,6 +17,7 @@
 #include "Noise/Noise.h"
 #include "Root.h"
 #include "BlockEntities/CommandBlockEntity.h"
+#include "BlockEntities/CommandBlockRules.h"
 #include "Entities/Player.h"
 #include "BlockArea.h"
 #include "Bindings/PluginManager.h"
@@ -787,21 +788,16 @@ void cChunk::RunQueuedCommandBlocks(void)
 	m_QueuedCommandBlocks.clear();
 	for (const auto & RelPos : Positions)
 	{
-		DoWithBlockEntityAt(RelPos, [](cBlockEntity & a_BlockEntity)
+		// Look the block entity up directly instead of through DoWithBlockEntityAt(): that would queue it
+		// for a resend to every client, and a repeating command block executes on every tick, so an open
+		// command block GUI would reset its options every tick and could never be saved:
+		const auto BlockEntity = GetBlockEntityRel(RelPos);
+		if ((BlockEntity == nullptr) || !IsCommandBlockType(BlockEntity->GetBlockType()))
 		{
-			const auto Type = a_BlockEntity.GetBlockType();
-			if (
-				(Type != E_BLOCK_COMMAND_BLOCK) &&
-				(Type != E_BLOCK_CHAIN_COMMAND_BLOCK) &&
-				(Type != E_BLOCK_REPEATING_COMMAND_BLOCK)
-			)
-			{
-				// The block changed since it registered.
-				return false;
-			}
-			static_cast<cCommandBlockEntity &>(a_BlockEntity).Execute();
-			return false;
-		});
+			// The block changed since it registered.
+			continue;
+		}
+		static_cast<cCommandBlockEntity &>(*BlockEntity).Execute();
 	}
 }
 
