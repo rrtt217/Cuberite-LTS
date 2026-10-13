@@ -61,3 +61,9 @@ world→plugin 成为唯一锁序，并让比较器在同一 tick 的红石评�
 - **〔待核〕** 同步执行后，慢命令（`/kill @e` 全图）会拖长 world tick；需要预算/分片（与 C3 §5 的异步队列风险相反）。
 - **风险**：`/stop`、`/restart` 等由 `cRoot` 处理的命令在 world 线程同步执行的副作用（本分支可继续走队列）。
 - **风险**：`CommandBlockOutCb` 目前是 `*new` 出来、指针存进 `m_PendingCommands`（[Server.h:212-215](../src/Server.h#L212-L215)）——同步路径下它的生命周期需要重新设计。
+
+## 7. 进度
+
+- **计数通道（已完成，行为不变）**：`06b59d9` 给 `cCommandOutputCallback` 增加 `CommandExecuted(int)`（默认转发到旧 `bool` 重载 → 只覆写 bool 的既有子类仍会被调用）；`cCommandHandler::ExecuteCommand` 与 `cPluginManager::ExecuteConsoleCommand` 增加**可选**计数出参；Lua 命令处理器把第三返回值当计数读，用 `cOptionalParam<int>` 保证只返回 `(handled, message)` 的既有命令不受影响。引擎自身仍报 1，所以**此提交不改变可观察行为**。
+- **命令上报计数（已完成）**：`rrtt217/Core` 分支 `feature/command-success-count`，提交 `6dcdcf4`；选择器命令（kill/clear/effect/spawn/spawnpoint/gamemode/give）第三返回值为"作用到的目标数"，失败路径返回 0。父仓库 [Server/Plugins/InfoReg.lua](../Server/Plugins/InfoReg.lua) 的多返回值天然透传（`MultiCommandHandler` 全部 `return Handler(...)`），无需改动。`/kill` 的值有实机依据（§2.3）；其余命令的精确值**〔待核〕**。
+- **待做**：§3.1 的**执行点**改动（命令方块命令从 `cServer` 队列搬到 world tick 的红石相位）——本分支的核心目标，尚未实现；在此之前 `SuccessCount` 写的是**计划数**，且仍由 server tick 线程写入。
