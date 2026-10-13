@@ -59,7 +59,7 @@ namespace RedstoneComparatorHandler
 				auto CommandBlock = dynamic_cast<cCommandBlockEntity *>(&a_BlockEntity);
 				if (CommandBlock != nullptr)
 				{
-					SignalStrength = CommandBlockComparatorSignal(CommandBlock->GetResult());
+					SignalStrength = CommandBlockComparatorSignal(CommandBlock->GetResultCount());
 				}
 				return false;
 			}

@@ -82,7 +82,16 @@ void cCommandBlockEntity::SetLastOutput(const AString & a_LastOut)
 
 void cCommandBlockEntity::SetResult(const NIBBLETYPE a_Result)
 {
-	m_Result = a_Result;
+	SetResultCount(a_Result);
+}
+
+
+
+
+
+void cCommandBlockEntity::SetResultCount(int a_ResultCount)
+{
+	m_Result = a_ResultCount;
 }
 
 
@@ -216,6 +225,15 @@ const AString & cCommandBlockEntity::GetLastOutput(void) const
 
 
 NIBBLETYPE cCommandBlockEntity::GetResult(void) const
+{
+	return static_cast<NIBBLETYPE>(GetResultCount());
+}
+
+
+
+
+
+int cCommandBlockEntity::GetResultCount(void) const
 {
 	return m_Result;
 }
@@ -362,7 +380,7 @@ public:
 		// comparator reflects the last executed command (spec sections 2.2 and 2.13):
 		DoWithBlock([&](cCommandBlockEntity & a_CmdBlock)
 		{
-			a_CmdBlock.SetResult(a_SuccessCount);
+			a_CmdBlock.SetResultCount(a_SuccessCount);
 		});
 	}
 };
@@ -393,7 +411,7 @@ void cCommandBlockEntity::Execute()
 		bool BehindSucceeded = false;
 		DoWithCommandBlockAt(*m_World, m_Pos - CommandBlockFacingOffset(Meta), [&](cCommandBlockEntity & a_Behind)
 		{
-			BehindSucceeded = (a_Behind.GetResult() > 0);
+			BehindSucceeded = (a_Behind.GetResultCount() > 0);
 		});
 
 		if (!CommandBlockShouldExecute(true, true, BehindSucceeded))

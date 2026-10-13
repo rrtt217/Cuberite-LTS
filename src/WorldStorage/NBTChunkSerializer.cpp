@@ -594,7 +594,7 @@ public:
 
 			sCommandBlockData Data;
 			Data.m_Command = a_CmdBlock->GetCommand();
-			Data.m_SuccessCount = a_CmdBlock->GetResult();
+			Data.m_SuccessCount = a_CmdBlock->GetResultCount();
 			Data.m_LastOutput = a_CmdBlock->GetLastOutput();
 			Data.m_TrackOutput = a_CmdBlock->GetTrackOutput();
 			Data.m_Powered = a_CmdBlock->IsPowered();

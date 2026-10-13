@@ -3133,7 +3133,7 @@ void cProtocol_1_8_0::WriteBlockEntity(cFastNBTWriter & a_Writer, const cBlockEn
 		{
 			auto & CommandBlockEntity = static_cast<const cCommandBlockEntity &>(a_BlockEntity);
 			a_Writer.AddByte("TrackOutput", CommandBlockEntity.GetTrackOutput() ? 1 : 0);
-			a_Writer.AddInt("SuccessCount", CommandBlockEntity.GetResult());
+			a_Writer.AddInt("SuccessCount", CommandBlockEntity.GetResultCount());
 			a_Writer.AddString("Command", CommandBlockEntity.GetCommand());
 			a_Writer.AddByte("powered", CommandBlockEntity.IsPowered() ? 1 : 0);
 			a_Writer.AddByte("auto", CommandBlockEntity.IsAuto() ? 1 : 0);

@@ -1082,7 +1082,7 @@ OwnedBlockEntity cWSSAnvil::LoadCommandBlockFromNBT(const cParsedNBT & a_NBT, in
 
 	auto CmdBlock = std::make_unique<cCommandBlockEntity>(a_BlockType, a_BlockMeta, a_Pos, m_World);
 	CmdBlock->SetCommand(Data.m_Command);
-	CmdBlock->SetResult(static_cast<NIBBLETYPE>(Data.m_SuccessCount));
+	CmdBlock->SetResultCount(Data.m_SuccessCount);
 	CmdBlock->SetLastOutput(Data.m_LastOutput);
 	CmdBlock->SetTrackOutput(Data.m_TrackOutput);
 	CmdBlock->SetPowered(Data.m_Powered);
