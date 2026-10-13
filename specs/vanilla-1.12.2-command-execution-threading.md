@@ -34,7 +34,19 @@
 world→plugin 成为唯一锁序，并让比较器在同一 tick 的红石评估中读到新计数。
 
 1. **执行点**：命令方块的红石相位（`IncrementalRedstoneSimulator` 的 `CommandBlockHandler`）已经是在 world 线程、world 锁内被调用（`m_ChunkMap.Tick` → `cChunk::Tick` → 红石模拟）。命令在此**同步执行**，而不是 `QueueExecuteConsoleCommand`。
-   - 需要先确认红石模拟与比较器读取的**相对顺序**，并把它固定为 vanilla 的顺序（命令方块先写计数、比较器后读）；这是本分支最关键的实现细节，须用测试钉死。
+   - **顺序已用代码查清**（原先的〔待核〕解除）：
+
+     | `cChunk::Tick`（[Chunk.cpp:695](../src/Chunk.cpp#L695)）内的顺序 | 行 |
+     |---|---|
+     | `TickBlocks()` | [:697](../src/Chunk.cpp#L697) |
+     | 方块实体 tick：`KeyPair.second->Tick(...)` ← **命令方块在这里 `Execute()`** | [:700](../src/Chunk.cpp#L700) |
+     | 实体 tick | [:708](../src/Chunk.cpp#L708) |
+     | 红石模拟 `SimulatorManager->SimulateChunk(...)` ← **比较器在这里读 `GetResult()`** | [:757](../src/Chunk.cpp#L757) |
+
+     所以"方块实体阶段同步执行 → 同一 tick 的红石阶段读新计数"就是 vanilla 的形状，无需额外调序。
+   - **新发现的危险点（必须在实现中处理）**：[:700](../src/Chunk.cpp#L700) 正在**遍历 `m_BlockEntities`**；若 `Execute()` 在该循环内同步执行 Lua，命令可能增删方块实体（`/setblock`、破坏方块）→ **迭代器失效**。
+     因此 `cCommandBlockEntity::Tick` 只应**登记**待执行的方块（按坐标），由 `cChunk::Tick` 在方块实体循环**之后**、红石模拟**之前**逐个用坐标重新取方块实体并执行：既避开迭代器失效，又保住"比较器同 tick 可见"。
+   - 重复型方块由自身 `Tick` 触发（`CommandBlockHandler::Update` 只 `Activate()`，[:38-42](../src/Simulator/IncrementalRedstoneSimulator/CommandBlockHandler.h#L38-L42)），同样走这条"登记 → 循环后执行"的路径。
 2. **锁序**：执行点已持 world 锁（`m_CSChunks` 可重入）→ 之后取插件 Lua 锁 = `world → plugin`，与 `TickMobs` 里的钩子同序；不会再出现 `plugin → world`。
 3. **输出与计数回写**：`CommandBlockOutCb` 的 `Out()` / `CommandExecuted()` 在**同一线程**被调用，直接写方块实体；`SuccessCount` 取命令报告的**数量**。
 4. **保留队列用于其它 origin**：console / RCON / 玩家命令仍走 `cServer`（它们本来就不在命令方块相位）。命令方块 origin 走同步路径；`cServer::TickCommands` 保留（向后兼容）。
@@ -57,7 +69,7 @@ world→plugin 成为唯一锁序，并让比较器在同一 tick 的红石评�
 
 ## 6. 待核 / 风险
 
-- **〔待核〕** 红石模拟内"命令方块"与"比较器"的评估顺序，以及它与 vanilla 的对应关系（实现前先用本地红石测试或实机确认）。
+- ~~红石模拟内"命令方块"与"比较器"的评估顺序~~ → **已解除**，见 §3.1 的顺序表（方块实体阶段 → 红石阶段，命令先、比较器后，同 tick）。
 - **〔待核〕** 同步执行后，慢命令（`/kill @e` 全图）会拖长 world tick；需要预算/分片（与 C3 §5 的异步队列风险相反）。
 - **风险**：`/stop`、`/restart` 等由 `cRoot` 处理的命令在 world 线程同步执行的副作用（本分支可继续走队列）。
 - **风险**：`CommandBlockOutCb` 目前是 `*new` 出来、指针存进 `m_PendingCommands`（[Server.h:212-215](../src/Server.h#L212-L215)）——同步路径下它的生命周期需要重新设计。
