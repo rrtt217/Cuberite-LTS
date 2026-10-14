@@ -47,6 +47,18 @@
 所以基准就是执行玩家；console 的 `tp <目标> <x> <y> <z>` 基准是**目标玩家**）。
 `/summon`、`/spawnpoint` 等其它命令仍按 §2.1 的通用规则（命令执行位置）。
 
+### 2.1c 选择器的维度/世界范围（跨世界是 vanilla 行为）
+
+同一份 1.12.2 时代原文（[Commands?oldid=1152284](https://minecraft.wiki/w/Commands?oldid=1152284)）：
+
+> `@e` — "all entities (including players)"；`@a` — "all players"，**都没有维度限定**；
+> `[r=R]` — "Using a value under 0 **restricts the targets to the same dimension the command was run from**
+> without applying a restriction on distance from the location of execution."
+
+→ **裸 `@e`/`@a`/`@r`（不带位置/距离参数）在 1.12.2 就是跨维度的**；只有带位置/距离语义时才被钉在执行维度。
+因此本仓库**不能**靠"把选择器限制在源世界"来规避跨世界访问——那会破坏 parity。
+（`r<0` 这条"限定在本维度"的语义也属于 parity 范围，见 C1 规格。）
+
 ### 2.2 「位置」的精确含义
 
 同页：
@@ -95,6 +107,9 @@ const cCommandOrigin Origin(
 `Vector3d(m_Pos.x + 0.5, m_Pos.y, m_Pos.z + 0.5)`（[CommandBlockEntity.cpp](../src/BlockEntities/CommandBlockEntity.cpp)）。
 
 ### 2.5 控制台 / RCON 的执行位置
+
+**1.12.2 时代的 wiki 出处**：[Commands#Target selectors（2017-10 修订 revid 1152284）](https://minecraft.wiki/w/Commands?oldid=1152284)
+里 `@p` 词条原文："When run by the console, the origin of selection will be at (0, 0, 0)."
 
 **已核实（维护者在真实 1.12.2 控制台实测，2026-10-13）**：
 - `spawnpoint Harry00025 ~ ~ ~` → `Set Harry00025's spawn point to (0, 0, 0)`；
