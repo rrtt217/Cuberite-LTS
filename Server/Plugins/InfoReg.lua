@@ -47,12 +47,13 @@ end
 --- This is a generic command callback used for handling multicommands' parent commands
 -- For example, if there are "/gal save" and "/gal load" commands, this callback handles the "/gal" command
 -- It is used for both console and in-game commands; the console version has a_Player set to nil
-local function MultiCommandHandler(a_Split, a_Player, a_CmdString, a_CmdInfo, a_Level, a_EntireCommand)
+-- a_Origin is the engine's cCommandOrigin (the 4th Lua command argument); handlers may ignore it
+local function MultiCommandHandler(a_Split, a_Player, a_CmdString, a_CmdInfo, a_Level, a_EntireCommand, a_Origin)
 	local Verb = a_Split[a_Level + 1]
 	if (Verb == nil) then
 		-- No verb was specified. If there is a handler for the upper level command, call it:
 		if (a_CmdInfo.Handler ~= nil) then
-			return a_CmdInfo.Handler(a_Split, a_Player, a_EntireCommand)
+			return a_CmdInfo.Handler(a_Split, a_Player, a_EntireCommand, a_Origin)
 		end
 		-- Let the player know they need to give a subcommand:
 		assert(type(a_CmdInfo.Subcommands) == "table", "Info.lua error: There is no handler for command \"" .. a_CmdString .. "\" and there are no subcommands defined at level " .. a_Level)
@@ -88,7 +89,7 @@ local function MultiCommandHandler(a_Split, a_Player, a_CmdString, a_CmdInfo, a_
 	-- First check if the subcommand has subcommands
 	if (Subcommand.Subcommands ~= nil) then
 		-- Next sublevel
-		return MultiCommandHandler(a_Split, a_Player, a_CmdString .. " " .. Verb, Subcommand, a_Level + 1, a_EntireCommand)
+		return MultiCommandHandler(a_Split, a_Player, a_CmdString .. " " .. Verb, Subcommand, a_Level + 1, a_EntireCommand, a_Origin)
 	elseif (Subcommand.Handler == nil) then
 		-- Subcommand has no subcommands and the handler is not found, report error
 		LOGWARNING("Cannot find handler for command " .. a_CmdString .. " " .. Verb)
@@ -96,7 +97,7 @@ local function MultiCommandHandler(a_Split, a_Player, a_CmdString, a_CmdInfo, a_
 	end
 
 	-- Execute:
-	return Subcommand.Handler(a_Split, a_Player, a_EntireCommand)
+	return Subcommand.Handler(a_Split, a_Player, a_EntireCommand, a_Origin)
 end
 
 
@@ -124,8 +125,8 @@ function RegisterPluginInfoCommands(aPluginInfo)
 			local Handler = info.Handler
 			-- Provide a special handler for multicommands:
 			if (info.Subcommands ~= nil) then
-				Handler = function(a_Split, a_Player, a_EntireCommand)
-					return MultiCommandHandler(a_Split, a_Player, CmdName, info, a_Level, a_EntireCommand)
+				Handler = function(a_Split, a_Player, a_EntireCommand, a_Origin)
+					return MultiCommandHandler(a_Split, a_Player, CmdName, info, a_Level, a_EntireCommand, a_Origin)
 				end
 			end
 
@@ -192,8 +193,11 @@ function RegisterPluginInfoConsoleCommands(aPluginInfo)
 			local CmdName = a_Prefix .. cmd
 			local Handler = info.Handler
 			if (Handler == nil) then
-				Handler = function(a_Split, a_EntireCommand)
-					return MultiCommandHandler(a_Split, nil, CmdName, info, a_Level, a_EntireCommand)
+				-- The engine calls every Lua command handler as (Split, Player, EntireCommand, Origin);
+				-- console commands get a_Player = nil. (The previous two-parameter wrapper read the
+				-- player as the entire command.)
+				Handler = function(a_Split, a_Player, a_EntireCommand, a_Origin)
+					return MultiCommandHandler(a_Split, nil, CmdName, info, a_Level, a_EntireCommand, a_Origin)
 				end
 			end
 			cPluginManager:BindConsoleCommand(CmdName, Handler, info.HelpString or "")
