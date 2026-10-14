@@ -451,12 +451,13 @@ void cCommandBlockEntity::Execute()
 		const Vector3i Pos = m_Pos;  // Capture before running: the command may destroy this block.
 		LOGD("cCommandBlockEntity: Executing command %s", m_Command.c_str());
 
-		// A command block executes at its own block position; the exact offset is an approximation
-		// until verified against 1.12.2 (spec: speculated / to be verified). It has no executor
-		// (vanilla has no "@s" for a command block).
+		// A command block executes at the centre of its own block: x and z get the usual +0.5, y does
+		// not move. Observed on 1.12.2: "setblock ~ ~ ~ air" run by a command block removes that block
+		// itself, and a summoned entity lands at (x + 0.5, y, z + 0.5)
+		// (see the command coordinates spec, section 2.4):
 		const cCommandOrigin Origin(
 			GetWorld(),
-			Vector3d(m_Pos.x + 0.5, m_Pos.y + 1, m_Pos.z + 0.5),
+			Vector3d(m_Pos.x + 0.5, m_Pos.y, m_Pos.z + 0.5),
 			nullptr
 		);
 
