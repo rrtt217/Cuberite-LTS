@@ -213,10 +213,16 @@ vanilla 1.12.2 控制台实测 `/spawnpoint Harry00025 ~ ~ ~` → `Set Harry0002
   - 新增 **[World:SetCommandBlockSuccessCount(BlockX, BlockY, BlockZ, SuccessCount)](../src/Bindings/ManualBindings_World.cpp)**
     （手写绑定 + [World.h](../src/World.h) 声明在 tolua 区域外 + APIDump 文档）：按坐标**无副作用**地写
     命令方块的 `SuccessCount`（不排队方块实体重发），方块不存在就返回 false。
-- **Core（待实现，本分支下一步）**
-  - 源世界：**实时枚举 + 立即动作**，保持严格 C 的"实际计数 + 同 tick"（最常见情形零变化）。
+- **Core（已实现）**
+  - `CollectSelectorCandidates` 只枚举 origin 世界；待访问世界用 `cRoot:ForEachWorld`+`GetName()`
+    收集（**不取任何世界锁**）。
+  - 源世界：**实时枚举 + 立即动作**，保持严格 C 的"实际计数 + 同 tick"（单世界命令零变化）。
   - 其它世界：**只排队**——`World:QueueTask(X)` 里在 X 的世界线程上实时解析并执行，把实际数报回；
     全部报回后，再 `World:QueueTask(W)` 到**源世界**把总数写回（两个跳都只锁自己那个世界）。
+  - 排队动作拿到第二个参数 `a_Deferred == true`：**不得触碰 executor**（见 §7.3），
+    `/give` 与 `/spawnpoint` 已按此把回执降级为控制台式（写日志）。
+  - `/give` 的选择器路径改为把**活的目标**直接交给动作，去掉按名字重查（`FindAndDoWithPlayer`
+    会逐个世界取锁，是同形的跨世界路径）。
 - **引擎侧"玩家命令对齐本世界锁"暂缓**：`ProcessProtocolIn` 目前不在 world 锁内
   （[World.cpp:1338](../src/World.cpp#L1338) vs `m_ChunkMap.Tick` [:1350](../src/World.cpp#L1350)）。
   在那里取本世界锁可能引入 world↔client 锁的新序，且**不是本次复现的路径**（复现是命令方块）。
@@ -231,14 +237,20 @@ vanilla 1.12.2 控制台实测 `/spawnpoint Harry00025 ~ ~ ~` → `Set Harry0002
 - `LastOutput` **不**跟随修正（只修计数），因此跨世界命令的消息只反映源世界那部分；
 - 只有在 **executor 为 nil 且位置非 (0,0,0)**（即命令方块；控制台是 (0,0,0)）时才登记回写——
   避免误写玩家脚下的方块或控制台的 (0,0,0) 处方块；
-- **玩家发出的命令暂不排队**（仍走旧的"实时跨世界"路径）：排队闭包会捕获 executor 引用，跨 tick 使用
-  entity userdata 违反 C1 规格的安全约定（[vanilla-1.12.2-command-target-selectors.md](vanilla-1.12.2-command-target-selectors.md) §233）。
-  这条留到 §8。
+- **executor 是"时间"问题，不是"世界"问题**：executor 永远在源世界，排队任务也不需要它；危险只在于
+  某些命令把"给玩家的回执"写进了**动作闭包**，而同一闭包会被排队任务复用——那等于把玩家 userdata
+  **跨 tick** 使用（玩家可能已离线），违反 C1 安全约定
+  （[vanilla-1.12.2-command-target-selectors.md](vanilla-1.12.2-command-target-selectors.md) §233）。
+  处理办法是让排队动作**拿不到 executor**（`a_Deferred`）：玩家命令因此也能排队。
+- **裸选择器"哪儿都没匹配到"不再报错**：命令时刻只能看到源世界，其它世界可能仍有匹配，
+  所以此时按 0 计数成功上报（而不是 vanilla 的"没有找到目标"）。
+  反过来的做法（源世界没匹配就报错）会**静默丢掉真实的跨世界匹配**，更糟。
+  带位置/距离语义的选择器（维度绑定、不排队）仍照常报错。
 
 ## 8. 本分支未做（记录，等下达）
 
-1. **Core 侧 D2**（源世界实时 / 其它世界排队 + 回报 + 回写）——引擎已经就位，Core 尚未改。
-2. **玩家命令的本世界锁对齐**（`ProcessProtocolIn`），含 world↔client 锁序评估。
-3. **玩家命令的跨世界排队**：需先给"动作闭包不得捕获 executor 引用"定一个机制（例如把 executor 名字
-   传入动作、或让 Core 的动作统一按 EntityID/名字重解析）。
-4. 1.12.2 的 `r<0`（"仅执行维度、不限距离"）语义仍是 C1 规格里的待办，与本节相关。
+1. **玩家命令的本世界锁对齐**（`ProcessProtocolIn` 不在 world 锁内，
+   [World.cpp:1338](../src/World.cpp#L1338) vs `m_ChunkMap.Tick` [:1350](../src/World.cpp#L1350)）：
+   在那取本世界锁可能引入 world↔client 新锁序，且不是本次复现的路径，故未做。
+2. 1.12.2 的 `r<0`（"仅执行维度、不限距离"）语义仍是 C1 规格里的待办，与本节相关。
+3. `LastOutput` 不跟随计数回写（§7.3）；若日后要让它也反映总数，需要把消息一并回写。
