@@ -3613,6 +3613,35 @@ bool cWorld::SetCommandBlockCommand(int a_BlockX, int a_BlockY, int a_BlockZ, co
 
 
 
+bool cWorld::SetCommandBlockSuccessCount(Vector3i a_BlockPos, int a_SuccessCount)
+{
+	// Look the block entity up directly through the chunk: cWorld::DoWithBlockEntityAt() would queue it
+	// for a resend to every client, and a repeating command block corrects its count on every tick.
+	return DoWithChunkAt(a_BlockPos, [&](cChunk & a_Chunk)
+	{
+		const auto BlockEntity = a_Chunk.GetBlockEntity(a_BlockPos);
+		if (BlockEntity == nullptr)
+		{
+			return false;
+		}
+		const auto BlockType = BlockEntity->GetBlockType();
+		if (
+			(BlockType != E_BLOCK_COMMAND_BLOCK) &&
+			(BlockType != E_BLOCK_CHAIN_COMMAND_BLOCK) &&
+			(BlockType != E_BLOCK_REPEATING_COMMAND_BLOCK)
+		)
+		{
+			return false;
+		}
+		static_cast<cCommandBlockEntity &>(*BlockEntity).SetResultCount(a_SuccessCount);
+		return true;
+	});
+}
+
+
+
+
+
 bool cWorld::IsTrapdoorOpen(int a_BlockX, int a_BlockY, int a_BlockZ)
 {
 	BLOCKTYPE Block;

@@ -189,3 +189,56 @@ vanilla 1.12.2 控制台实测 `/spawnpoint Harry00025 ~ ~ ~` → `Set Harry0002
 ### 6.3 非法坐标的错误文本
 1.12.2 对 `tp ~a ~ ~` 这类输入的确切提示未核实；本实现沿用 Core 既有风格
 （`'<token>' is not a valid number`），只保证**行为**（失败、不执行）与来源一致。
+
+## 7. 跨世界选择器的处理（方案 D2）
+
+### 7.1 为什么必须处理
+
+1.12.2 的裸 `@a`/`@e`/`@r` 是**跨维度**的（§2.1c），所以不能把选择器限制在源世界来规避。
+而严格 C 让命令方块**在源世界的锁内**执行 Lua，于是出现了实测到的环
+（[命令执行线程 spec §7](vanilla-1.12.2-command-execution-threading.md) 与 DeadlockDetect dump）：
+
+```
+源世界 W 的线程:  W.chunkmap(已持) → plugin(执行 Lua) → 想要 X.chunkmap   （裸 @e 枚举别的世界）
+世界 X 的线程:    X.chunkmap(已持) → 想要 plugin                          （钩子在 world 锁下回调）
+```
+
+### 7.2 D2 的设计（本分支的引擎部分已落地）
+
+**规则：Core 只允许锁"本命令正在执行的那个世界"；其它世界一律不取锁。**
+
+- **引擎（已实现）**
+  - [Server.cpp](../src/Server.cpp) 的 plugin 分发前取 **origin 世界**的锁 → console / RCON 也变成
+    `world → plugin`（与命令方块同形）。`cWorld::cLock` 递归，命令方块路径不受影响。
+  - 新增 **[World:SetCommandBlockSuccessCount(BlockX, BlockY, BlockZ, SuccessCount)](../src/Bindings/ManualBindings_World.cpp)**
+    （手写绑定 + [World.h](../src/World.h) 声明在 tolua 区域外 + APIDump 文档）：按坐标**无副作用**地写
+    命令方块的 `SuccessCount`（不排队方块实体重发），方块不存在就返回 false。
+- **Core（待实现，本分支下一步）**
+  - 源世界：**实时枚举 + 立即动作**，保持严格 C 的"实际计数 + 同 tick"（最常见情形零变化）。
+  - 其它世界：**只排队**——`World:QueueTask(X)` 里在 X 的世界线程上实时解析并执行，把实际数报回；
+    全部报回后，再 `World:QueueTask(W)` 到**源世界**把总数写回（两个跳都只锁自己那个世界）。
+- **引擎侧"玩家命令对齐本世界锁"暂缓**：`ProcessProtocolIn` 目前不在 world 锁内
+  （[World.cpp:1338](../src/World.cpp#L1338) vs `m_ChunkMap.Tick` [:1350](../src/World.cpp#L1350)）。
+  在那里取本世界锁可能引入 world↔client 锁的新序，且**不是本次复现的路径**（复现是命令方块）。
+  记入 §8。
+
+### 7.3 已知偏差（D2 固有权衡）
+
+"每世界一线程"意味着跨世界部分**不可能**同时做到"值准确"和"执行时刻就正确"；D2 选择值最终准确：
+
+- 执行时刻写入的 `SuccessCount` = **源世界实际数**；其它世界的实际数在它们的队列任务跑完后由回写
+  **修正为总数**（比较器上表现为"先一个数、随后跳一次"）；
+- `LastOutput` **不**跟随修正（只修计数），因此跨世界命令的消息只反映源世界那部分；
+- 只有在 **executor 为 nil 且位置非 (0,0,0)**（即命令方块；控制台是 (0,0,0)）时才登记回写——
+  避免误写玩家脚下的方块或控制台的 (0,0,0) 处方块；
+- **玩家发出的命令暂不排队**（仍走旧的"实时跨世界"路径）：排队闭包会捕获 executor 引用，跨 tick 使用
+  entity userdata 违反 C1 规格的安全约定（[vanilla-1.12.2-command-target-selectors.md](vanilla-1.12.2-command-target-selectors.md) §233）。
+  这条留到 §8。
+
+## 8. 本分支未做（记录，等下达）
+
+1. **Core 侧 D2**（源世界实时 / 其它世界排队 + 回报 + 回写）——引擎已经就位，Core 尚未改。
+2. **玩家命令的本世界锁对齐**（`ProcessProtocolIn`），含 world↔client 锁序评估。
+3. **玩家命令的跨世界排队**：需先给"动作闭包不得捕获 executor 引用"定一个机制（例如把 executor 名字
+   传入动作、或让 Core 的动作统一按 EntityID/名字重解析）。
+4. 1.12.2 的 `r<0`（"仅执行维度、不限距离"）语义仍是 C1 规格里的待办，与本节相关。

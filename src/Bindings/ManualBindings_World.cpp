@@ -1541,6 +1541,44 @@ static int tolua_cWorld_SetBlockMeta(lua_State * tolua_S)
 
 
 
+static int tolua_cWorld_SetCommandBlockSuccessCount(lua_State * tolua_S)
+{
+	// Exported manually so that the lookup stays a single one without queueing a block entity resend.
+	// Function signature:
+	// World:SetCommandBlockSuccessCount(BlockX, BlockY, BlockZ, SuccessCount)
+
+	// Check params:
+	cLuaState L(tolua_S);
+	if (
+		!L.CheckParamUserType(1, "cWorld") ||
+		!L.CheckParamNumber(2, 5) ||
+		!L.CheckParamEnd(6)
+	)
+	{
+		return 0;
+	}
+
+	// Get params:
+	cWorld * Self = nullptr;
+	int BlockX = 0;
+	int BlockY = 0;
+	int BlockZ = 0;
+	int SuccessCount = 0;
+	L.GetStackValues(1, Self, BlockX, BlockY, BlockZ, SuccessCount);
+	if (Self == nullptr)
+	{
+		return L.ApiParamError("Invalid 'self'");
+	}
+
+	// Call the function:
+	L.Push(Self->SetCommandBlockSuccessCount({BlockX, BlockY, BlockZ}, SuccessCount));
+	return 1;
+}
+
+
+
+
+
 static int tolua_cWorld_SetSignLines(lua_State * tolua_S)
 {
 	// Exported manually, because tolua would generate useless additional return values (a_Line1 .. a_Line4)
@@ -1817,6 +1855,7 @@ void cManualBindings::BindWorld(lua_State * tolua_S)
 			tolua_function(tolua_S, "ScheduleTask",                 tolua_cWorld_ScheduleTask);
 			tolua_function(tolua_S, "SetBlock",                     tolua_cWorld_SetBlock);
 			tolua_function(tolua_S, "SetBlockMeta",                 tolua_cWorld_SetBlockMeta);
+			tolua_function(tolua_S, "SetCommandBlockSuccessCount",  tolua_cWorld_SetCommandBlockSuccessCount);
 			tolua_function(tolua_S, "SetSignLines",                 tolua_cWorld_SetSignLines);
 			tolua_function(tolua_S, "SetTimeOfDay",                 tolua_cWorld_SetTimeOfDay);
 			tolua_function(tolua_S, "SpawnSplitExperienceOrbs",     tolua_cWorld_SpawnSplitExperienceOrbs);

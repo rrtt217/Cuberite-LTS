@@ -599,7 +599,25 @@ void cServer::ExecuteConsoleCommand(const AString & a_Cmd, cCommandOutputCallbac
 		// A plugin handler may report the command's success count as the third Lua return value;
 		// default to 1 (a plain success) when it does not.
 		int successCount = 1;
-		if (cPluginManager::Get()->ExecuteConsoleCommand(split, a_Output, a_Cmd, Origin, &successCount))
+
+		// Plugin code may reach into the world (Core's target selectors do), while every world thread
+		// takes its own chunkmap lock before calling plugin hooks. Taking the origin world's lock here
+		// gives the console and RCON the same world -> plugin order that command blocks already have,
+		// instead of plugin -> world from the server tick thread (spec: command execution threading,
+		// section 3.1). cWorld::cLock is recursive, so callers that already hold it are unaffected:
+		cWorld * OriginWorld = Origin.GetWorld();
+		bool Handled = false;
+		if (OriginWorld != nullptr)
+		{
+			cWorld::cLock Lock(*OriginWorld);
+			Handled = cPluginManager::Get()->ExecuteConsoleCommand(split, a_Output, a_Cmd, Origin, &successCount);
+		}
+		else
+		{
+			Handled = cPluginManager::Get()->ExecuteConsoleCommand(split, a_Output, a_Cmd, Origin, &successCount);
+		}
+
+		if (Handled)
 		{
 			Finish(successCount);
 			return;

@@ -322,6 +322,12 @@ public:
 		return SetCommandBlockCommand(a_BlockPos.x, a_BlockPos.y, a_BlockPos.z, a_Command);
 	}
 
+	/** Sets the success count (the comparator signal) of the command block at the specified position.
+	Returns false when there is no command block there.
+	Plugins use this to correct a command's count after finishing its cross-world work on another
+	world's thread. Unlike SetCommandBlockCommand(), it does not queue a block entity resend. */
+	bool SetCommandBlockSuccessCount(Vector3i a_BlockPos, int a_SuccessCount);  // Exported in ManualBindings.cpp
+
 	/** Is the trapdoor open? Returns false if there is no trapdoor at the specified coords. */
 	bool IsTrapdoorOpen(int a_BlockX, int a_BlockY, int a_BlockZ);                                      // tolua_export
 

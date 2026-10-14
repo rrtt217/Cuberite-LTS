@@ -2856,6 +2856,35 @@ function OnAllChunksAvailable()</pre> All return values from the callbacks are i
 				},
 				Notes = "Sets the command to be executed in a command block at the specified coordinates. Returns if command was changed.",
 			},
+			SetCommandBlockSuccessCount =
+			{
+				Params =
+				{
+					{
+						Name = "BlockX",
+						Type = "number",
+					},
+					{
+						Name = "BlockY",
+						Type = "number",
+					},
+					{
+						Name = "BlockZ",
+						Type = "number",
+					},
+					{
+						Name = "SuccessCount",
+						Type = "number",
+					},
+				},
+				Returns =
+				{
+					{
+						Type = "boolean",
+					},
+				},
+				Notes = "Sets the success count (the comparator signal) of the command block at the specified coordinates, and returns whether a command block was found there. Unlike SetCommandBlockCommand(), it does not queue a block entity resend to the clients.",
+			},
 			SetCommandBlocksEnabled =
 			{
 				Params =
