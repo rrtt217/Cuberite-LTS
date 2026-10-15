@@ -249,8 +249,8 @@ vanilla 1.12.2 控制台实测 `/spawnpoint Harry00025 ~ ~ ~` → `Set Harry0002
 
 ## 8. 本分支未做（记录，等下达）
 
-1. **玩家命令的本世界锁对齐**（`ProcessProtocolIn` 不在 world 锁内，
-   [World.cpp:1338](../src/World.cpp#L1338) vs `m_ChunkMap.Tick` [:1350](../src/World.cpp#L1350)）：
-   在那取本世界锁可能引入 world↔client 新锁序，且不是本次复现的路径，故未做。
+1. ~~玩家命令的本世界锁对齐~~ **已做**（本分支引擎提交）：`ProcessProtocolIn` 现在在
+   `cWorld::cLock` 内运行，三种来源统一为 `world → plugin`；锁序核查与不变量见
+   [命令执行线程 spec §3.2](vanilla-1.12.2-command-execution-threading.md)。
 2. 1.12.2 的 `r<0`（"仅执行维度、不限距离"）语义仍是 C1 规格里的待办，与本节相关。
 3. `LastOutput` 不跟随计数回写（§7.3）；若日后要让它也反映总数，需要把消息一并回写。

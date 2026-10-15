@@ -53,6 +53,35 @@ world→plugin 成为唯一锁序，并让比较器在同一 tick 的红石评�
 5. **跨世界**：命令方块内的 `@e` 全局选择器可能触及别的世界。同步执行下，跨世界读写在**别的世界的锁**上进行——必须规定：跨世界部分要么仍按世界排队（C3 已实现的 `ApplyToTargets` 世界扇出），要么在持本世界锁时只做本世界部分。**本分支只保证 origin world 的同 tick 语义**，跨世界部分沿用 C3 的 `World:QueueTask` 扇出（其语义已在 C3 §5 记录）。
 6. **`/execute` 与 `/function`**：1.12.2 的例外（计数转发）不在本分支；`/execute` 尚未实现（Core 无 `cmd_execute.lua`）。
 
+### 3.2 加锁序不变量（玩家命令对齐）
+
+**不变量 A：任何插件钩子都持有 origin 世界的 chunkmap 锁。**
+
+| 来源 | 取锁点 |
+|---|---|
+| 命令方块 | `cChunk::Tick` → `RunQueuedCommandBlocks`，在 `m_ChunkMap.Tick` 的锁内 |
+| 控制台 / RCON | `cServer::ExecuteConsoleCommand` 在 plugin 分发前取 origin 世界锁（引擎提交 `1ac6920`） |
+| 玩家命令 | `cWorld::Tick` 把 `ProcessProtocolIn` 循环包进 `cWorld::cLock`（本提交，[World.cpp:1336](../src/World.cpp#L1336)） |
+
+**不变量 B：不得在持有客户端锁时获取世界锁。**
+本改动**首次**确立 `world → client` 序，因此 B 必须遵守。核实方法（可复核）：把
+`cClientHandle` 的全部 `cCSLock` 行号
+（140 / 257 / 286 / 374 / 557 / 585 / 639 / 689 / 758 / 2124 / 2136 / 2231 / 2244 / 2377 / 2395 /
+2596 / 2623 / 3250 / 3425 / 3441 / 3510 / 3538）与 `ClientHandle.cpp` 里全部世界调用行号
+（458 / 485 / 672 / 709 / 1169 / 1306 / 1345 / 1348 / 1377 / 1419 / 1430 / 1451 / 1510 / 1617 /
+1705 / 1720 / 1797 / 1812 / 1853 / 2070 / 2097 / 2283 / 2298 / 2552 / 2582 / 3047）取交集 →
+**为空**；并逐段读过较复杂的几处（`UnloadOutOfRangeChunks`、`StreamChunk`、`cClientHandle::Tick`、
+`RemoveFromWorld`、`SendBlockChange` / `SendBlockChanges`）：`World->...` 调用一律在锁作用域之外，
+`SendBlockChange` 甚至显式 `Lock.Unlock()` 之后才发。
+
+**不变量 C：钩子与 `cWorld:QueueTask` 任务不得锁另一个世界**（C1 规格 §233 既有）。
+`TickQueuedTasks`（[World.cpp:1354](../src/World.cpp#L1354)）在锁外运行，任务是 `plugin → world` 序；
+D2 的排队任务因此只碰自己那个世界，回写再投回源世界（坐标规格 §7.2）。
+
+**本改动不解决**：插件在自己的钩子里去锁**另一个**世界——那由 C 约束（Core 已由 D2 满足）。
+**代价**：origin 世界的 chunkmap 锁现在罩住整条收包链（含 Lua 钩子），慢插件会放大它；
+命令方块路径本来就是这个形态。**收益**：三种来源的钩子获得同样的原子性——钩子执行期间本世界不会被并发改写。
+
 ## 4. 前向兼容性契约（必须保持不变）
 
 1. **插件 API**：`cPluginManager:ExecuteCommand` / `ExecuteConsoleCommand`、`cCommandOutputCallback` 的既有虚函数（`Out`、`Finished`、`CommandExecuted(bool)`）**不得改变语义**；新增能力只能**追加**（例如新增携带数量的重载/新虚函数，并让旧虚函数的默认实现转发到它）。

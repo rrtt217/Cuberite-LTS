@@ -1332,10 +1332,17 @@ void cWorld::Tick(std::chrono::milliseconds a_Dt, std::chrono::milliseconds a_La
 		BroadcastPlayerListUpdatePing();
 	}
 
-	// Process all clients' buffered actions:
-	for (const auto Player : m_Players)
+	// Process all clients' buffered actions. The world's own chunkmap lock is taken first, so that a
+	// command handled here - and the plugin code it calls - runs with the same world -> plugin order
+	// that command blocks and the console already use, instead of plugin -> world on this thread
+	// (spec: command execution threading, section 3.2). cClientHandle releases every client lock before
+	// it calls into a world, so this cannot invert against them:
 	{
-		Player->GetClientHandle()->ProcessProtocolIn();
+		cLock Lock(*this);
+		for (const auto Player : m_Players)
+		{
+			Player->GetClientHandle()->ProcessProtocolIn();
+		}
 	}
 
 	TickClients(a_Dt);
