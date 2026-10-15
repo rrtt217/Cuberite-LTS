@@ -3,7 +3,7 @@
 #include "../TestHelpers.h"
 
 /** What this test verifies:
-The hunger / saturation arithmetic of specs/vanilla-1.12.2-status-effect-saturation.md section 2:
+The hunger / saturation arithmetic of specs/status-effects/vanilla-1.12.2-status-effect-saturation.md section 2:
 (1) The per-level scaling - amplifier 0 is level I, so the deltas are +1 hunger and +2 saturation per
     level (sources: https://minecraft.wiki/w/Potion, "Saturation ... Restores 1 hunger point x level and
     2 x level points of saturation", and https://minecraft.wiki/w/Saturation_(effect)); the pre-existing

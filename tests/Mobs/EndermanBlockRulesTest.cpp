@@ -3,7 +3,7 @@
 #include "../TestHelpers.h"
 
 /** What this test verifies:
-(1) The 1.12.2 enderman "holdable" block list of specs/vanilla-1.12.2-enderman.md section 3.7 -
+(1) The 1.12.2 enderman "holdable" block list of specs/mobs/vanilla-1.12.2-enderman.md section 3.7 -
 the current wiki list minus its 1.13+ additions, plus netherrack (1.10 / 16w20a, removed 1.16 / 20w07a);
 (2) The metadata discrimination the list needs: dirt / coarse dirt / podzol share one block, and only the
 small flowers are holdable, not every flower-metadata value;

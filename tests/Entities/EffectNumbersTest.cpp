@@ -3,7 +3,7 @@
 #include "../TestHelpers.h"
 
 /** What this test verifies:
-(1) The instant health amounts of specs/vanilla-1.12.2-status-effect-numbers.md section 1: 4 * 2^amplifier -
+(1) The instant health amounts of specs/status-effects/vanilla-1.12.2-status-effect-numbers.md section 1: 4 * 2^amplifier -
     4 / 8 / 16 / 32 for levels I..IV (wiki "Potion": Potion of Healing "Restores 4 health", Healing II
     "Restores 8 health (doubles with every additional level)"; the History of "Potion of Healing" dates the
     33.3% nerf from 6 to 4 to 13w23a).  The defect this removes: healing used to share the Harming base of 6

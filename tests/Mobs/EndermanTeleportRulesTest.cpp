@@ -3,7 +3,7 @@
 #include "../TestHelpers.h"
 
 /** What this test verifies:
-(1) The chase-teleport geometry of specs/vanilla-1.12.2-enderman.md section 3.6.2 -
+(1) The chase-teleport geometry of specs/mobs/vanilla-1.12.2-enderman.md section 3.6.2 -
 the aim point of a chasing enderman's teleport is the point 16 blocks horizontally and
 17 blocks vertically towards the target, snapped onto the target's own XZ / Y when closer;
 (2) The sunlight-teleport per-tick probability formula of section 3.6.3,

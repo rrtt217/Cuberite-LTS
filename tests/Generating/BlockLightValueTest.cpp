@@ -5,7 +5,7 @@
 
 // BlockLightValueTest
 //
-// Verifies the vanilla 1.12.2 block light-emission table as specified in specs/vanilla-1.12.2-lighting.md,
+// Verifies the vanilla 1.12.2 block light-emission table as specified in specs/lighting/vanilla-1.12.2-lighting.md,
 // section 2 (sourced from the Minecraft Wiki "Light" page, 2018-11-24 revision, the last revision covering
 // 1.12.2 before the 1.14 lighting rewrite).
 //

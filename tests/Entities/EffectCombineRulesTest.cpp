@@ -3,7 +3,7 @@
 #include "../TestHelpers.h"
 
 /** What this test verifies:
-(1) The re-application table of specs/vanilla-1.12.2-status-effect-application.md section 2, all four rows:
+(1) The re-application table of specs/status-effects/vanilla-1.12.2-status-effect-application.md section 2, all four rows:
     a higher amplifier replaces the active effect (even with a shorter duration), a lower one is ignored
     (even with a much longer duration), an equally strong effect extends the active effect only when it
     lasts strictly longer, and is ignored otherwise;

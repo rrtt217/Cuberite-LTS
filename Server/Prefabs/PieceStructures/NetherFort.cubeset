@@ -3,7 +3,7 @@
 
 -- Defines the prefabs in the group NetherFort
 
--- 方块实体（本仓库手工补充，见 specs/vanilla-1.12.2-cubeset-block-entities.md）：
+-- 方块实体（本仓库手工补充，见 specs/worldgen/vanilla-1.12.2-cubeset-block-entities.md）：
 --   * BlazePlatform / BlazePlatformOverhang 的刷怪笼补为 blaze
 --     （Minecraft Wiki, Nether Fortress；上游 issue cuberite/cuberite#2455）。
 --   * 箱子（CorridorCornerChest5、TinyCorridorCornerChest）的战利品属于阶段 1，当前仍为空。

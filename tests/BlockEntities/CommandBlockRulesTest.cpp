@@ -1,7 +1,7 @@
 // CommandBlockRulesTest.cpp
 
 // Tests for CommandBlockRules.h - the pure 1.12.2 command block type / metadata / activation rules.
-// Spec: specs/vanilla-1.12.2-command-blocks.md, sections 2.1 (types), 2.4 (metadata), 2.5 (timing).
+// Spec: specs/commands/vanilla-1.12.2-command-blocks.md, sections 2.1 (types), 2.4 (metadata), 2.5 (timing).
 //
 // Invariants verified here:
 //   1. Each command block ID maps to its own type (impulse 137, repeating 210, chain 211).

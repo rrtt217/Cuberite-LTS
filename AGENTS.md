@@ -16,7 +16,7 @@
   （[src/Protocol/ProtocolRecognizer.h:10](src/Protocol/ProtocolRecognizer.h#L10) 的 `MCS_CLIENT_VERSIONS`）；
   **parity 目标只针对 1.12.2 行为**，1.13 / 1.14 的地位见第 9 节。
 - 本 fork 的目标：**以 vanilla Minecraft Java 1.12.2 为基准，近似 1:1 重现其特性**，按「已知功能缺失」逐条推进。
-- 缺口来源：上游追踪 issue [#4888](https://github.com/cuberite/cuberite/issues/4888) 及其子 issue（用 `gh` 拉取）。**不在仓库内维护全局 parity ledger**——缺口由维护者逐条下达。允许的唯一例外是**任务级 roadmap**（如 `specs/vanilla-1.12.2-status-effects-roadmap.md`）：它是某次下达任务的交付物，只覆盖该任务划定的子系统；roadmap 列出的条目**不自动构成新任务**，开工仍需维护者逐条下达（与第 3 节「不做自动续跑」一致）。
+- 缺口来源：上游追踪 issue [#4888](https://github.com/cuberite/cuberite/issues/4888) 及其子 issue（用 `gh` 拉取）。**不在仓库内维护全局 parity ledger**——缺口由维护者逐条下达。允许的唯一例外是**任务级 roadmap**（如 `specs/status-effects/vanilla-1.12.2-status-effects-roadmap.md`）：它是某次下达任务的交付物，只覆盖该任务划定的子系统；roadmap 列出的条目**不自动构成新任务**，开工仍需维护者逐条下达（与第 3 节「不做自动续跑」一致）。
 - 当前处于起步阶段：不追求一次性对齐，追求**每条改动可独立验证、可回滚、可评审**。
 
 ---
@@ -94,7 +94,9 @@
      无编号的（维护者直接描述、或任务级 roadmap 指派的条目），
      以维护者下达的描述为任务定义，不补造 issue；
   2. **先复核该缺口在当前 HEAD 是否仍然存在**（清单来自 2020，基线 `23bca00`，本检出新 5 年）；
-  3. 从白名单来源写出 vanilla 1.12.2 行为规格；
+  3. 从白名单来源写出 vanilla 1.12.2 行为规格，落盘到 `specs/<子系统>/`；
+     子系统目录、判定归属的办法与新规格的落盘流程见 [specs/README.md](specs/README.md)
+     （spec **平铺在 `specs/` 根下是错的**，见该文件「为什么分目录」一节）；
   4. 实现 + 测试，遵守第 5 节规范；
   5. 跑完第 4 节**适用的**验收门；
   6. 交付汇报（改了什么 / 规格与来源 / 证据 / 已知偏差 / 复核结论）→ **停下等维护者评审**。
@@ -192,7 +194,7 @@
 - 命名：**新测试**的目标名与 `add_test` 的 `NAME` 统一用 `<Feature>Test`（两者同名）。
   仓库并存上游遗留的 `<name>-exe` / `<name>-test` 旧风格（如 `Google-exe` / `Google-test`、
   `BoundingBox-exe` / `BoundingBox-test`）——**不仿效，也不批量改名**（避免无意义 churn）。
-- 每个测试文件顶部写清三件事：**它验证哪条规格**（指向 `specs/*.md`）、**不变量**、**为什么这样验证**；
+- 每个测试文件顶部写清三件事：**它验证哪条规格**（指向 `specs/<子系统>/*.md`）、**不变量**、**为什么这样验证**；
   常量用具名 `TEST_*` 而不是裸魔术数字。
 
 > **没有可用 oracle 时**：行为验收以「规格 + 单元测试」为准，实机对照后续补。本机是否具备实机环境见 `AGENTS.local.md`。
@@ -226,6 +228,7 @@
 | `Server/` | 运行环境：默认插件、配置、协议数据 | ⚠️ 区分源码与运行生成物 |
 | `Server/Plugins/APIDump/` | 插件 API 权威文档源（`Hooks/` 70 个） | ✅ 改 API 时同步 |
 | `Server/Plugins/{Core,ChatLog,ProtectionAreas}` | 默认插件 submodule | ⚠️ 只在 fork 中改（见下方纪律） |
+| `specs/` | 任务级 vanilla 1.12.2 行为规格，**按子系统分子目录** | ✅ 约定见 [specs/README.md](specs/README.md) |
 | `tests/` | CTest 单元测试 | ✅ |
 | `Tools/` | 工具（ProtoProxy、方块调色板生成器等） | ⚠️ 按需 |
 | `Tools/BlockTypePaletteGenerator/lib/lunajson` | 第三方 submodule（纯 Lua JSON 库） | ❌ 只读（仅依赖更新任务可动指针） |

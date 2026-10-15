@@ -3,7 +3,7 @@
 #include "../TestHelpers.h"
 
 /** What this test verifies:
-The immunity table of specs/vanilla-1.12.2-status-effect-immunity.md section 2, which is taken from
+The immunity table of specs/status-effects/vanilla-1.12.2-status-effect-immunity.md section 2, which is taken from
 https://minecraft.wiki/w/Status_effect (section "Immunity"):
 (1) Undead mobs are immune to Regeneration and Poison, but accept every other effect;
 (2) Wither skeletons are immune to Wither on top of that, while other undead mobs are not;

@@ -3,7 +3,7 @@
 #include "../TestHelpers.h"
 
 /** What this test verifies:
-The decision table of specs/vanilla-1.12.2-status-effect-fire-resistance.md section 2 - an entity is
+The decision table of specs/status-effects/vanilla-1.12.2-status-effect-fire-resistance.md section 2 - an entity is
 fireproof when it is hardcoded fireproof, or carries a Fire Resistance effect, or is a player in creative
 or spectator mode (sources: https://minecraft.wiki/w/Potion, "Immunity to all heat-related damage";
 https://minecraft.wiki/w/Enchanted_Golden_Apple, 5:00 of Fire Resistance):

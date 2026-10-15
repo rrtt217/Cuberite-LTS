@@ -1,7 +1,7 @@
 // CommandBlockNBTTest.cpp
 
 // Tests for the 1.12.2 command block NBT field mapping (CommandBlockNBT.h).
-// Spec: specs/vanilla-1.12.2-command-blocks.md, section 2.7 (and the round-trip requirement in section 4).
+// Spec: specs/commands/vanilla-1.12.2-command-blocks.md, section 2.7 (and the round-trip requirement in section 4).
 //
 // Invariants verified here:
 //   1. Writing every field and reading it back yields the same values (including the 15 comparator

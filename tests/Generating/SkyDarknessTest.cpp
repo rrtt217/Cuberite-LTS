@@ -5,7 +5,7 @@
 // SkyDarknessTest
 //
 // Verifies the vanilla 1.12.2 sky darkness (the amount subtracted from stored skylight to get the internal
-// skylight) as specified in specs/vanilla-1.12.2-lighting.md, section 4 (sourced from the Minecraft Wiki
+// skylight) as specified in specs/lighting/vanilla-1.12.2-lighting.md, section 4 (sourced from the Minecraft Wiki
 // "Light" page, 2018-11-24 revision, and the "Internal light level" section of the current page).
 //
 // Invariants checked:

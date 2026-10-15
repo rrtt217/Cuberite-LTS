@@ -1,7 +1,7 @@
 // CommandLineSplitTest.cpp
 
 // Tests for StringSplitCommandLine(), the command-line splitter that tolerates quoted arguments.
-// Spec: specs/vanilla-1.12.2-command-context-and-splitting.md, section 2.1
+// Spec: specs/commands/vanilla-1.12.2-command-context-and-splitting.md, section 2.1
 //
 // Invariants verified here:
 //   1. For inputs without quotes the result is byte-identical to StringSplit(input, " ") - in particular

@@ -3,7 +3,7 @@
 #include "../TestHelpers.h"
 
 /** What this test verifies:
-(1) The amplifier -> level conversion of specs/vanilla-1.12.2-status-effect-amplifier.md section 2 - an
+(1) The amplifier -> level conversion of specs/status-effects/vanilla-1.12.2-status-effect-amplifier.md section 2 - an
     amplifier of 0 is level I, so the per-level scaling must never come out as zero (the defect this fix
     removes: Speed I used to add exactly +0.00);
 (2) The potency table of that section: Speed = +20% per level (+0.2 / +0.4 / +0.6 / +0.8 / +1.0 for

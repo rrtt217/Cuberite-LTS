@@ -2,7 +2,7 @@
 
 // Implements the tests for the cubeset BlockEntities field, which carries the non-loot block entity
 // contents of a prefab (the mob spawner's mob type, the flower pot's contents).
-// See specs/vanilla-1.12.2-cubeset-block-entities.md for the format and the data sources.
+// See specs/worldgen/vanilla-1.12.2-cubeset-block-entities.md for the format and the data sources.
 
 /*
 COVERAGE BOUNDARY - read before extending this file.

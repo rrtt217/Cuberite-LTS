@@ -22,7 +22,7 @@ tables are total functions):
 	2. Every axis the direction refers to is saturated with the matching sign: a z- connector sits at or
 	   beyond the box's z- face, never inside it.
 
-See specs/piece-connector-rotation.md for the specification, and specs/vanilla-1.12.2-stronghold.md section 5.7
+See specs/worldgen/piece-connector-rotation.md for the specification, and specs/worldgen/vanilla-1.12.2-stronghold.md section 5.7
 for how the 180-degree defect was found (a stronghold whose starting piece drew rotation 2 was stubbed).
 */
 
