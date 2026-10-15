@@ -257,5 +257,9 @@ vanilla 1.12.2 控制台实测 `/spawnpoint Harry00025 ~ ~ ~` → `Set Harry0002
    [target_selectors.lua](../Server/Plugins/Core/target_selectors.lua)（`Key == "r"`、`a_Argument.Number < 0`
    → 返回"实体世界 == 原点世界"），测试 `tests/test_selectors.lua` 的
    `r=-1 keeps the execution dimension`；C1 规格 §3 的表格本就记作"已实现"。
-   维度部分由 `SelectorNeedsOrigin()`（`Lookup.r ~= nil`）保证，因此 `@e[r=-1]` 不会进入 D2 的排队路径。
+   维度部分由 `SelectorNeedsOrigin()`（`Lookup.r ~= nil` / `Lookup.rm ~= nil`）保证，因此带负半径的选择器
+   不会进入 D2 的排队路径。
+   随后的实测又补上一条：**`rm<0` 与 `r<0` 行为一致**（维护者真实 1.12.2 观察，2026-10-13），
+   而原实现把 `rm<0` 当正数下界（`rm=-1` 会排除 1 格内实体），已在本轮的
+   Core `feature/selector-negative-radius` 修正并加测试。
 3. `LastOutput` 不跟随计数回写（§7.3）；若日后要让它也反映总数，需要把消息一并回写。

@@ -76,7 +76,7 @@ E1 原文「Spaces are not allowed around the brackets, equal signs, or commas�
 | `type=` | 实体 ID（如 `creeper`、`minecart`、`player`），可取反；`@p`/`@r` 带 `type=` 时从玩家集切到实体集 | 已实现（大小写不敏感、下划线归一，见下） |
 | `name=` | 名字**精确**匹配，可取反；非玩家实体匹配自定义名 | 已实现（大小写敏感〔推测〕） |
 | `c=` | 按距离排序后的数量上限；`@p`/`@r` 默认 1；**负值反转顺序**（`@p[c=-1]` = 最远） | 已实现 |
-| `r=` / `rm=` | 距原点的最大 / 最小半径；`r<0` 表示「仅执行维度、不限距离」 | 已实现（边界闭区间〔待核〕） |
+| `r=` / `rm=` | 距原点的最大 / 最小半径；**负值表示「仅执行维度、不限距离」，`r=` 与 `rm=` 一致** | 已实现（边界闭区间〔待核〕） |
 | `x=` / `y=` / `z=` | 设定原点（供 `r`/`rm`/`dx`…与排序用）；**整数**；`x`/`z` 做中心修正（`x=0` ≡ `x=0.5`），`y` 不修正 | 已实现（中心修正按 E2 反推） |
 | `dx=` / `dy=` / `dz=` | 自原点的有符号增量构成体积；未给的默认 0；选命中体积的实体 | 已实现（实体包围盒与体积求交） |
 | `l=` / `lm=` | 最大 / 最小经验等级（含端点），过滤到玩家 | 已实现 |
@@ -107,6 +107,13 @@ E1 原文「Spaces are not allowed around the brackets, equal signs, or commas�
 依据：E1 的 `player` 参数定义为「player name or target selector」，而位置参数自带维度；
 `x/y/z` 单独给出时**只移动原点、不缩小候选集**，但仍**钉住维度**（见 §7 的〔待核〕）。
 原实现把异世界实体当作「无穷远」参与 `c=` 排序、且 `dx/dy/dz` 的包围盒不查世界，属错误，已修正。
+
+**负值半径的来源**：`r<0` 见 1.12.2 时代 wiki 原文（[Commands?oldid=1152284](https://minecraft.wiki/w/Commands?oldid=1152284)：
+"Using a value under 0 restricts the targets to the same dimension the command was run from without
+applying a restriction on distance from the location of execution"）；
+`rm<0` 与之行为一致，来自维护者在真实 1.12.2 上的**实测观察（2026-10-13）**——
+原实现把 `rm<0` 当正数下界（与数值平方比较，`rm=-1` 会排除 1 格内的实体），与实测相反，已修正
+（Core `feature/selector-negative-radius`）。
 
 **控制台 / RCON**：没有执行者世界，`GetSelectorOrigin` 回退到**默认世界**的出生点
 （出生点存取器 [World.h:584](../src/World.h#L584)），故控制台同样不存在多世界问题。
