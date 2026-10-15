@@ -252,5 +252,10 @@ vanilla 1.12.2 控制台实测 `/spawnpoint Harry00025 ~ ~ ~` → `Set Harry0002
 1. ~~玩家命令的本世界锁对齐~~ **已做**（本分支引擎提交）：`ProcessProtocolIn` 现在在
    `cWorld::cLock` 内运行，三种来源统一为 `world → plugin`；锁序核查与不变量见
    [命令执行线程 spec §3.2](vanilla-1.12.2-command-execution-threading.md)。
-2. 1.12.2 的 `r<0`（"仅执行维度、不限距离"）语义仍是 C1 规格里的待办，与本节相关。
+2. ~~1.12.2 的 `r<0` 语义仍是待办~~ —— **本次复核发现该条记录有误**：`r<0`（"仅执行维度、不限距离"）
+   在 C1 就已实现并有测试：代码
+   [target_selectors.lua](../Server/Plugins/Core/target_selectors.lua)（`Key == "r"`、`a_Argument.Number < 0`
+   → 返回"实体世界 == 原点世界"），测试 `tests/test_selectors.lua` 的
+   `r=-1 keeps the execution dimension`；C1 规格 §3 的表格本就记作"已实现"。
+   维度部分由 `SelectorNeedsOrigin()`（`Lookup.r ~= nil`）保证，因此 `@e[r=-1]` 不会进入 D2 的排队路径。
 3. `LastOutput` 不跟随计数回写（§7.3）；若日后要让它也反映总数，需要把消息一并回写。
