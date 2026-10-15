@@ -1533,6 +1533,62 @@ static int tolua_cPluginManager_ExecuteConsoleCommand(lua_State * tolua_S)
 
 
 
+static int tolua_cPluginManager_ExecuteCommandFromOrigin(lua_State * tolua_S)
+{
+	/*
+	Function signature:
+	cPluginManager:ExecuteCommandFromOrigin(Origin, PermissionPlayer, EntireCommandStr) -> Result, OutputString, SuccessCount
+
+	Runs the command with the given cCommandOrigin as its execution context. PermissionPlayer (may be nil) is
+	the player whose permissions are checked - the player who issued /execute. The origin's player, when
+	present, is the sender the command handler sees (vanilla: the /execute target).
+	*/
+
+	// Check params:
+	cLuaState L(tolua_S);
+	if (
+		!L.CheckParamSelf("cPluginManager") ||
+		!L.CheckParamUserType(2, "cCommandOrigin") ||
+		!L.CheckParamString(4) ||
+		!L.CheckParamEnd(5)
+	)
+	{
+		return 0;
+	}
+
+	// Get the params:
+	cCommandOrigin * Origin = nullptr;
+	cPlayer * PermissionPlayer = nullptr;
+	AString Command;
+	if (
+		!L.GetStackValues(2, Origin) ||
+		!L.GetStackValues(4, Command) ||
+		((PermissionPlayer == nullptr) && !lua_isnil(tolua_S, 3) && !L.GetStackValue(3, PermissionPlayer))
+	)
+	{
+		L.LogStackTrace();
+		return 0;
+	}
+	if (Origin == nullptr)
+	{
+		return cManualBindings::lua_do_error(tolua_S, "Error in function call '#funcname#': Invalid 'Origin'");
+	}
+
+	// Run the command and hand its result, output and success count back to Lua:
+	AString Output;
+	int SuccessCount = 1;
+	const auto Result = cPluginManager::Get()->ExecuteCommandFromOrigin(*Origin, PermissionPlayer, Command, Output, SuccessCount);
+
+	L.Push(static_cast<int>(Result));
+	L.Push(Output);
+	L.Push(SuccessCount);
+	return 3;
+}
+
+
+
+
+
 static int tolua_cPluginManager_FindPlugins(lua_State * tolua_S)
 {
 	// API function no longer exists:
@@ -4710,6 +4766,7 @@ void cManualBindings::Bind(lua_State * tolua_S)
 			tolua_function(tolua_S, "BindConsoleCommand",    tolua_cPluginManager_BindConsoleCommand);
 			tolua_function(tolua_S, "CallPlugin",            tolua_cPluginManager_CallPlugin);
 			tolua_function(tolua_S, "DoWithPlugin",          StaticDoWith<cPluginManager, cPlugin, &cPluginManager::DoWithPlugin>);
+			tolua_function(tolua_S, "ExecuteCommandFromOrigin", tolua_cPluginManager_ExecuteCommandFromOrigin);
 			tolua_function(tolua_S, "ExecuteConsoleCommand", tolua_cPluginManager_ExecuteConsoleCommand);
 			tolua_function(tolua_S, "FindPlugins",           tolua_cPluginManager_FindPlugins);
 			tolua_function(tolua_S, "ForEachCommand",        tolua_cPluginManager_ForEachCommand);

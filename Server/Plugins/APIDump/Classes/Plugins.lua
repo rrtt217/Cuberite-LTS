@@ -93,6 +93,26 @@ return
 					},
 					Notes = "Creates an origin from the specified world, position and executor (Player may be nil).",
 				},
+				{
+					Params =
+					{
+						{
+							Name = "World",
+							Type = "cWorld",
+						},
+						{
+							Name = "Position",
+							Type = "Vector3d",
+						},
+					},
+					Returns =
+					{
+						{
+							Type = "cCommandOrigin",
+						},
+					},
+					Notes = "Creates an origin without an executor, the same shape the console, RCON and command blocks use.",
+				},
 			},
 		},
 	},
@@ -460,6 +480,48 @@ cPluginManager.AddHook(cPluginManager.HOOK_CHAT, OnChatMessage);
 					},
 				},
 				Notes = "Executes the command as if given by the specified Player. Checks permissions.",
+			},
+			ExecuteCommandFromOrigin =
+			{
+				Params =
+				{
+					{
+						Name = "Origin",
+						Type = "cCommandOrigin",
+					},
+					{
+						Name = "PermissionPlayer",
+						Type = "cPlayer",
+						IsOptional = true,
+					},
+					{
+						Name = "CommandStr",
+						Type = "string",
+					},
+				},
+				Returns =
+				{
+					{
+						Name = "CommandResult",
+						Type = "cPluginManager#CommandResult",
+					},
+					{
+						Name = "Output",
+						Type = "string",
+					},
+					{
+						Name = "SuccessCount",
+						Type = "number",
+					},
+				},
+				Notes = [[
+					Executes the command with the given {{cCommandOrigin}} as its execution context, which is what
+					Core's <code>/execute</code> command uses. PermissionPlayer, when given, is the player whose
+					permissions are checked - the one that issued the command; without it the command runs with
+					console privileges. The origin's player, when it has one, is the sender the command handler
+					sees, so the command reports to it and resolves <code>@s</code> to it. Returns the result of
+					the dispatch, the text the command produced and the command's success count (the number of
+					objects it affected; vanilla Java 1.12.2 stores that count in a command block).]],
 			},
 			ExecuteConsoleCommand =
 			{

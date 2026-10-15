@@ -364,6 +364,23 @@ public:
 	/** Executes the command, as if it was requested by a_Player. Permisssions are not checked. Returns crExecuted if executed. */
 	CommandResult ForceExecuteCommand(cPlayer & a_Player, const AString & a_Command);  // tolua_export
 
+	/** Executes a_Command with a_Origin as its execution context; used by Core's /execute command.
+	a_PermissionPlayer, when not nullptr, is the player whose permissions are checked - the player who issued
+	the command; a nullptr means the command runs with console privileges (console, RCON, command block).
+	The origin's player, when present, is the sender the command handler sees, so an /execute target that is a
+	player becomes the executed command's sender (vanilla: "as if executed by the specified target(s)") and
+	resolves "@s". a_Output receives the text the command produced and a_SuccessCount its success count
+	(the caller initialises it to the "plain success" default of 1).
+	Returns crExecuted if the command was executed.
+	Exported in ManualBindings.cpp. */
+	CommandResult ExecuteCommandFromOrigin(
+		const cCommandOrigin & a_Origin,
+		cPlayer * a_PermissionPlayer,
+		const AString & a_Command,
+		AString & a_Output,
+		int & a_SuccessCount
+	);
+
 	/** Removes all console command bindings that the specified plugin has made */
 	void RemovePluginConsoleCommands(cPlugin * a_Plugin);
 
@@ -466,6 +483,20 @@ private:
 
 	/** Tries to match a_Command to the internal table of commands, if a match is found, the corresponding plugin is called. Returns crExecuted if the command is executed. */
 	CommandResult HandleCommand(cPlayer & a_Player, const AString & a_Command, bool a_ShouldCheckPermissions);
+
+	/** Tries to match a_Command to the in-game command table and calls the matching handler with a_Player as the
+	sender and a_Origin as its execution context. a_PermissionPlayer, when not nullptr, is the player whose
+	permissions are checked (it is the issuing player for /execute, which may differ from the sender).
+	a_Output, when not nullptr, receives the text the handler produced; a_SuccessCount, when not nullptr,
+	receives the command's success count. Returns crExecuted if the command is executed. */
+	CommandResult HandleCommand(
+		cPlayer & a_Player,
+		cPlayer * a_PermissionPlayer,
+		const cCommandOrigin & a_Origin,
+		const AString & a_Command,
+		cCommandOutputCallback * a_Output,
+		int * a_SuccessCount
+	);
 
 	/** Returns the folders that are specified in the settings ini to load plugins from. */
 	AStringVector GetFoldersToLoad(cSettingsRepositoryInterface & a_Settings);

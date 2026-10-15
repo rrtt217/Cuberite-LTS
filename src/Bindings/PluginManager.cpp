@@ -1256,6 +1256,37 @@ bool cPluginManager::CallHookWorldTick(cWorld & a_World, std::chrono::millisecon
 
 cPluginManager::CommandResult cPluginManager::HandleCommand(cPlayer & a_Player, const AString & a_Command, bool a_ShouldCheckPermissions)
 {
+	// The command originates from the player's own world and position. Checking the permissions against the
+	// player itself is the only case the engine's own entry points need; /execute checks them against the
+	// issuing player instead and calls the six-parameter overload directly.
+	const cCommandOrigin Origin(a_Player.GetWorld(), a_Player.GetPosition(), &a_Player);
+
+	// a_Output is intentionally nullptr for player commands: Lua handlers send their feedback to the
+	// player directly (SendMessage() etc.), and their return string is only used for console output.
+	// Do not change this to a real callback without updating Core (see core_functions.lua).
+	return HandleCommand(
+		a_Player,
+		a_ShouldCheckPermissions ? &a_Player : nullptr,
+		Origin,
+		a_Command,
+		nullptr,
+		nullptr
+	);
+}
+
+
+
+
+
+cPluginManager::CommandResult cPluginManager::HandleCommand(
+	cPlayer & a_Player,
+	cPlayer * a_PermissionPlayer,
+	const cCommandOrigin & a_Origin,
+	const AString & a_Command,
+	cCommandOutputCallback * a_Output,
+	int * a_SuccessCount
+)
+{
 	AStringVector Split(StringSplitCommandLine(a_Command));
 	if (Split.empty())
 	{
@@ -1288,29 +1319,109 @@ cPluginManager::CommandResult cPluginManager::HandleCommand(cPlayer & a_Player, 
 	}
 
 	if (
-		a_ShouldCheckPermissions &&
+		(a_PermissionPlayer != nullptr) &&
 		!cmd->second.m_Permission.empty() &&
-		!a_Player.HasPermission(cmd->second.m_Permission)
+		!a_PermissionPlayer->HasPermission(cmd->second.m_Permission)
 	)
 	{
-		LOGINFO("Player %s tried to execute forbidden command: \"%s\"", a_Player.GetName().c_str(), Split[0].c_str());
+		LOGINFO("Player %s tried to execute forbidden command: \"%s\"", a_PermissionPlayer->GetName().c_str(), Split[0].c_str());
 		return crNoPermission;
 	}
 
 	ASSERT(cmd->second.m_Handler != nullptr);
 
-	// The command originates from the player's own world and position:
-	const cCommandOrigin Origin(a_Player.GetWorld(), a_Player.GetPosition(), &a_Player);
-
-	// a_Output is intentionally nullptr for player commands: Lua handlers send their feedback to the
-	// player directly (SendMessage() etc.), and their return string is only used for console output.
-	// Do not change this to a real callback without updating Core (see core_functions.lua).
-	if (!cmd->second.m_Handler->ExecuteCommand(Split, &a_Player, a_Command, Origin, nullptr))
+	if (!cmd->second.m_Handler->ExecuteCommand(Split, &a_Player, a_Command, a_Origin, a_Output, a_SuccessCount))
 	{
 		return crError;
 	}
 
 	return crExecuted;
+}
+
+
+
+
+
+cPluginManager::CommandResult cPluginManager::ExecuteCommandFromOrigin(
+	const cCommandOrigin & a_Origin,
+	cPlayer * a_PermissionPlayer,
+	const AString & a_Command,
+	AString & a_Output,
+	int & a_SuccessCount
+)
+{
+	AStringVector Split(StringSplitCommandLine(a_Command));
+	if (Split.empty())
+	{
+		return crUnknownCommand;
+	}
+
+	// The text the executed command produces is collected here and handed back to the caller; a handler
+	// that does not report a count at all is a plain success, exactly as in cServer's console path:
+	cStringAccumCommandOutputCallback Output;
+	a_SuccessCount = 1;
+
+	const auto Run = [&]() -> CommandResult
+	{
+		cPlayer * Sender = a_Origin.GetPlayer();
+		if (Sender != nullptr)
+		{
+			// A player is the sender ("the command is run as the target"), so it goes through the in-game
+			// command map and receives the command's feedback itself:
+			return HandleCommand(*Sender, a_PermissionPlayer, a_Origin, a_Command, &Output, &a_SuccessCount);
+		}
+
+		// No player sender: the console, RCON, a command block, or an /execute target that is not a player.
+		// The command then runs through the console command map. When a player issued it (/execute), the
+		// permission of the in-game registration is still enforced - the command must exist as an in-game
+		// command for a player to be allowed to run it at all:
+		if (a_PermissionPlayer != nullptr)
+		{
+			CommandMap::iterator cmd = m_Commands.find(Split[0]);
+			if (cmd == m_Commands.end())
+			{
+				return crUnknownCommand;
+			}
+			if (!cmd->second.m_Permission.empty() && !a_PermissionPlayer->HasPermission(cmd->second.m_Permission))
+			{
+				LOGINFO("Player %s tried to execute forbidden command: \"%s\"", a_PermissionPlayer->GetName().c_str(), Split[0].c_str());
+				return crNoPermission;
+			}
+		}
+
+		if (!ExecuteConsoleCommand(Split, Output, a_Command, a_Origin, &a_SuccessCount))
+		{
+			// ExecuteConsoleCommand() lets the plugins' HOOK_EXECUTE_COMMAND try unknown commands first, so the
+			// command is only an error when a handler was actually reached. A command that is missing from the
+			// console map - or one of cServer's built-ins (stop, restart, ...), which are answered before the
+			// plugin dispatch - is unknown here:
+			CommandMap::iterator cmd = m_ConsoleCommands.find(Split[0]);
+			if ((cmd == m_ConsoleCommands.end()) || (cmd->second.m_Plugin == nullptr))
+			{
+				return crUnknownCommand;
+			}
+			return crError;
+		}
+		return crExecuted;
+	};
+
+	// Plugin code runs with the origin world's lock held, so that every origin uses the same world -> plugin
+	// lock order (spec: command execution threading, section 3.1). cWorld::cLock is recursive, so callers
+	// that already hold it - the usual case for /execute - are unaffected:
+	CommandResult Result = crUnknownCommand;
+	cWorld * OriginWorld = a_Origin.GetWorld();
+	if (OriginWorld != nullptr)
+	{
+		cWorld::cLock Lock(*OriginWorld);
+		Result = Run();
+	}
+	else
+	{
+		Result = Run();
+	}
+
+	a_Output = Output.GetAccum();
+	return Result;
 }
 
 

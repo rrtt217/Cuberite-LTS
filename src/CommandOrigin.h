@@ -44,6 +44,15 @@ public:
 	{
 	}
 
+	/** Creates an origin without an issuing player - the same shape the console, RCON and command blocks use,
+	and the one /execute builds for a target that is not a player. */
+	cCommandOrigin(cWorld * a_World, const Vector3d & a_Position):
+		m_World(a_World),
+		m_Position(a_Position),
+		m_Player(nullptr)
+	{
+	}
+
 	/** Returns the world the command originates from, or nullptr if it is not known. */
 	cWorld * GetWorld(void) const { return m_World; }
 
