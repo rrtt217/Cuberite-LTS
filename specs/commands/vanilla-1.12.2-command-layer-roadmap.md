@@ -34,6 +34,11 @@
 验收：风格 / 编译 / ctest（47/47）/ `CheckBindingsDependencies` 全绿；门 6 因 6 个**与本分支无关的既有**未文档化符号（`cEnderCrystal.HasRespawnBeam` 等，基线 `master` 同样触发）未全绿，见交付说明。
 | C3 | `feature/command-blocks-parity` | [command-blocks](vanilla-1.12.2-command-blocks.md) | P1 | C2 | `src/` | 成功计数/比较器/`TrackOutput`/链与循环方块/改名显示/编辑界面下发 |
 | C4 | `feature/core-execute-commands` | [execute-and-testfor](vanilla-1.12.2-execute-and-testfor.md) | P1 | C1, C2, C3 | Core + `src/` | `/execute`、`/testfor`、`/testforblock`（1.12.2 形态） |
+
+**C4 状态**：已实现并推送（父仓库 `feature/core-execute-commands` 三个原子提交；Core 侧 `feature/core-execute-commands` / `797047e`，父仓库 gitlink 同步；`.gitmodules` 的 Core `url` 早在 C1 已指向 `rrtt217/Core`），待维护者评审。
+`src/` 侧新增一条「带原点执行命令」的通路（`cPluginManager:ExecuteCommandFromOrigin`，权限主体与 sender 分离），Core 侧新增 `cmd_execute.lua` / `cmd_testfor.lua` / `cmd_testforblock.lua` / `command_execute.lua` + `Info.lua` 注册。
+验收：风格 0 violations / 编译通过 / ctest 49/49 / `CheckBindingsDependencies` 通过 / 行为（真实服务器 + 探针插件，见 [C4 §6](vanilla-1.12.2-execute-and-testfor.md)）；门 6 本支两个新符号已入 APIDump，`NewlyUndocumented.lua` 仍只剩 C2 记录过的同 6 个既有符号。
+**待实机核实**（本机无客户端）：玩家发起路径的权限闸门与「目标即 sender」；另有跨世界目标不执行等 10 条偏差，逐条见 [C4 §5](vanilla-1.12.2-execute-and-testfor.md)。
 | C5 | `feature/core-presentation-commands` | [presentation-commands](vanilla-1.12.2-presentation-commands.md) | P2 | C1 | Core | `/title` `/particle` `/playsound` `/stopsound`（合并的小命令组） |
 | C6 | `feature/core-scoreboard-teams` | [scoreboard-teams](vanilla-1.12.2-scoreboard-teams.md) | P2 | C1 | Core | `/scoreboard teams` 子命令 + setdisplay 槽位 |
 
