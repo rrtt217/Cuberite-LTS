@@ -27,7 +27,10 @@
 | C1 | `feature/core-target-selectors` | [command-target-selectors](vanilla-1.12.2-command-target-selectors.md) | P0 | — | Core（submodule，`rrtt217/Core`）| 选择器层 `@p @a @r @e @s` + 已核实的 1.12.2 参数集，命令共用 |
 
 **C1 状态**：已实现并推送（Core 侧 `8913d93212cf3fb4d7236437c1b06a83fa08e3f1`，父仓库同步 `.gitmodules` 的 `url` 与 gitlink），待维护者评审。
-2026-10 的后续支把 §7 里「`@e` 只覆盖 pawn」那条偏差收掉了（候选集枚举全部实体、`"entity"` 不再等同 `"pawn"`），并按维护者要求**叠在 `feature/core-entity-name-lookup` 之上**：`feature/core-selector-all-entities`。
+2026-10 的两个后续支均已按 `--ff-only` 合入 `master`（父仓库 `3980fec`，gitlink → Core `3aed7f3`）：
+`feature/core-entity-name-lookup`（`entity_names.lua`：生物名不再在 Lua 复制、直接问引擎的 `cMonster::StringToMobType`，非生物 id 一张表，`/summon` 与选择器 `type=` 共用）
+与**叠在它之上**的 `feature/core-selector-all-entities`（§7 的「`@e` 只覆盖 pawn」那条偏差被收掉：候选集枚举全部实体、`"entity"` 不再等同 `"pawn"`）。
+合入过程中实机实测抓到一个 bug 并已修：`eEntityType` 常量挂在 `cEntity` 表下（`cEntity.etPickup`）而非全局，`entity_names.lua` 按全局读为 `nil`，导致 `@e[type=item]` 一类非生物 `type=` 永远不匹配；三处测试桩已改为按真实路径打桩（实测：`@e[type=item]` 在 18 个掉落物的存档上返回 18）。
 实现范围与〔待核〕项见 [C1 §4/§7](vanilla-1.12.2-command-target-selectors.md)。
 | C2 | `feature/command-context-and-splitting` | [command-context-and-splitting](vanilla-1.12.2-command-context-and-splitting.md) | P0 | — | `src/` | 执行上下文（世界/位置/执行者）+ 引号切分 + 玩家命令输出回传 |
 
