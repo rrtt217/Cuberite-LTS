@@ -309,7 +309,19 @@ AGENTS.md §2.1/§2.2。这条已被现行 [AGENTS.md §2.1](../../AGENTS.md) �
   TNT 等；`kind = "pawn"`（`/effect`）与 `kind = "player"`（`/title`、`/tellraw`、`/playsound`、`/stopsound`、
   `/clear`、`/spawn`、`/spawnpoint`）**不变**。`type=` 能点名的实体与「Cuberite 里真实存在的实体」一致：
   33 个有配置的生物全部在引擎名字表里，非生物里选得到但造不出的 6 类已标 `selector_only`。
-  仍未做的：**跨世界**候选（`ApplyToTargets` 延后，§3.3 作用域规则）、以及 `@e` 只覆盖**已加载区块**（与 vanilla 同）。
+- **跨世界候选是实现的**（§3.3 作用域规则 + §7.2 锁序）：位置无关的选择器（裸 `@a`/`@e`/`@r` + `type=`/`name=`/`m=`/`l=`/`lm=`/`team=` 等；`@s` 永远只在本世界）由 `GetSelectorDeferral()` 判定后交给
+  `ApplyToTargets()`：原点世界的匹配**当拍**执行，其余世界 `QueueTask` 到各自线程、下一拍用该世界重新解析并执行
+  （`ResolveDeferredTargets()`，不携带执行者），计数经 `NewPendingResult()`/`ReportDeferredResult()` 汇总后**回写到原点世界的命令方块**
+  （只在原点世界的线程上写，避免两把世界锁）。
+  真正的限制，按性质分三类：
+  1. **按定义只在本世界**：带位置/距离语义的选择器（`x=`/`y=`/`z=`/`dx=`/`dy=`/`dz=`/`r=`/`rm=`/`c=`、`@p`）——
+     距离只在单个世界内良定义（§3.3）；`@s` 就是执行者本身。
+  2. **两个命令主动放弃跨世界**（`Context.LocalOnly = true`，均记录在 [C4 spec §5.7](vanilla-1.12.2-execute-and-testfor.md)）：
+     `/execute`（权限主体与产出的文本不能跨线程用）与 `/testfor`（它的成功计数**就是**命中数，而延迟计数只能回写命令方块，
+     否则其余世界会静默计成 0）。
+  3. **延迟的固有代价**：其余世界的动作晚**一拍**、在该世界线程运行且**不能碰执行者**；命令 handler 当拍返回的提示文本/计数
+     只反映原点世界的即时命中（回写只修正命令方块的 `SuccessCount`）。
+- `@e` 只覆盖**已加载区块**（与 vanilla 同，不是缺口）。
 - **未实现的合法参数**：`tag`、`score_*`、`rx/rxm/ry/rym` → 使用时报「not supported yet」，不静默。
 - **`type=` 值大小写**：来源冲突，按大小写不敏感实现〔待核〕（§3.3）。
 - **`r`/`rm` 边界**：E1 措辞为「less than / more than」，现行页按闭区间；本实现取闭区间〔待核〕。
