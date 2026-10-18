@@ -1254,6 +1254,36 @@ bool cPluginManager::CallHookWorldTick(cWorld & a_World, std::chrono::millisecon
 
 
 
+cPluginManager::CommandMap::iterator cPluginManager::FindCommand(const AString & a_Name)
+{
+	CommandMap::iterator itr = m_Commands.find(a_Name);
+	if ((itr != m_Commands.end()) || a_Name.empty() || (a_Name[0] == '/'))
+	{
+		// Exact match, or the name already has the form this map uses:
+		return itr;
+	}
+	return m_Commands.find("/" + a_Name);
+}
+
+
+
+
+
+cPluginManager::CommandMap::iterator cPluginManager::FindConsoleCommand(const AString & a_Name)
+{
+	CommandMap::iterator itr = m_ConsoleCommands.find(a_Name);
+	if ((itr != m_ConsoleCommands.end()) || a_Name.empty() || (a_Name[0] != '/'))
+	{
+		// Exact match, or there is no leading slash to strip:
+		return itr;
+	}
+	return m_ConsoleCommands.find(a_Name.substr(1));
+}
+
+
+
+
+
 cPluginManager::CommandResult cPluginManager::HandleCommand(cPlayer & a_Player, const AString & a_Command, bool a_ShouldCheckPermissions)
 {
 	// The command originates from the player's own world and position. Checking the permissions against the
@@ -1293,7 +1323,9 @@ cPluginManager::CommandResult cPluginManager::HandleCommand(
 		return crUnknownCommand;
 	}
 
-	CommandMap::iterator cmd = m_Commands.find(Split[0]);
+	// Inner commands (/execute, /function) are written without the leading slash that the in-game map's
+	// keys carry, so the lookup accepts both forms:
+	CommandMap::iterator cmd = FindCommand(Split[0]);
 	if (cmd == m_Commands.end())
 	{
 		// Command not found
@@ -1377,7 +1409,7 @@ cPluginManager::CommandResult cPluginManager::ExecuteCommandFromOrigin(
 		// command for a player to be allowed to run it at all:
 		if (a_PermissionPlayer != nullptr)
 		{
-			CommandMap::iterator cmd = m_Commands.find(Split[0]);
+			CommandMap::iterator cmd = FindCommand(Split[0]);
 			if (cmd == m_Commands.end())
 			{
 				return crUnknownCommand;
@@ -1395,7 +1427,7 @@ cPluginManager::CommandResult cPluginManager::ExecuteCommandFromOrigin(
 			// command is only an error when a handler was actually reached. A command that is missing from the
 			// console map - or one of cServer's built-ins (stop, restart, ...), which are answered before the
 			// plugin dispatch - is unknown here:
-			CommandMap::iterator cmd = m_ConsoleCommands.find(Split[0]);
+			CommandMap::iterator cmd = FindConsoleCommand(Split[0]);
 			if ((cmd == m_ConsoleCommands.end()) || (cmd->second.m_Plugin == nullptr))
 			{
 				return crUnknownCommand;
@@ -1723,7 +1755,7 @@ bool cPluginManager::ExecuteConsoleCommand(const AStringVector & a_Split, cComma
 		return false;
 	}
 
-	CommandMap::iterator cmd = m_ConsoleCommands.find(a_Split[0]);
+	CommandMap::iterator cmd = FindConsoleCommand(a_Split[0]);
 	if (cmd == m_ConsoleCommands.end())
 	{
 		// Command not found

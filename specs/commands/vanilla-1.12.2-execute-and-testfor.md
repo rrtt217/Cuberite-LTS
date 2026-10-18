@@ -97,6 +97,7 @@ cPluginManager:ExecuteCommandFromOrigin(Origin, PermissionPlayer, Command) -> Re
 - `Origin` 是 Lua 侧用 C1 的坐标解析结果构造的 `cCommandOrigin(World, Position, Sender)`（构造器已由 tolua 导出）。
 - 语义：切分用与引擎同一把切分器 `StringSplitCommandLine()`；**目标是玩家**时走 in-game 路径（hook → 按 `PermissionPlayer` 查权限 → `handler->ExecuteCommand(Split, Sender, …, &Output, &SuccessCount)`）；**无 sender** 时走控制台路径（仍按 `PermissionPlayer` 查权限；命令必须在 `m_ConsoleCommands` 里）；两条路径都取原点世界的 `cWorld::cLock`（递归锁，调用方已持有时无影响），与 [Server.cpp:605-613](../../src/Server.cpp#L605) 的控制台路径保持**同一条 world → plugin 锁序**。
 - `Result` 是 `cPluginManager::CommandResult`（Lua 侧用已导出的 `cPluginManager.crExecuted` 等常量比较；**不能**用真值判断——`crExecuted == 0`，而 Lua 里 0 为真）。
+- **命令名形态**：vanilla 的内层命令不带前导 `/`（§2.2 的语法），而 in-game 命令表的键带 `/`。两条 sender 路径（含无 sender 时的权限查表与错误归类）都对两种形态容错，精确命中优先；`Split`/原始串、权限与成功计数语义不变。细节与副作用见 [command-context-and-splitting §2.3](vanilla-1.12.2-command-context-and-splitting.md)。
 
 ### 3.4 命令体取原文切片
 

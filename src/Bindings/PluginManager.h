@@ -444,6 +444,18 @@ private:
 	typedef std::map<AString, cCommandReg> CommandMap;
 
 
+	/** Finds a command in the in-game command map.
+	Accepts the registered form (Core registers "/name") and, when that misses, the vanilla inner-command
+	form without the leading slash that /execute and /function hand to the dispatcher. The exact form
+	wins when a plugin registered both. */
+	CommandMap::iterator FindCommand(const AString & a_Name);
+
+	/** Finds a command in the console command map.
+	Accepts the registered form (without a slash) and, when that misses, the same name with a leading
+	slash stripped. The exact form wins when a plugin registered both. */
+	CommandMap::iterator FindConsoleCommand(const AString & a_Name);
+
+
 	/** FolderNames of plugins that need an action (unload, reload, ...).
 	The plugins will be acted upon within the next call to Tick(), to avoid multithreading issues.
 	Protected against multithreaded access by m_CSPluginsNeedAction. */

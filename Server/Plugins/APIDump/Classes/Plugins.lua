@@ -519,9 +519,13 @@ cPluginManager.AddHook(cPluginManager.HOOK_CHAT, OnChatMessage);
 					Core's <code>/execute</code> command uses. PermissionPlayer, when given, is the player whose
 					permissions are checked - the one that issued the command; without it the command runs with
 					console privileges. The origin's player, when it has one, is the sender the command handler
-					sees, so the command reports to it and resolves <code>@s</code> to it. Returns the result of
-					the dispatch, the text the command produced and the command's success count (the number of
-					objects it affected; vanilla Java 1.12.2 stores that count in a command block).]],
+					sees, so the command reports to it and resolves <code>@s</code> to it. The command string may
+					be given with or without a leading slash: the in-game command map is keyed by the registered
+					name (Core registers <code>/name</code>) while the inner commands of <code>/execute</code> and
+					<code>/function</code> are written without one, so both forms are accepted (the exact
+					registered form wins). Returns the result of the dispatch, the text the command produced and
+					the command's success count (the number of objects it affected; vanilla Java 1.12.2 stores that
+					count in a command block).]],
 			},
 			ExecuteConsoleCommand =
 			{
