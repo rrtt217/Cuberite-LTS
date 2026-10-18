@@ -1,6 +1,7 @@
 # C1 目标选择器层（Core 插件内共用模块）
 
-分支：`feature/core-target-selectors`（父仓库）+ [`rrtt217/Core`](https://github.com/rrtt217/Core) 上的同名分支 ｜ 级别：P0 ｜ 前置：无 ｜ 编排见 [roadmap](vanilla-1.12.2-command-layer-roadmap.md)
+分支：`feature/core-target-selectors`（§3.1 的 `@e` 全实体覆盖与 §3.3 的 `type=` 统一查找是 2026-10 的后续支，
+叠在 `feature/core-entity-name-lookup` 之上，见各支交付说明）（父仓库）+ [`rrtt217/Core`](https://github.com/rrtt217/Core) 上的同名分支 ｜ 级别：P0 ｜ 前置：无 ｜ 编排见 [roadmap](vanilla-1.12.2-command-layer-roadmap.md)
 
 > **交付状态（2026-10-12）**：本分支已实现并推送。Core 侧提交 `8913d93212cf3fb4d7236437c1b06a83fa08e3f1`
 > （fork 分支 `feature/core-target-selectors`），父仓库同一分支更新 `.gitmodules` 的 `url`
@@ -55,7 +56,7 @@ fork `cuberite/Core` → `https://github.com/rrtt217/Core.git` → fork 上一�
 | `@p` | 距执行原点最近的**玩家**（有 `type=` 时改为最近的匹配实体） | 已实现（同一世界内比距离） |
 | `@r` | 随机玩家（有 `type=` 时为随机实体） | 已实现 |
 | `@a` | 所有玩家 | 已实现 |
-| `@e` | 所有实体 | **只覆盖 pawn**（玩家 + 怪物），见 §7 |
+| `@e` | 所有实体（含掉落物 / 矿车 / 箭 / 经验球 …） | 已实现（原点世界的**全部**实体；跨世界仍由 `ApplyToTargets` 延后，见 §7） |
 | `@s` | 执行命令的实体；无执行者时为**空集** | 已实现；context 为 `nil` 时为空集 |
 
 **`@n` 不属于 1.12.2**：E3 的 History 记 `@n` 为 1.21 / 24w21a 引入；E1 明记 1.12.2「There are five variables」。
@@ -99,8 +100,10 @@ E1 原文「Spaces are not allowed around the brackets, equal signs, or commas�
 生物名**不在 Lua 里复制**，直接问引擎的 `cMonster::StringToMobType`（它内部就是 `g_MobTypeNames`：每个生物类型的
 Cuberite 名、vanilla 名、1.12.2 NBT id 三种拼写，大小写不敏感），因此两条命令对生物名的接受集合按构造一致；
 非生物 id（`tnt`、`boat`、`minecart`、`arrow` 等 21 个）引擎没有「名字→构造器」映射，只有这一张表，两边共用。
-匹配时：`player` 由本层解析；生物比 `GetMobType()`；非生物比 `GetEntityType()`（今天就写成按实体类型匹配，
-等到 `@e` 覆盖非 pawn 实体时无需再改，见 §5 的 `@e` 偏差）；不认识的 id 一律不匹配。
+匹配时：`player` 由本层解析；生物比 `GetMobType()`；非生物比 `GetEntityType()`；不认识的 id 一律不匹配。
+表里同时收录「选得到但造不出」的实体（`item`、`item_frame`、`painting`、`leash_knot`、`area_effect_cloud`、
+`eye_of_ender`，标 `selector_only`）：`@e[type=item]` 能命中，`/summon item` 仍会报未知（vanilla 的 `/summon item`
+要 NBT 才有意义，本仓库无 NBT 通路）。
 副作用（刻意）：`/summon` 不再接受它自己那张表独有的 1.10 驼峰别名（`PrimedTnt`、`MinecartChest`、`ThrownEgg` …）
 ——它们从来不是 1.12.2 的 id；生物侧的旧拼写仍由引擎表接受（`PigZombie`、`LavaSlime` …）。
 
@@ -300,11 +303,13 @@ AGENTS.md §2.1/§2.2。这条已被现行 [AGENTS.md §2.1](../../AGENTS.md) �
 
 ## 7. 已知偏差 / 风险
 
-- **`@e` 只覆盖 pawn**（玩家 + 怪物），不含掉落物/矿车/物品展示框 → 与 vanilla 有实质差距。
-  原因**不是** C++ 缺类型判定（`IsPickup`/`IsMinecart` 等已在 [Entity.h:161-171](../../src/Entities/Entity.h#L161) 导出），
-  而是尚无**已核实的 1.12.2 实体 ID ↔ Cuberite 实体种类映射**；补齐映射前只放 pawn，另立分支。
-  对 `/effect` 而言 pawn 恰好覆盖全部能接收效果的实体（E4 的 `@e[type=zombie]` 用例即怪物），
-  故本分支的实际影响面较小；差距主要体现在 `/kill @e`、`/execute @e` 一类通用消费者上。
+- **`@e` 已覆盖全部实体**（2026-10，叠在实体名查找统一之上）：候选集从「只枚举 pawn」改为枚举原点世界的全部实体
+  （`ForEachEntity`——玩家也在 chunkmap 里，见 `cWorld::AddPlayer`），`kind` 判定里 `"entity"` 不再等同 `"pawn"`。
+  随之**行为变化**（对 `kind = "entity"` 的消费者）：`/kill`、`/testfor`、`/execute` 现在会看到掉落物、矿车、箭、
+  TNT 等；`kind = "pawn"`（`/effect`）与 `kind = "player"`（`/title`、`/tellraw`、`/playsound`、`/stopsound`、
+  `/clear`、`/spawn`、`/spawnpoint`）**不变**。`type=` 能点名的实体与「Cuberite 里真实存在的实体」一致：
+  33 个有配置的生物全部在引擎名字表里，非生物里选得到但造不出的 6 类已标 `selector_only`。
+  仍未做的：**跨世界**候选（`ApplyToTargets` 延后，§3.3 作用域规则）、以及 `@e` 只覆盖**已加载区块**（与 vanilla 同）。
 - **未实现的合法参数**：`tag`、`score_*`、`rx/rxm/ry/rym` → 使用时报「not supported yet」，不静默。
 - **`type=` 值大小写**：来源冲突，按大小写不敏感实现〔待核〕（§3.3）。
 - **`r`/`rm` 边界**：E1 措辞为「less than / more than」，现行页按闭区间；本实现取闭区间〔待核〕。

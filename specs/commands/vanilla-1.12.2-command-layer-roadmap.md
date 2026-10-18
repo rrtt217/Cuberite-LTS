@@ -27,6 +27,7 @@
 | C1 | `feature/core-target-selectors` | [command-target-selectors](vanilla-1.12.2-command-target-selectors.md) | P0 | — | Core（submodule，`rrtt217/Core`）| 选择器层 `@p @a @r @e @s` + 已核实的 1.12.2 参数集，命令共用 |
 
 **C1 状态**：已实现并推送（Core 侧 `8913d93212cf3fb4d7236437c1b06a83fa08e3f1`，父仓库同步 `.gitmodules` 的 `url` 与 gitlink），待维护者评审。
+2026-10 的后续支把 §7 里「`@e` 只覆盖 pawn」那条偏差收掉了（候选集枚举全部实体、`"entity"` 不再等同 `"pawn"`），并按维护者要求**叠在 `feature/core-entity-name-lookup` 之上**：`feature/core-selector-all-entities`。
 实现范围与〔待核〕项见 [C1 §4/§7](vanilla-1.12.2-command-target-selectors.md)。
 | C2 | `feature/command-context-and-splitting` | [command-context-and-splitting](vanilla-1.12.2-command-context-and-splitting.md) | P0 | — | `src/` | 执行上下文（世界/位置/执行者）+ 引号切分 + 玩家命令输出回传 |
 
