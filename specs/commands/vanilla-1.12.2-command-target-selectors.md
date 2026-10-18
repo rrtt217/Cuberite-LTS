@@ -73,7 +73,7 @@ E1 原文「Spaces are not allowed around the brackets, equal signs, or commas�
 
 | 参数 | 1.12.2 语义 | 本分支 |
 |---|---|---|
-| `type=` | 实体 ID（如 `creeper`、`minecart`、`player`），可取反；`@p`/`@r` 带 `type=` 时从玩家集切到实体集 | 已实现（大小写不敏感、下划线归一，见下） |
+| `type=` | 实体 ID（如 `creeper`、`minecart`、`player`），可取反；`@p`/`@r` 带 `type=` 时从玩家集切到实体集 | 已实现；**与 `/summon` 共用同一查找**（`entity_names.lua`：生物交给引擎的 `cMonster:StringToMobType`，非生物 id 由同一张小表识别），见下 |
 | `name=` | 名字**精确**匹配，可取反；非玩家实体匹配自定义名 | 已实现（大小写敏感〔推测〕） |
 | `c=` | 按距离排序后的数量上限；`@p`/`@r` 默认 1；**负值反转顺序**（`@p[c=-1]` = 最远） | 已实现 |
 | `r=` / `rm=` | 距原点的最大 / 最小半径；**负值表示「仅执行维度、不限距离」，`r=` 与 `rm=` 一致** | 已实现（边界闭区间〔待核〕） |
@@ -92,9 +92,17 @@ E1 原文「Spaces are not allowed around the brackets, equal signs, or commas�
 
 **`type=` 值的大小写有来源冲突**〔待核〕：E1/E4（1.12.2 时点）写「Entity IDs are case-sensitive」，
 而 [Java Edition 1.11](https://minecraft.wiki/w/Java_Edition_1.11) 写实体 ID「now are no longer case sensitive」。
-两说直接冲突且未找到 1.12.2 专用裁决。本分支按**大小写不敏感**实现（同时接受 `Creeper` 与 `creeper`），
-并把 `type=cave_spider` 一类下划线 ID 归一化后经 `cMonster.StringToMobType` 匹配，避免依赖单一拼写。
+两说直接冲突且未找到 1.12.2 专用裁决。本分支按**大小写不敏感**实现（同时接受 `Creeper` 与 `creeper`）。
 裁决方法：合法 1.12.2 服务端实测 `/kill @e[type=Creeper]`。
+
+**`type=` 与 `/summon` 共用同一个查找**（2026-10 对齐）：`entity_names.lua` 的 `GetEntityInfo()` 是唯一入口——
+生物名**不在 Lua 里复制**，直接问引擎的 `cMonster::StringToMobType`（它内部就是 `g_MobTypeNames`：每个生物类型的
+Cuberite 名、vanilla 名、1.12.2 NBT id 三种拼写，大小写不敏感），因此两条命令对生物名的接受集合按构造一致；
+非生物 id（`tnt`、`boat`、`minecart`、`arrow` 等 21 个）引擎没有「名字→构造器」映射，只有这一张表，两边共用。
+匹配时：`player` 由本层解析；生物比 `GetMobType()`；非生物比 `GetEntityType()`（今天就写成按实体类型匹配，
+等到 `@e` 覆盖非 pawn 实体时无需再改，见 §5 的 `@e` 偏差）；不认识的 id 一律不匹配。
+副作用（刻意）：`/summon` 不再接受它自己那张表独有的 1.10 驼峰别名（`PrimedTnt`、`MinecartChest`、`ThrownEgg` …）
+——它们从来不是 1.12.2 的 id；生物侧的旧拼写仍由引擎表接受（`PigZombie`、`LavaSlime` …）。
 
 **作用域规则（跨世界距离无定义）**：距离只在**单个世界内**良定义，因此凡是带
 **位置 / 距离语义**的选择器，候选集一律限定在**原点世界**，绝不跨世界比较坐标：

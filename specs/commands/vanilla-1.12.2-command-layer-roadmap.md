@@ -49,6 +49,7 @@ Core 侧新增 `command_presentation.lua`（解析 + 两张白名单 + `MC|StopS
 **范围变化（两次）**：①`/tellraw` 由维护者决定并入本支（与 `/title` 的文本参数共用同一个 JSON 文本组件层）；②`/stopsound` 起初因「1.12.2 的下发机制〔待核〕、且本仓库没有任何 Stop Sound 包类型」被判为需新 C++ 通路，**维护者的 ProtoProxy 原版抓包推翻了这一判断**：1.12.2 用 `MC|StopSound` **插件消息**（0x18，载荷 = 分类 + 声音事件两个可选 VarInt 字符串），而 `cClientHandle:SendPluginMessage` 本就已导出 → 纯 Lua 实现，本支并入。抓包字节与实现见 [C5 §2.4/§6](vanilla-1.12.2-presentation-commands.md)。
 **实机验收**：维护者于 2026-10-18 用原版 1.12.2 客户端逐条实测**通过**（标题/副标题/actionbar/`times`/`clear`/`reset`、plain 与 JSON 两种文本形态、`/tellraw` 的组件透传、`/particle` 的粒子与 `count=0`、`/playsound` 的按玩家下发、`/stopsound` 真正停声）。实测过程中抓到并修掉两个只有实机能暴露的 bug（actionbar 接收者用错类、拒绝提示被 `${` 加固吞掉），修完重测全绿。
 后续补抓（`Log_1792294770_5.log`）把 `MC|StopSound` 的另外两种形态也定死了（缺的那一段是**空串**而非省略），据此做的收尾修正也已按同一方式合入 `master`（Core `2eedbdb`；父仓库 `a9e8965`，gitlink 指向前者），两个 `master` 均已推送；三种形态的实测字节见 [C5 §2.4](vanilla-1.12.2-presentation-commands.md)。
+`/summon` 与选择器 `type=` 的实体名查找也已统一到 `entity_names.lua`（见 [C1 §3.3](vanilla-1.12.2-command-target-selectors.md)）：生物名不再在 Lua 复制，直接问引擎的 `cMonster::StringToMobType`，非生物 21 个 id 只有一张表。
 仍余〔待核〕：fuzz 场景本机仍无法执行（需外部 `CuberitePluginChecker`）。另有 `mode`/`<source>`/`<viewers>`/`[params]`/服务端组件/1.13+ 客户端不认该通道/成功反馈文本与原版不同形 等**已记录偏差**，逐条见 [C5 §5](vanilla-1.12.2-presentation-commands.md)。
 
 **串行约束**：C2 → C3（同改 `CommandBlockEntity` / `PluginManager` 的上下文通路）；C1 → C4/C5/C6（都消费选择器）。
@@ -71,7 +72,7 @@ C1 与 C2 可并行（分属 submodule 与 `src/`，无同文件冲突）。**�
 |---|---|---|
 | `/testforblocks`、`/blockdata`、`/entitydata`、`/xp`、`/gamerule` | 1.12.2 均存在（可从 [Commands 导航模板](https://minecraft.wiki/w/Commands/title) 的 JE-only / Removed 列表反查），Core 无对应 `cmd_*.lua` | 各自独立且小，宜并入 C4 或各自成支；`/entitydata` 需 SNBT 解析层 |
 | `/tellraw` | Core 无 | 需 JSON 文本组件解析，规模自成一支 |
-| `/summon` 的选择器化与 NBT 参数 | [cmd_summon.lua](../../Server/Plugins/Core/cmd_summon.lua) 收实体名 + 可选 `[x] [y] [z]`（`SpawnEntity` 支持怪 / 矿车 / 船 / 投射物 / TNT / 经验球 / 末地水晶 / 下落方块 / 闪电），**无选择器、无 NBT**（多余 token 被静默忽略） | 与 C1 正交；需 1.12.2 实体名对照表与 NBT 解析 |
+| `/summon` 的选择器化与 NBT 参数 | [cmd_summon.lua](../../Server/Plugins/Core/cmd_summon.lua) 收实体名 + 可选 `[x] [y] [z]`，**无选择器、无 NBT**（多余 token 被静默忽略）；实体名查找已与选择器的 `type=` 统一到 `entity_names.lua`（生物交给引擎表，非生物 21 个 id 一张表） | 与 C1 正交；NBT 部分仍需 C++ 通路，名字表部分已随对齐落地 |
 | 命令方块矿车 #3499 | `E_ITEM_MINECART_WITH_COMMAND_BLOCK = 422` 已在 [BlockType.h:469](../../src/BlockType.h#L469)，无对应实体类 | 需新实体 + GUI + 轨道交互，规模 ≥ C3 |
 | Tab 补全到参数级 | [PluginManager.cpp:1625](../../src/Bindings/PluginManager.cpp#L1625) 仅补命令名 | 需先核实 vanilla 1.12.2 的参数补全行为（〔推测〕：仅命令名与玩家名，置信度低），再决定 |
 
