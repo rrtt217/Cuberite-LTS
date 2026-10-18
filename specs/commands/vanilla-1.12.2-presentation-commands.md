@@ -85,24 +85,28 @@
    - `<player>`：玩家名或目标选择器；
    - `[source]`：可选的十项分类（同 §2.3）；
    - `[sound]`：可选；不给则停止该范围内的全部声音。
-2. **下发机制（实测）**：1.12.2 **没有** Stop Sound 包——这一版之前查 wiki.vg 与该结论一致（protocol 340 的 clientbound 列表里没有该包，它到 1.13 才出现）。原版改用 **`MC|StopSound` 插件消息**（clientbound Plugin Message，包 ID **0x18**）：
+2. **下发机制（实测）**：1.12.2 **没有** Stop Sound 包（protocol 340 的 clientbound 列表里没有该包，它到 1.13 才出现）。原版改用 **`MC|StopSound` 插件消息**（clientbound Plugin Message，包 ID **0x18**），载荷是**固定两个 VarInt 长度前缀的字符串**：先 source，后 sound；命令没给的那一段写成**空串**（不是省略）：
 
+   | 命令（玩家原样输入） | 服务端发出的载荷 |
+   |---|---|
+   | `/stopsound Harry00025` | `00 00`（2 字节） |
+   | `/stopsound Harry00025 weather` | `07 "weather" 00`（9 字节） |
+   | `/stopsound Harry00025 weather minecraft:weather.rain` | `07 "weather" 16 "minecraft:weather.rain"`（31 字节） |
+
+   整包示例（第三种形态）：
    ```
-   packet: 18 0C "MC|StopSound" 07 "weather" 16 "minecraft:weather.rain"
-           ^^ ^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^
-           |  channel(12)      string #1     string #2
-           packet id 0x18      = source      = sound event
+   2E 00 18 0C "MC|StopSound" 07 "weather" 16 "minecraft:weather.rain"
    ```
-   - 载荷是**两个可选的、VarInt 长度前缀的字符串**：先 source，后 sound（与 1.13 Stop Sound 包的 `Flags/Source?/Sound?` 字段顺序一致）；
-   - 三次独立执行（日志时间 54.240 / 73.983 / 77.137）产生的字节**完全相同**；
-   - 命令 `"/stopsound Harry00025 weather minecraft:weather.rain"` 是玩家原样输入的，服务端把 sound 名**原样**转发（没有改写命名空间）。
+   - 三种形态各至少抓包一次（`build/bin/Logs/Log_1792127802_5.log` 的 54.240 / 73.983 / 77.137，`Log_1792294770_5.log` 的 9.794 / 13.643），同一形态多次执行字节**完全相同**；
+   - 载荷永远是两个字符串这一点也解释了 ProtoProxy 的 "1 payload bytes left over, the proxy's layout is out of date"——它的旧布局只解一个字符串；
+   - 服务端把 sound 名**原样**转发（没有改写命名空间）。
 3. **成功反馈（实测）**：服务端随后发 Chat Message（0x0F，position 1）：
    `{"translate":"commands.stopsound.success.individualSound","with":["minecraft:weather.rain","weather","Harry00025"]}`
    —— 参数顺序是 `[sound, source, player]`。缺参数时 vanilla 发的是
    `{"color":"red","translate":"commands.generic.usage","with":[{"translate":"commands.stopsound.usage"}]}`
    （即原版用翻译键、红色系统消息；Core 用的是自己的英文文本，见 §5 第 13 条）。
 4. 本仓库现状核对：`cClientHandle::SendPluginMessage(Channel, Message)`（[ClientHandle.h:212](../../src/ClientHandle.h#L212)）**已导出**（手写绑定取两个字符串，二进制字节按 `lua_strlen` 原样传出，[ManualBindings.cpp:2403](../../src/Bindings/ManualBindings.cpp#L2403)）且有 APIDump 文档 → **`/stopsound` 无需任何 `src/` 改动**，纯 Lua 即可。
-5. **〔待核〕**：只给 source（`/stopsound @a weather`）或什么都不给（`/stopsound @a`）时，原版载荷是「省略对应字符串」还是别的形态——本次抓包只覆盖了两串形态。本支按「省略」实现（空载荷 = 停全部、单串 = 只给分类），与 1.13 包的三态语义一致〔推测：置信度中高〕。复核方式：对原版跑 `/stopsound <玩家> weather` 与 `/stopsound <玩家>`，看 `MC|StopSound` 的载荷长度（应为 8 与 0 字节）。
+5. 三种形态**均已实测**（见上表），实现按「固定两串、缺者为空串」编码，`BuildStopSoundPayload()` 对三种形态逐字节一致。
 
 ### 2.5 `/tellraw` 与 JSON 文本组件层（已核实；本支并入）
 
@@ -142,9 +146,9 @@
 ## 4. 测试与验收
 
 - **胶水层（handler 级）**：`tests/test_presentation_handlers.lua`（`lua tests/test_presentation_handlers.lua`）用一套**只实现「允许调用」的方法**的假宇宙（假玩家 / 假 client handle / 假世界）直接驱动五个 handler，断言每个命令**在哪个接收者上调了哪个方法、参数是什么**，并检查**每条被拒绝的输入都真的给玩家回了话、且回话文本本身是可送达的**。**实测 68 条断言全绿**。这一层是解析测试看不见的：`/title @s actionbar` 曾因把 `cPlayer:SendAboveActionBarMessage` 写成 `Client:SendAboveActionBarMessage` 而在实机崩（`attempt to call method (a nil value)`），本套件就是它的回归守卫（故意改回错误接收者时该套件立刻报错）。
-- **纯逻辑抽头**：`command_presentation.lua` 的解析函数写成纯函数（唯一的例外是 `ParseTellrawLine()`，它按需调用 `cJson:Parse()`），表驱动测试 `tests/test_presentation_commands.lua`（`lua tests/test_presentation_commands.lua`）覆盖：缺参/多参、`~` 坐标、非数字、负数、越界、未知粒子名、未知 sound source、`<viewers>`/`[params]` 拒绝路径、原始命令行切分（含「引擎剥引号」的对照断言）、JSON 组件校验（合法对象/数组、畸形 JSON、标量/null、嵌套 `selector`）、含 `${` 的拒绝、以及畸形输入不得崩。**实测 270 条断言全绿**（测试自带一个最小 JSON 解析器顶替 `cJson`，见该文件头注释），且与 `cProtocol_1_8_0::GetProtocolParticleID()` 的 49 个名字逐一对表（测试里独立抄了一份，两侧互查）；`MC|StopSound` 的载荷用**原版抓包的字节**做断言（`07 "weather" 16 "minecraft:weather.rain"`，含 >127 长度的 VarInt 用例）。
+- **纯逻辑抽头**：`command_presentation.lua` 的解析函数写成纯函数（唯一的例外是 `ParseTellrawLine()`，它按需调用 `cJson:Parse()`），表驱动测试 `tests/test_presentation_commands.lua`（`lua tests/test_presentation_commands.lua`）覆盖：缺参/多参、`~` 坐标、非数字、负数、越界、未知粒子名、未知 sound source、`<viewers>`/`[params]` 拒绝路径、原始命令行切分（含「引擎剥引号」的对照断言）、JSON 组件校验（合法对象/数组、畸形 JSON、标量/null、嵌套 `selector`）、含 `${` 的拒绝、以及畸形输入不得崩。**实测 271 条断言全绿**（测试自带一个最小 JSON 解析器顶替 `cJson`，见该文件头注释），且与 `cProtocol_1_8_0::GetProtocolParticleID()` 的 49 个名字逐一对表（测试里独立抄了一份，两侧互查）；`MC|StopSound` 的载荷用**原版抓包的字节**做断言，三种形态（`00 00` / `07 "weather" 00` / `07 "weather" 16 …`）逐一比对，另含 >127 长度的 VarInt 用例。
 - **fuzz**：`choices` 增列 `"title"`、`"clear"`、`"particle"`、`"explode"`、`"master"`、`"mob.pig.say"`、`"tellraw"`、`"{\"text\":\"hi\"}"`、`"{\"text\":"`、`"stopsound"`、`"weather"`、`"minecraft:weather.rain"`；`fuzzAllCommands` 覆盖「所有已注册命令」，注册即覆盖。**本机未能执行**：该场景要外部 `CuberitePluginChecker` 驱动（[Core 的 ci.yml](../../Server/Plugins/Core/.github/workflows/ci.yml) 的 `Run tests` 步骤），本机无 checker、`github.com` 也不可达 → 〔待核〕，复现命令同 C4。
-- Core 侧 `luac -p` / `luacheck`：`luac -p` 覆盖 Core 全部 Lua 文件；九个新增/改动文件（`command_presentation.lua`、`command_text.lua`、五个 `cmd_*.lua`、两个测试）**0 warning / 0 error**（用服务器生成的 `build/Server/.luacheckrc`、在 `build/Server` 下跑——这是 `.luacheckrc` 的来源与正确 CWD）。`Info.lua` 的改动新增 8 条 W113（6 个新 handler 名 + `HandleTellraw*`），与该文件既有的 127 条 **同型**，无新类型、无行尾空格。C1–C4 既有的五个纯 Lua 套件重跑无回归（35 / 153 / 95 / 50 / 44 条断言），本支两套共 338 条断言。
+- Core 侧 `luac -p` / `luacheck`：`luac -p` 覆盖 Core 全部 Lua 文件；九个新增/改动文件（`command_presentation.lua`、`command_text.lua`、五个 `cmd_*.lua`、两个测试）**0 warning / 0 error**（用服务器生成的 `build/Server/.luacheckrc`、在 `build/Server` 下跑——这是 `.luacheckrc` 的来源与正确 CWD）。`Info.lua` 的改动新增 8 条 W113（6 个新 handler 名 + `HandleTellraw*`），与该文件既有的 127 条 **同型**，无新类型、无行尾空格。C1–C4 既有的五个纯 Lua 套件重跑无回归（35 / 153 / 95 / 50 / 44 条断言），本支两套共 339 条断言。
 - 本支只用**已文档化**的 C++ 成员（`SendSetTitle`/`SendSetSubTitle`/`SendSetRawTitle`/`SendSetRawSubTitle`/`SendTitleTimes`/`SendHideTitle`/`SendResetTitle`/`SendAboveActionBarMessage`/`SendMessageRaw`/`SendPluginMessage`/`cJson:Parse`/`BroadcastParticleEffect`/`SendSoundEffect`/`GetClientHandle` 在 [APIDesc.lua](../../Server/Plugins/APIDump/APIDesc.lua) 均已在册）→ 无新增未文档化符号，门 6 不适用（详见 §6）。
 - 行为证据：见 §6 的运行期观察（控制台命令表 + 真实服务器）；客户端可见效果仍为「未验」（本机无实机）。
 
@@ -159,7 +163,7 @@
 7. **`/playsound` 的 `minimumVolume` 是近似**：按页面描述实现为「目标到声源距离 > volume×16 格时，改在**目标自身位置**以 `minimumVolume` 播放」。vanilla 是「离目标不到 4 格处」，具体落点算法**无来源**〔推测：改成目标自身位置可保证听域内、且听感等价；置信度中〕。
 8. **`<volume>`/`<pitch>`/`<minimumVolume>` 的越界处理是〔推测〕**：页面写「Must be at least 0.0」「Must be between 0.0 and 2.0」，本支按**校验失败**处理（而不是钳值），因为这些措辞与同页 `count`/`radius` 那类「must be at least」一致。若实机证明是钳值，改起来只动 `command_presentation.lua` 一处。
 9. **`/stopsound` 只对 1.12.2 及更早的客户端有效**：`MC|StopSound` 是 1.12.2 期的通道名；1.13 起原版改用真正的 Stop Sound 包（0x4C），本仓库的 1.13/1.14 协议实现处于冻结状态（[AGENTS §9](../../AGENTS.md)）且不发该包 → 1.13+ 客户端会忽略这条插件消息（命令本身仍报成功）。1.8 客户端没有 `/stopsound`（1.9.3 才加入），同样忽略。
-  另：0 串 / 1 串载荷形态与原版反馈文本的翻译键见 §2.4 第 3、5 条（前者〔待核〕、后者属第 13 条）。
+  另：原版反馈文本的翻译键见 §2.4 第 3 条（与本支英文文本的差异属第 13 条）。
 10. **权限/目标语义**：`/title`、`/particle` 的目标是 player 类；`/particle` 本身**没有目标参数**（它作用于「可视范围内的人」），所以 C5 的 `/particle` 不需要（也无法）用选择器限流——这与同批其它命令不同，实现时不要照抄目标解析样板。
 11. **含 `${` 的聊天类文本被拒绝，且反馈本身必须可送达**：`SendChatRaw()` 的 log4shell 加固会**整条丢弃**含 `${` 的消息（§2.5 第 5 条）。受影响的是 `/tellraw` 与 `/title ... actionbar`（两者都走 Chat 包）；本支对它们**报错**而不是静默无输出后谎报成功。`/title ... title|subtitle` 走 Title 包，**不受**该加固影响、也不做此检查。vanilla 1.12.2 会正常送达，这是本 fork 的安全加固带来的偏差。
     **实测发现的两个坑（均为「静默」）**：① 反馈本身也走 `cPlayer:SendMessageFailure()` → `SendChat()` → `SendChatRaw()`（[Player.cpp:1207](../../src/Entities/Player.cpp#L1207)），所以**报错文本里如果原样写出 `${`，这条报错也会被同一个加固丢掉**——`/title @s actionbar a${b}` 因此完全没有回执。现改为**用文字描述**该序列（"a dollar sign followed by an opening brace"），并在 `MakeChatSafe()` 里把可能引用玩家输入的反馈中的 `${` 改写成 `$ {`，五个命令的 17 处 `SendMessageFailure` 全部经过它。② 解析器的报错会**引用玩家原样输入**（如 `Unknown particle "${x}"`），同样会被吞——`MakeChatSafe()` 一并覆盖。两条都有回归断言（见 §4 的 handler 套件）。
@@ -254,6 +258,5 @@
 
 **仍未验**：
 
-- `MC|StopSound` 的 **0 串 / 1 串载荷形态**（本次抓包只覆盖两串形态）→〔待核〕，复核方式见 §2.4 第 5 条；
 - **1.13+ 客户端**收到该通道的行为（按设计：原版 1.13 起改用真正的 Stop Sound 包，本仓库不受理）→ §5 第 9 条；
 - 成功反馈**文本与原版不同形**（原版用翻译键 + 红色系统消息，已由抓包确认；本支用英文文本）→ §5 第 13 条。
