@@ -130,6 +130,23 @@ C1 与 C2 可并行（分属 submodule 与 `src/`，无同文件冲突）。**�
 
 **C. 对 §4 上表的修正**：`/entitydata` 的硬阻碍是"Lua 拿不到 NBT"而非"缺 SNBT 解析层"；`/summon` 行应补上 1.12.2 确有 `[dataTag]`；/fill、/clone、/setblock、/testforblocks、/xp、/teleport、/save-off·on、/setworldspawn、/ban-ip、/banlist、/pardon·ip、/tellraw、/function 这些**纯 Lua 候选**上一版未收录；`/particle`、`/playsound`、`/title` 已由 C5 落地，`/stopsound` 由 C5 判定为需先核实。
 
+### 4.2 纯 Lua 命令族的拆分（2026-10-18 维护者下达：「按命令聚类分分支」）
+
+§4.1 A 表里尚未落地的纯 Lua 命令按「共享同一批参数/语义」聚类，各自一支、各自一份规格：
+
+| 支 | 命令 | 规格 | 聚类理由 | 状态 |
+|---|---|---|---|---|
+| `feature/core-server-state-commands` | `/save-off`、`/save-on`、`/setworldspawn` | [server-state](vanilla-1.12.2-server-state-commands.md) | 都只读写服务端/世界的持久状态，规模 S | **已合并**（Core `475d92f`） |
+| `feature/core-ban-commands` | `/ban-ip`、`/banlist`、`/pardon`、`/pardon-ip` | [ban](vanilla-1.12.2-ban-commands.md) | 共用 `banlist.lua` 的 DB 与 IP 解析 | **已合并**（Core `924bcdb`） |
+| `feature/core-xp-command` | `/xp` | [xp](vanilla-1.12.2-xp-command.md) | 独占经验数值语义 | **已合并**（Core `1686bb6`） |
+| `feature/core-movement-commands` | `/teleport`、`/spreadplayers` | [movement](vanilla-1.12.2-movement-commands.md) | 都移动实体、都消费 C1 选择器与 C2 坐标 | **已合并**（Core `05be7ae`） |
+| `feature/core-block-commands` | `/setblock`、`/fill`、`/clone`、`/testforblocks` | [block](vanilla-1.12.2-block-commands.md) | 共用方块参数解析与 `cBlockArea`；`/fill`、`/clone`、`/setblock` 的 `[dataTag]`/`<state>` 同受「无 NBT / 无方块状态注册表」限制 | **已合并**（Core `7d589ec`） |
+| `feature/core-function-command` | `/function` | [function](vanilla-1.12.2-function-command.md) | 唯一需要读服务器文件与 `ExecuteCommandFromOrigin` 的命令 | **已合并**（Core `38948b2`） |
+
+不在本批：`/tellraw` 已随 C5 落地；`/scoreboard teams` 是 C6 且四个 option 键需要 C++ 字段；B 表 14 条需新 C++，不属「纯 Lua」。
+
+命令名斜杠形态的派发缺陷由独立分支 `feature/command-dispatch-slash-forms` 一并合并（`/execute` 与 `/function` 的无 `/` 内层命令因此可用）；细节见 [command-context-and-splitting §2.3](vanilla-1.12.2-command-context-and-splitting.md)。
+
 ## 5. 统一验收门（AGENTS §4.1 按改动面选）
 
 - 改 `src/`（C2/C3/C4）：六道门全适用——`cd src && lua CheckBasicStyle.lua`；`cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=DEBUG -DSELF_TEST=Yes -DBUILD_TOOLS=Yes && cmake --build build`；`cd build && ctest --output-on-failure -E "UrlClient-test|Google-test"`；行为逐条核；改导出 API 时同步 APIDump 三处并跑自检。
