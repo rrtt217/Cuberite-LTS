@@ -280,16 +280,19 @@ bool cScoreboardSerializer::LoadScoreboardFromNBT(const cParsedNBT & a_NBT)
 			Suffix = a_NBT.GetString(CurrLine);
 		}
 
+		// Vanilla 1.12.2 stores both flags as TAG_Byte and so does SaveScoreboardToNBT(); the loader used
+		// to insist on TAG_Int, so the two team options were written but never read back and every team
+		// silently reverted to the constructor's defaults after a restart.
 		CurrLine = a_NBT.FindChildByName(Child, "AllowFriendlyFire");
-		if ((CurrLine >= 0) && (a_NBT.GetType(CurrLine) == TAG_Int))
+		if ((CurrLine >= 0) && (a_NBT.GetType(CurrLine) == TAG_Byte))
 		{
-			AllowsFriendlyFire = (a_NBT.GetInt(CurrLine) != 0);
+			AllowsFriendlyFire = (a_NBT.GetByte(CurrLine) != 0);
 		}
 
 		CurrLine = a_NBT.FindChildByName(Child, "SeeFriendlyInvisibles");
-		if ((CurrLine >= 0) && (a_NBT.GetType(CurrLine) == TAG_Int))
+		if ((CurrLine >= 0) && (a_NBT.GetType(CurrLine) == TAG_Byte))
 		{
-			CanSeeFriendlyInvisible = (a_NBT.GetInt(CurrLine) != 0);
+			CanSeeFriendlyInvisible = (a_NBT.GetByte(CurrLine) != 0);
 		}
 
 		cTeam * Team = m_ScoreBoard->RegisterTeam(Name, DisplayName, Prefix, Suffix);
