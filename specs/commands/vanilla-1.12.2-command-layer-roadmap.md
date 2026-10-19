@@ -56,6 +56,19 @@ Core 侧新增 `command_presentation.lua`（解析 + 两张白名单 + `MC|StopS
 `/summon` 与选择器 `type=` 的实体名查找也已统一到 `entity_names.lua`（见 [C1 §3.3](vanilla-1.12.2-command-target-selectors.md)）：生物名不再在 Lua 复制，直接问引擎的 `cMonster::StringToMobType`，非生物 21 个 id 只有一张表。
 仍余〔待核〕：fuzz 场景本机仍无法执行（需外部 `CuberitePluginChecker`）。另有 `mode`/`<source>`/`<viewers>`/`[params]`/服务端组件/1.13+ 客户端不认该通道/成功反馈文本与原版不同形 等**已记录偏差**，逐条见 [C5 §5](vanilla-1.12.2-presentation-commands.md)。
 
+**C6 状态**：已实现，待维护者评审（分支 `feature/core-scoreboard-teams`）。Core 侧新增
+`command_scoreboard.lua`（纯解析/校验）与 `cmd_scoreboard.lua` 的 `teams` 分支
+（add/remove/empty/join/leave/list/option）+ 三槽位表修正（移除 `count` 哨兵，未知槽位/未知目标不再崩）；
+`Info.lua` 注册 in-game 与 console 两套子命令（权限 `core.scoreboard.teams`）；新增
+`tests/test_scoreboard_teams.lua`（144 条断言）并扩充 `FuzzCommands.lua`。父仓库侧含一处**前置** `src/` 修复：
+`ScoreboardSerializer` 读队伍布尔时要求 `TAG_Int`、而写入是 `TAG_Byte`，导致两个选项每次重启丢失
+（见 [C6 §3.2](vanilla-1.12.2-scoreboard-teams.md)）。
+验收：风格 0 / 构建通过 / ctest 49/49 / Core 18 套 Lua 测试全绿 / 实机（console + mineflayer bot）逐条通过，
+含一次停服 → NBT 字节检查 → 重启读回的落盘往返。
+**未做**（C++ 缺口，逐条见 [C6 §5](vanilla-1.12.2-scoreboard-teams.md)）：`color`/`nametagVisibility`/
+`deathMessageVisibility`/`collisionRule` 四个 option 键（`cTeam` 无字段）、Teams 包（队伍不下发客户端）、
+`sidebar.team.*` 16 个槽位、`teams list <team>` 的成员枚举、`*` 目标、`setdisplay` 省略 objective 的清除。
+
 **串行约束**：C2 → C3（同改 `CommandBlockEntity` / `PluginManager` 的上下文通路）；C1 → C4/C5/C6（都消费选择器）。
 C1 与 C2 可并行（分属 submodule 与 `src/`，无同文件冲突）。**每个分支都必须自带测试。**
 
