@@ -345,6 +345,16 @@ void cMonster::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 		++m_TicksSinceLastDamaged;
 	}
 
+	// A mob pushed outside the world (for example by /teleport above the build height) must not run
+	// the block-dependent AI: the chunk accessors require a valid height, and the idle state used to
+	// query the block below an out-of-range Y and abort the server (spec
+	// vanilla-1.12.2-out-of-world-entities.md). Gravity has already been applied by Super::Tick();
+	// non-players below y = 0 are destroyed by cEntity::Tick().
+	if ((GetPosY() < 0) || (GetPosY() >= cChunkDef::Height))
+	{
+		return;
+	}
+
 	// Process the undead burning in daylight.
 	HandleDaylightBurning(*Chunk, WouldBurnAt(GetPosition(), *Chunk));
 
@@ -962,7 +972,7 @@ void cMonster::InStateIdle(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 			int RelX = static_cast<int>(Destination.x) - Chunk->GetPosX() * cChunkDef::Width;
 			int RelZ = static_cast<int>(Destination.z) - Chunk->GetPosZ() * cChunkDef::Width;
 			int YBelowUs = static_cast<int>(Destination.y) - 1;
-			if (YBelowUs >= 0)
+			if (cChunkDef::IsValidHeight({ RelX, YBelowUs, RelZ }))
 			{
 				Chunk->GetBlockTypeMeta(RelX, YBelowUs, RelZ, BlockType, BlockMeta);
 				if (BlockType != E_BLOCK_STATIONARY_WATER)  // Idle mobs shouldn't enter water on purpose
