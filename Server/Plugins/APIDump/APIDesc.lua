@@ -12680,6 +12680,36 @@ local CompressedString = cStringCompression.CompressStringGZIP("DataToCompress")
 					},
 					Notes = "Returns whether players can see invisible teammates.",
 				},
+				GetCollisionRule =
+				{
+					Returns =
+					{
+						{
+							Type = "string",
+						},
+					},
+					Notes = "Returns the collision rule of this team: always, pushOtherTeams, pushOwnTeam or never.",
+				},
+				GetColor =
+				{
+					Returns =
+					{
+						{
+							Type = "string",
+						},
+					},
+					Notes = "Returns the color of this team as a vanilla color name (red, dark_blue, ...), or an empty string when the team has no color.",
+				},
+				GetDeathMessageVisibility =
+				{
+					Returns =
+					{
+						{
+							Type = "string",
+						},
+					},
+					Notes = "Returns the death message visibility rule of this team: always, hideForOtherTeams, hideForOwnTeam or never. It is applied server-side only.",
+				},
 				GetDisplayName =
 				{
 					Returns =
@@ -12699,6 +12729,16 @@ local CompressedString = cStringCompression.CompressStringGZIP("DataToCompress")
 						},
 					},
 					Notes = "Returns the internal name of the team.",
+				},
+				GetNameTagVisibility =
+				{
+					Returns =
+					{
+						{
+							Type = "string",
+						},
+					},
+					Notes = "Returns the name tag visibility rule of this team: always, hideForOtherTeams, hideForOwnTeam or never.",
 				},
 				GetNumPlayers =
 				{
@@ -12779,6 +12819,39 @@ local CompressedString = cStringCompression.CompressStringGZIP("DataToCompress")
 					},
 					Notes = "Set whether players can see invisible teammates.",
 				},
+				SetCollisionRule =
+				{
+					Params =
+					{
+						{
+							Name = "CollisionRule",
+							Type = "string",
+						},
+					},
+					Notes = "Sets the collision rule of this team: always, pushOtherTeams, pushOwnTeam or never. It is sent to the clients in the Teams packet.",
+				},
+				SetColor =
+				{
+					Params =
+					{
+						{
+							Name = "Color",
+							Type = "string",
+						},
+					},
+					Notes = "Sets the color of this team as a vanilla color name (red, dark_blue, ...); an empty string removes the color. It is sent to the clients in the Teams packet.",
+				},
+				SetDeathMessageVisibility =
+				{
+					Params =
+					{
+						{
+							Name = "DeathMessageVisibility",
+							Type = "string",
+						},
+					},
+					Notes = "Sets the death message visibility rule of this team: always, hideForOtherTeams, hideForOwnTeam or never. It is applied server-side only and is not sent to the clients.",
+				},
 				SetDisplayName =
 				{
 					Params =
@@ -12800,6 +12873,17 @@ local CompressedString = cStringCompression.CompressStringGZIP("DataToCompress")
 						},
 					},
 					Notes = "Sets whether team friendly fire is allowed.",
+				},
+				SetNameTagVisibility =
+				{
+					Params =
+					{
+						{
+							Name = "NameTagVisibility",
+							Type = "string",
+						},
+					},
+					Notes = "Sets the name tag visibility rule of this team: always, hideForOtherTeams, hideForOwnTeam or never. It is sent to the clients in the Teams packet.",
 				},
 				SetPrefix =
 				{

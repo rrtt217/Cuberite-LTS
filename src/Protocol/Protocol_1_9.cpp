@@ -587,6 +587,51 @@ void cProtocol_1_9_0::SendSoundEffect(const AString & a_SoundName, Vector3d a_Or
 
 
 
+void cProtocol_1_9_0::SendTeam(const cTeam & a_Team, Byte a_Mode, const AStringVector & a_Players)
+{
+	ASSERT(m_State == 3);  // In game mode?
+
+	// 1.9 added the Collision Rule field; 1.10 - 1.12.2 use the same layout (wiki.vg revs 1157 and 1306):
+	cPacketizer Pkt(*this, pktTeam);
+	Pkt.WriteString(a_Team.GetName());
+	Pkt.WriteBEUInt8(a_Mode);
+
+	if ((a_Mode == 0) || (a_Mode == 2))
+	{
+		Pkt.WriteString(a_Team.GetDisplayName());
+		Pkt.WriteString(a_Team.GetPrefix());
+		Pkt.WriteString(a_Team.GetSuffix());
+
+		Byte Flags = 0;
+		if (a_Team.AllowsFriendlyFire())
+		{
+			Flags |= 0x01;
+		}
+		if (a_Team.CanSeeFriendlyInvisible())
+		{
+			Flags |= 0x02;
+		}
+		Pkt.WriteBEUInt8(Flags);
+
+		Pkt.WriteString(a_Team.GetNameTagVisibility());
+		Pkt.WriteString(a_Team.GetCollisionRule());
+		Pkt.WriteBEInt8(static_cast<Int8>(cTeam::GetColorID(a_Team.GetColor())));
+	}
+
+	if ((a_Mode == 0) || (a_Mode == 3) || (a_Mode == 4))
+	{
+		Pkt.WriteVarInt32(static_cast<UInt32>(a_Players.size()));
+		for (const auto & Player : a_Players)
+		{
+			Pkt.WriteString(Player);
+		}
+	}
+}
+
+
+
+
+
 void cProtocol_1_9_0::SendSpawnMob(const cMonster & a_Mob)
 {
 	ASSERT(m_State == 3);  // In game mode?
@@ -717,6 +762,7 @@ UInt32 cProtocol_1_9_0::GetPacketID(cProtocol::ePacketType a_Packet) const
 		case pktStatistics:             return 0x07;
 		case pktStatusResponse:         return 0x00;
 		case pktTabCompletionResults:   return 0x0e;
+		case pktTeam:                   return 0x41;
 		case pktTeleportEntity:         return 0x4a;
 		case pktTimeUpdate:             return 0x44;
 		case pktTitle:                  return 0x45;

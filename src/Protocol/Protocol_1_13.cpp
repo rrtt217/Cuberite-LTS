@@ -114,6 +114,16 @@ void cProtocol_1_13::SendScoreboardObjective(const AString & a_Name, const AStri
 
 
 
+void cProtocol_1_13::SendTeam(const cTeam &, Byte, const AStringVector &)
+{
+	// The 1.13 and 1.14 protocol classes are frozen (see AGENTS.md section 9): they keep not receiving
+	// team data instead of being sent the 1.12.2 layout under a 1.13 packet id.
+}
+
+
+
+
+
 void cProtocol_1_13::SendStatistics(const StatisticsManager & a_Manager)
 {
 	ASSERT(m_State == 3);  // In game mode?

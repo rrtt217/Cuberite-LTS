@@ -131,6 +131,15 @@ void cScoreboardSerializer::SaveScoreboardToNBT(cFastNBTWriter & a_Writer)
 		a_Writer.AddString("Prefix", Team.GetPrefix());
 		a_Writer.AddString("Suffix", Team.GetSuffix());
 
+		// Vanilla 1.12.2 NBT keys for the remaining team options (TeamColor is absent when unset):
+		a_Writer.AddString("NameTagVisibility", Team.GetNameTagVisibility());
+		a_Writer.AddString("DeathMessageVisibility", Team.GetDeathMessageVisibility());
+		a_Writer.AddString("CollisionRule", Team.GetCollisionRule());
+		if (!Team.GetColor().empty())
+		{
+			a_Writer.AddString("TeamColor", Team.GetColor());
+		}
+
 		a_Writer.BeginList("Players", TAG_String);
 
 		for (cTeam::cPlayerNameSet::const_iterator it2 = Team.m_Players.begin(); it2 != Team.m_Players.end(); ++it2)
@@ -253,6 +262,7 @@ bool cScoreboardSerializer::LoadScoreboardFromNBT(const cParsedNBT & a_NBT)
 	for (int Child = a_NBT.GetFirstChild(Teams); Child >= 0; Child = a_NBT.GetNextSibling(Child))
 	{
 		AString Name, DisplayName, Prefix, Suffix;
+		AString NameTagVisibility = "always", DeathMessageVisibility = "always", CollisionRule = "always", Color;
 
 		bool AllowsFriendlyFire = true, CanSeeFriendlyInvisible = false;
 
@@ -280,6 +290,30 @@ bool cScoreboardSerializer::LoadScoreboardFromNBT(const cParsedNBT & a_NBT)
 			Suffix = a_NBT.GetString(CurrLine);
 		}
 
+		CurrLine = a_NBT.FindChildByName(Child, "NameTagVisibility");
+		if ((CurrLine >= 0) && (a_NBT.GetType(CurrLine) == TAG_String))
+		{
+			NameTagVisibility = a_NBT.GetString(CurrLine);
+		}
+
+		CurrLine = a_NBT.FindChildByName(Child, "DeathMessageVisibility");
+		if ((CurrLine >= 0) && (a_NBT.GetType(CurrLine) == TAG_String))
+		{
+			DeathMessageVisibility = a_NBT.GetString(CurrLine);
+		}
+
+		CurrLine = a_NBT.FindChildByName(Child, "CollisionRule");
+		if ((CurrLine >= 0) && (a_NBT.GetType(CurrLine) == TAG_String))
+		{
+			CollisionRule = a_NBT.GetString(CurrLine);
+		}
+
+		CurrLine = a_NBT.FindChildByName(Child, "TeamColor");
+		if ((CurrLine >= 0) && (a_NBT.GetType(CurrLine) == TAG_String))
+		{
+			Color = a_NBT.GetString(CurrLine);
+		}
+
 		// Vanilla 1.12.2 stores both flags as TAG_Byte and so does SaveScoreboardToNBT(); the loader used
 		// to insist on TAG_Int, so the two team options were written but never read back and every team
 		// silently reverted to the constructor's defaults after a restart.
@@ -299,6 +333,13 @@ bool cScoreboardSerializer::LoadScoreboardFromNBT(const cParsedNBT & a_NBT)
 
 		Team->SetFriendlyFire(AllowsFriendlyFire);
 		Team->SetCanSeeFriendlyInvisible(CanSeeFriendlyInvisible);
+		Team->SetNameTagVisibility(NameTagVisibility);
+		Team->SetDeathMessageVisibility(DeathMessageVisibility);
+		Team->SetCollisionRule(CollisionRule);
+		if (!Color.empty())
+		{
+			Team->SetColor(Color);
+		}
 
 		int Players = a_NBT.FindChildByName(Child, "Players");
 		if (Players < 0)

@@ -3114,6 +3114,10 @@ void cPlayer::OnRemoveFromWorld(cWorld & a_World)
 		return;
 	}
 
+	// The client's scoreboard is global, while this server keeps one scoreboard per world: drop this
+	// world's teams before the destination world sends its own (OnAddToWorld -> cScoreboard::SendTo).
+	a_World.GetScoreBoard().SendTeamRemovals(*m_ClientHandle);
+
 	const auto DestinationDimension = m_WorldChangeInfo.m_NewWorld->GetDimension();
 
 	// Award relevant achievements:

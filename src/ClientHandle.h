@@ -217,6 +217,7 @@ public:  // tolua_export
 	void SendRespawn                    (eDimension a_Dimension, bool a_IsRespawningFromDeath);
 	void SendScoreUpdate                (const AString & a_Objective, const AString & a_Player, cObjective::Score a_Score, Byte a_Mode);
 	void SendScoreboardObjective        (const AString & a_Name, const AString & a_DisplayName, Byte a_Mode);
+	void SendTeam                       (const cTeam & a_Team, Byte a_Mode, const AStringVector & a_Players);
 	void SendSetSubTitle                (const cCompositeChat & a_SubTitle);  // tolua_export
 	void SendSetRawSubTitle             (const AString & a_SubTitle);  // tolua_export
 	void SendSetTitle                   (const cCompositeChat & a_Title);  // tolua_export

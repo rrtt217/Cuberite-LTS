@@ -42,6 +42,7 @@ protected:
 	virtual void SendPaintingSpawn              (const cPainting & a_Painting) override;
 	virtual void SendParticleEffect             (const AString & a_ParticleName, Vector3f a_Src, Vector3f a_Offset, float a_ParticleData, int a_ParticleAmount, std::array<int, 2> a_Data) override;
 	virtual void SendScoreboardObjective        (const AString & a_Name, const AString & a_DisplayName, Byte a_Mode) override;
+	virtual void SendTeam                       (const cTeam & a_Team, Byte a_Mode, const AStringVector & a_Players) override;
 	virtual void SendStatistics                 (const StatisticsManager & a_Manager) override;
 	virtual void SendTabCompletionResults       (const AStringVector & a_Results) override;
 	virtual void SendUpdateBlockEntity          (cBlockEntity & a_BlockEntity) override;

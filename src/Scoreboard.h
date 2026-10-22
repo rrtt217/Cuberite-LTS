@@ -130,24 +130,23 @@ public:
 
 	cTeam(
 		const AString & a_Name, const AString & a_DisplayName,
-		const AString & a_Prefix, const AString & a_Suffix
+		const AString & a_Prefix, const AString & a_Suffix,
+		cWorld * a_World
 	);
 
 	// tolua_begin
 
-	/** Adds a new player to the team */
+	/** Adds a new player to the team and tells the clients about it */
 	bool AddPlayer(const AString & a_Name);
 
-	/** Removes a player from the team */
+	/** Removes a player from the team and tells the clients about it */
 	bool RemovePlayer(const AString & a_Name);
 
 	/** Returns whether the specified player is in this team */
 	bool HasPlayer(const AString & a_Name) const;
 
-	/** Removes all registered players */
+	/** Removes all registered players and tells the clients about it */
 	void Reset(void);
-
-	// tolua_begin
 
 	/** Returns the number of registered players */
 	size_t GetNumPlayers(void) const;
@@ -161,30 +160,61 @@ public:
 	const AString & GetPrefix(void) const { return m_Prefix; }
 	const AString & GetSuffix(void) const { return m_Suffix; }
 
-	void SetFriendlyFire(bool a_Flag)            { m_AllowsFriendlyFire      = a_Flag; }
-	void SetCanSeeFriendlyInvisible(bool a_Flag) { m_CanSeeFriendlyInvisible = a_Flag; }
+	/** Returns the team color as a vanilla color name ("red", ...), or an empty string when it has none. */
+	const AString & GetColor(void) const { return m_Color; }
+
+	/** Returns the name tag visibility rule: always / hideForOtherTeams / hideForOwnTeam / never. */
+	const AString & GetNameTagVisibility(void) const { return m_NameTagVisibility; }
+
+	/** Returns the collision rule: always / pushOtherTeams / pushOwnTeam / never. */
+	const AString & GetCollisionRule(void) const { return m_CollisionRule; }
+
+	/** Returns the death message visibility rule: always / hideForOtherTeams / hideForOwnTeam / never. */
+	const AString & GetDeathMessageVisibility(void) const { return m_DeathMessageVisibility; }
+
+	void SetFriendlyFire(bool a_Flag);
+	void SetCanSeeFriendlyInvisible(bool a_Flag);
 
 	void SetDisplayName(const AString & a_Name);
+	void SetPrefix(const AString & a_Prefix);
+	void SetSuffix(const AString & a_Suffix);
+	void SetColor(const AString & a_Color);
+	void SetNameTagVisibility(const AString & a_Rule);
+	void SetCollisionRule(const AString & a_Rule);
 
-	void SetPrefix(const AString & a_Prefix) { m_Prefix = a_Prefix; }
-	void SetSuffix(const AString & a_Suffix) { m_Suffix = a_Suffix; }
+	/** Sets the death message visibility rule. It is applied server-side only, so it is not broadcast. */
+	void SetDeathMessageVisibility(const AString & a_Rule);
 
 	// tolua_end
+
+	/** Returns the team's player names (C++ only - the protocol and the serializer enumerate them). */
+	const std::set<AString> & GetPlayers(void) const { return m_Players; }
+
+	/** Returns the protocol color index for a vanilla color name, or -1 for no color / an unknown name. */
+	static int GetColorID(const AString & a_ColorName);
 
 private:
 
 	typedef std::set<AString> cPlayerNameSet;
 
+	/** Tells the clients that the team's properties changed (Teams packet mode 2) */
+	void BroadcastUpdate(void);
+
 	bool m_AllowsFriendlyFire;
 	bool m_CanSeeFriendlyInvisible;
 
+	AString m_Color;
+	AString m_CollisionRule;
+	AString m_DeathMessageVisibility;
 	AString m_DisplayName;
 	AString m_Name;
-
+	AString m_NameTagVisibility;
 	AString m_Prefix;
 	AString m_Suffix;
 
 	cPlayerNameSet m_Players;
+
+	cWorld * m_World;
 
 	friend class cScoreboardSerializer;
 
@@ -251,8 +281,12 @@ public:
 	/** Retrieves the list of team names */
 	AStringVector GetTeamNames();
 
-	/** Send this scoreboard to the specified client */
+	/** Send this scoreboard (objectives, display slots and teams) to the specified client */
 	void SendTo(cClientHandle & a_Client);
+
+	/** Send a Teams packet mode 1 (remove) for every team to the client, without touching the scoreboard.
+	Use it when the client is leaving this world: its scoreboard is global, while this server keeps one per world. */
+	void SendTeamRemovals(cClientHandle & a_Client);
 
 	cTeam * QueryPlayerTeam(const AString & a_Name);  // WARNING: O(n logn)
 

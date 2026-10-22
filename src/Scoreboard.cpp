@@ -195,15 +195,35 @@ void cObjective::SendTo(cClientHandle & a_Client)
 
 cTeam::cTeam(
 	const AString & a_Name, const AString & a_DisplayName,
-	const AString & a_Prefix, const AString & a_Suffix
+	const AString & a_Prefix, const AString & a_Suffix,
+	cWorld * a_World
 )
 	: m_AllowsFriendlyFire(true)
 	, m_CanSeeFriendlyInvisible(false)
+	, m_CollisionRule("always")
+	, m_DeathMessageVisibility("always")
 	, m_DisplayName(a_DisplayName)
 	, m_Name(a_Name)
+	, m_NameTagVisibility("always")
 	, m_Prefix(a_Prefix)
 	, m_Suffix(a_Suffix)
+	, m_World(a_World)
 {
+}
+
+
+
+
+
+void cTeam::BroadcastUpdate(void)
+{
+	if (m_World == nullptr)
+	{
+		return;
+	}
+
+	AStringVector NoPlayers;
+	m_World->BroadcastTeam(*this, 2, NoPlayers);
 }
 
 
@@ -212,7 +232,19 @@ cTeam::cTeam(
 
 bool cTeam::AddPlayer(const AString & a_Name)
 {
-	return m_Players.insert(a_Name).second;
+	if (!m_Players.insert(a_Name).second)
+	{
+		return false;
+	}
+
+	if (m_World != nullptr)
+	{
+		AStringVector Added;
+		Added.push_back(a_Name);
+		m_World->BroadcastTeam(*this, 3, Added);
+	}
+
+	return true;
 }
 
 
@@ -221,7 +253,19 @@ bool cTeam::AddPlayer(const AString & a_Name)
 
 bool cTeam::RemovePlayer(const AString & a_Name)
 {
-	return m_Players.erase(a_Name) > 0;
+	if (m_Players.erase(a_Name) == 0)
+	{
+		return false;
+	}
+
+	if (m_World != nullptr)
+	{
+		AStringVector Removed;
+		Removed.push_back(a_Name);
+		m_World->BroadcastTeam(*this, 4, Removed);
+	}
+
+	return true;
 }
 
 
@@ -241,9 +285,13 @@ bool cTeam::HasPlayer(const AString & a_Name) const
 
 void cTeam::Reset(void)
 {
-	// TODO 2014-01-22 xdot: Inform online players
-
+	AStringVector Cleared(m_Players.begin(), m_Players.end());
 	m_Players.clear();
+
+	if ((m_World != nullptr) && !Cleared.empty())
+	{
+		m_World->BroadcastTeam(*this, 4, Cleared);
+	}
 }
 
 
@@ -253,8 +301,111 @@ void cTeam::Reset(void)
 void cTeam::SetDisplayName(const AString & a_Name)
 {
 	m_DisplayName = a_Name;
+	BroadcastUpdate();
+}
 
-	// TODO 2014-03-01 xdot: Update clients
+
+
+
+
+void cTeam::SetPrefix(const AString & a_Prefix)
+{
+	m_Prefix = a_Prefix;
+	BroadcastUpdate();
+}
+
+
+
+
+
+void cTeam::SetSuffix(const AString & a_Suffix)
+{
+	m_Suffix = a_Suffix;
+	BroadcastUpdate();
+}
+
+
+
+
+
+void cTeam::SetFriendlyFire(bool a_Flag)
+{
+	m_AllowsFriendlyFire = a_Flag;
+	BroadcastUpdate();
+}
+
+
+
+
+
+void cTeam::SetCanSeeFriendlyInvisible(bool a_Flag)
+{
+	m_CanSeeFriendlyInvisible = a_Flag;
+	BroadcastUpdate();
+}
+
+
+
+
+
+void cTeam::SetColor(const AString & a_Color)
+{
+	m_Color = a_Color;
+	BroadcastUpdate();
+}
+
+
+
+
+
+void cTeam::SetNameTagVisibility(const AString & a_Rule)
+{
+	m_NameTagVisibility = a_Rule;
+	BroadcastUpdate();
+}
+
+
+
+
+
+void cTeam::SetCollisionRule(const AString & a_Rule)
+{
+	m_CollisionRule = a_Rule;
+	BroadcastUpdate();
+}
+
+
+
+
+
+void cTeam::SetDeathMessageVisibility(const AString & a_Rule)
+{
+	// Server-side only: the Teams packet has no field for it.
+	m_DeathMessageVisibility = a_Rule;
+}
+
+
+
+
+
+int cTeam::GetColorID(const AString & a_ColorName)
+{
+	static const char * const Colors[] =
+	{
+		"black", "dark_blue", "dark_green", "dark_aqua",
+		"dark_red", "dark_purple", "gold", "gray",
+		"dark_gray", "blue", "green", "aqua",
+		"red", "light_purple", "yellow", "white",
+	};
+
+	for (size_t i = 0; i < ARRAYCOUNT(Colors); i++)
+	{
+		if (NoCaseCompare(a_ColorName, Colors[i]) == 0)
+		{
+			return static_cast<int>(i);
+		}
+	}
+	return -1;
 }
 
 
@@ -361,12 +512,19 @@ cTeam * cScoreboard::RegisterTeam(
 	const AString & a_Prefix, const AString & a_Suffix
 )
 {
-	auto [TeamIterator, TeamExists] = m_Teams.try_emplace(a_Name, a_Name, a_DisplayName, a_Prefix, a_Suffix);
+	auto [TeamIterator, TeamExists] = m_Teams.try_emplace(a_Name, a_Name, a_DisplayName, a_Prefix, a_Suffix, m_World);
 
 	if (!TeamExists && GetTeam(a_Name))
 	{
 		LOGWARNING("Tried to register a team that already exists: %s", a_Name.c_str());
 		return nullptr;
+	}
+
+	// Tell the clients about the new team, together with the roster it was created with (vanilla mode 0):
+	if (m_World != nullptr)
+	{
+		AStringVector Players(TeamIterator->second.GetPlayers().begin(), TeamIterator->second.GetPlayers().end());
+		m_World->BroadcastTeam(TeamIterator->second, 0, Players);
 	}
 
 	return &TeamIterator->second;
@@ -385,6 +543,13 @@ bool cScoreboard::RemoveTeam(const AString & a_Name)
 	if (it == m_Teams.end())
 	{
 		return false;
+	}
+
+	// Tell the clients before the team and its id are gone (vanilla mode 1):
+	if (m_World != nullptr)
+	{
+		AStringVector NoPlayers;
+		m_World->BroadcastTeam(it->second, 1, NoPlayers);
 	}
 
 	m_Teams.erase(it);
@@ -566,22 +731,46 @@ void cScoreboard::AddPlayerScore(const AString & a_Name, cObjective::eType a_Typ
 
 void cScoreboard::SendTo(cClientHandle & a_Client)
 {
-	cCSLock Lock(m_CSObjectives);
-
-	for (cObjectiveMap::iterator it = m_Objectives.begin(); it != m_Objectives.end(); ++it)
 	{
-		it->second.SendTo(a_Client);
+		cCSLock Lock(m_CSObjectives);
+
+		for (cObjectiveMap::iterator it = m_Objectives.begin(); it != m_Objectives.end(); ++it)
+		{
+			it->second.SendTo(a_Client);
+		}
+
+		for (int i = 0; i < static_cast<int>(dsCount); ++i)
+		{
+			// Avoid race conditions
+			cObjective * Objective = m_Display[i];
+
+			if (Objective)
+			{
+				a_Client.SendDisplayObjective(Objective->GetName(), static_cast<eDisplaySlot>(i));
+			}
+		}
 	}
 
-	for (int i = 0; i < static_cast<int>(dsCount); ++i)
+	// The teams live under their own lock; the client needs them for the nametags and the colors of this world:
+	cCSLock Lock(m_CSTeams);
+	for (const auto & Team : m_Teams)
 	{
-		// Avoid race conditions
-		cObjective * Objective = m_Display[i];
+		AStringVector Players(Team.second.GetPlayers().begin(), Team.second.GetPlayers().end());
+		a_Client.SendTeam(Team.second, 0, Players);
+	}
+}
 
-		if (Objective)
-		{
-			a_Client.SendDisplayObjective(Objective->GetName(), static_cast<eDisplaySlot>(i));
-		}
+
+
+
+
+void cScoreboard::SendTeamRemovals(cClientHandle & a_Client)
+{
+	cCSLock Lock(m_CSTeams);
+	for (const auto & Team : m_Teams)
+	{
+		AStringVector NoPlayers;
+		a_Client.SendTeam(Team.second, 1, NoPlayers);
 	}
 }
 

@@ -191,6 +191,10 @@ public:
 	virtual void BroadcastScoreboardObjective        (const AString & a_Name, const AString & a_DisplayName, Byte a_Mode) override;
 	virtual void BroadcastScoreUpdate                (const AString & a_Objective, const AString & a_Player, cObjective::Score a_Score, Byte a_Mode) override;
 	virtual void BroadcastDisplayObjective           (const AString & a_Objective, cScoreboard::eDisplaySlot a_Display) override;
+
+	/** Sends a Teams packet to every client in this world. a_Mode is the protocol mode (0-4);
+	a_Players holds the names to serialize for modes 0, 3 and 4. */
+	void BroadcastTeam                               (const cTeam & a_Team, Byte a_Mode, const AStringVector & a_Players);
 	virtual void BroadcastSoundEffect                (const AString & a_SoundName, Vector3d a_Position, float a_Volume, float a_Pitch, const cClientHandle * a_Exclude = nullptr) override;  // Exported in ManualBindings_World.cpp
 	virtual void BroadcastSoundParticleEffect        (const EffectID a_EffectID, Vector3i a_SrcPos, int a_Data, const cClientHandle * a_Exclude = nullptr) override;  // Exported in ManualBindings_World.cpp
 	virtual void BroadcastSpawnEntity                (cEntity & a_Entity, const cClientHandle * a_Exclude = nullptr) override;

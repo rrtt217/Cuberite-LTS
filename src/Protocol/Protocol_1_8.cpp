@@ -1345,6 +1345,50 @@ void cProtocol_1_8_0::SendDisplayObjective(const AString & a_Objective, cScorebo
 
 
 
+void cProtocol_1_8_0::SendTeam(const cTeam & a_Team, Byte a_Mode, const AStringVector & a_Players)
+{
+	ASSERT(m_State == 3);  // In game mode?
+
+	// 1.8 has the same layout as 1.9+, minus the Collision Rule field (protocol 47, wiki.vg rev 994):
+	cPacketizer Pkt(*this, pktTeam);
+	Pkt.WriteString(a_Team.GetName());
+	Pkt.WriteBEUInt8(a_Mode);
+
+	if ((a_Mode == 0) || (a_Mode == 2))
+	{
+		Pkt.WriteString(a_Team.GetDisplayName());
+		Pkt.WriteString(a_Team.GetPrefix());
+		Pkt.WriteString(a_Team.GetSuffix());
+
+		Byte Flags = 0;
+		if (a_Team.AllowsFriendlyFire())
+		{
+			Flags |= 0x01;
+		}
+		if (a_Team.CanSeeFriendlyInvisible())
+		{
+			Flags |= 0x02;
+		}
+		Pkt.WriteBEUInt8(Flags);
+
+		Pkt.WriteString(a_Team.GetNameTagVisibility());
+		Pkt.WriteBEInt8(static_cast<Int8>(cTeam::GetColorID(a_Team.GetColor())));
+	}
+
+	if ((a_Mode == 0) || (a_Mode == 3) || (a_Mode == 4))
+	{
+		Pkt.WriteVarInt32(static_cast<UInt32>(a_Players.size()));
+		for (const auto & Player : a_Players)
+		{
+			Pkt.WriteString(Player);
+		}
+	}
+}
+
+
+
+
+
 void cProtocol_1_8_0::SendSetSubTitle(const cCompositeChat & a_SubTitle)
 {
 	SendSetRawSubTitle(a_SubTitle.CreateJsonString(false));
@@ -1951,6 +1995,7 @@ UInt32 cProtocol_1_8_0::GetPacketID(ePacketType a_PacketType) const
 		case pktStatistics:             return 0x37;
 		case pktStatusResponse:         return 0x00;
 		case pktTabCompletionResults:   return 0x3a;
+		case pktTeam:                   return 0x3E;
 		case pktTeleportEntity:         return 0x18;
 		case pktTimeUpdate:             return 0x03;
 		case pktTitle:                  return 0x45;

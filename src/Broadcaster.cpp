@@ -267,6 +267,19 @@ void cWorld::BroadcastDisplayObjective(const AString & a_Objective, cScoreboard:
 
 
 
+void cWorld::BroadcastTeam(const cTeam & a_Team, Byte a_Mode, const AStringVector & a_Players)
+{
+	ForClientsInWorld(*this, nullptr, [&](cClientHandle & a_Client)
+		{
+			a_Client.SendTeam(a_Team, a_Mode, a_Players);
+		}
+	);
+}
+
+
+
+
+
 void cWorld::BroadcastEntityEffect(const cEntity & a_Entity, int a_EffectID, int a_Amplifier, int a_Duration, const cClientHandle * a_Exclude)
 {
 	ForClientsWithEntity(a_Entity, *this, a_Exclude, [&](cClientHandle & a_Client)

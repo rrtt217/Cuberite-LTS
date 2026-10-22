@@ -3116,6 +3116,15 @@ void cClientHandle::SendDisplayObjective(const AString & a_Objective, cScoreboar
 
 
 
+void cClientHandle::SendTeam(const cTeam & a_Team, Byte a_Mode, const AStringVector & a_Players)
+{
+	m_Protocol->SendTeam(a_Team, a_Mode, a_Players);
+}
+
+
+
+
+
 void cClientHandle::SendSetSubTitle(const cCompositeChat & a_SubTitle)
 {
 	m_Protocol->SendSetSubTitle(a_SubTitle);

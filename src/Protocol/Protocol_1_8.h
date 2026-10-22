@@ -107,6 +107,7 @@ public:
 	virtual void SendScoreboardObjective        (const AString & a_Name, const AString & a_DisplayName, Byte a_Mode) override;
 	virtual void SendScoreUpdate                (const AString & a_Objective, const AString & a_Player, cObjective::Score a_Score, Byte a_Mode) override;
 	virtual void SendDisplayObjective           (const AString & a_Objective, cScoreboard::eDisplaySlot a_Display) override;
+	virtual void SendTeam                       (const cTeam & a_Team, Byte a_Mode, const AStringVector & a_Players) override;
 	virtual void SendSetSubTitle                (const cCompositeChat & a_SubTitle) override;
 	virtual void SendSetRawSubTitle             (const AString & a_SubTitle) override;
 	virtual void SendSetTitle                   (const cCompositeChat & a_Title) override;

@@ -1046,6 +1046,7 @@ UInt32 cProtocol_1_12::GetPacketID(cProtocol::ePacketType a_Packet) const
 		case pktRespawn:             return 0x34;
 		case pktScoreboardObjective: return 0x41;
 		case pktSpawnPosition:       return 0x45;
+		case pktTeam:                return 0x43;
 		case pktTeleportEntity:      return 0x4b;
 		case pktTimeUpdate:          return 0x46;
 		case pktTitle:               return 0x47;
@@ -1241,6 +1242,7 @@ UInt32 cProtocol_1_12_1::GetPacketID(ePacketType a_Packet) const
 		case pktRespawn:                return 0x35;
 		case pktScoreboardObjective:    return 0x42;
 		case pktSpawnPosition:          return 0x46;
+		case pktTeam:                   return 0x44;
 		case pktUnlockRecipe:           return 0x31;
 		case pktUpdateHealth:           return 0x41;
 		case pktUpdateScore:            return 0x45;
