@@ -69,6 +69,15 @@ Core 侧新增 `command_presentation.lua`（解析 + 两张白名单 + `MC|StopS
 `deathMessageVisibility`/`collisionRule` 四个 option 键（`cTeam` 无字段）、Teams 包（队伍不下发客户端）、
 `sidebar.team.*` 16 个槽位、`teams list <team>` 的成员枚举、`*` 目标、`setdisplay` 省略 objective 的清除。
 
+**Teams 包分支（C6 的后续，叠在 C6 之上）**：`feature/protocol-scoreboard-team-packet`
+（父仓库 `dec2c56` + 规格提交）↔ Core `feature/core-scoreboard-team-options`（`51e7233`）。
+`src/` 侧：`cTeam` 增 Color / NameTagVisibility / CollisionRule / DeathMessageVisibility 与变更广播，
+新增 Teams 包（1.8 0x3E、1.9–1.11 0x41、1.12 0x43、1.12.1/2 0x44；1.13/1.14 冻结 no-op），
+入服全量下发 `SendTo`、切世界清理 `SendTeamRemovals`、`scoreboard.dat` 四个新键；Core 侧开放
+`color` / `nametagVisibility` / `collisionRule`，`deathMessageVisibility` 仍拒绝（聊天过滤留给后续）。
+规格：[protocol/vanilla-1.12.2-scoreboard-teams-packet.md](../protocol/vanilla-1.12.2-scoreboard-teams-packet.md)。
+验收：风格 0 / 构建通过 / ctest 49/49 / Core 170 断言 / 实机在**原始包层**逐字节核对（含重启往返）。
+
 **串行约束**：C2 → C3（同改 `CommandBlockEntity` / `PluginManager` 的上下文通路）；C1 → C4/C5/C6（都消费选择器）。
 C1 与 C2 可并行（分属 submodule 与 `src/`，无同文件冲突）。**每个分支都必须自带测试。**
 
