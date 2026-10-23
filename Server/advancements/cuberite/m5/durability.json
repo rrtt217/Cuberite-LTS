@@ -1,0 +1,32 @@
+{
+  "parent": "cuberite:m1/root",
+  "display": {
+    "title": {
+      "text": "M5 Worn Out"
+    },
+    "description": {
+      "text": "Damage a damageable item"
+    },
+    "icon": {
+      "item": 276
+    },
+    "frame": "task",
+    "x": 1,
+    "y": 9
+  },
+  "criteria": {
+    "worn": {
+      "trigger": "minecraft:item_durability_changed",
+      "conditions": {
+        "delta": {
+          "min": 1
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "worn"
+    ]
+  ]
+}

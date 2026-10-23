@@ -532,16 +532,32 @@ bool cInventory::DamageItem(int a_SlotNum, short a_Amount)
 		LOGWARNING("%s(%d, %d): requesting an invalid grid, ignoring.", __FUNCTION__, a_SlotNum, a_Amount);
 		return false;
 	}
-	if (!Grid->DamageItem(GridSlotNum, a_Amount))
+	const cItem ItemBefore = Grid->GetSlot(GridSlotNum);
+	const bool Broken = Grid->DamageItem(GridSlotNum, a_Amount);
+	int Remaining = 0;
+	if (Broken)
+	{
+		// The item has broken, remove it:
+		Grid->EmptySlot(GridSlotNum);
+	}
+	else
 	{
 		// The item has been damaged, but did not break yet
 		SendSlot(a_SlotNum);
-		return false;
+		const auto & Damaged = Grid->GetSlot(GridSlotNum);
+		Remaining = std::max(static_cast<int>(Damaged.GetMaxDamage()) - static_cast<int>(Damaged.m_ItemDamage), 0);
 	}
 
-	// The item has broken, remove it:
-	Grid->EmptySlot(GridSlotNum);
-	return true;
+	// Fire the durability trigger for the player's item:
+	if (m_Owner.IsTicking() && !ItemBefore.IsEmpty())
+	{
+		auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+		if (AdvancementManager != nullptr)
+		{
+			AdvancementManager->TriggerItemDurabilityChanged(m_Owner, ItemBefore, a_Amount, Remaining);
+		}
+	}
+	return Broken;
 }
 
 

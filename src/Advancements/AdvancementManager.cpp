@@ -292,7 +292,8 @@ namespace
 			(a_Trigger == "minecraft:player_killed_entity") ||
 			(a_Trigger == "minecraft:entity_killed_player") ||
 			(a_Trigger == "minecraft:player_hurt_entity") ||
-			(a_Trigger == "minecraft:entity_hurt_player");
+			(a_Trigger == "minecraft:entity_hurt_player") ||
+			(a_Trigger == "minecraft:item_durability_changed");
 	}
 
 
@@ -331,6 +332,23 @@ namespace
 						a_Reason = "unsupported entity predicate \"" + Key + "\"";
 						return false;
 					}
+				}
+			}
+			return true;
+		}
+		if (a_Trigger == "minecraft:item_durability_changed")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+			{
+				const AString Key = it.key().asString();
+				if ((Key != "item") && (Key != "delta") && (Key != "durability"))
+				{
+					a_Reason = "unsupported condition \"" + Key + "\"";
+					return false;
 				}
 			}
 			return true;
@@ -404,6 +422,31 @@ namespace
 
 
 	bool MatchEntityPredicate(const Json::Value & a_Conditions, const cEntity & a_Entity);
+
+
+
+
+
+	bool MatchDurabilityChanged(const Json::Value & a_Conditions, const cItem & a_ItemBefore, int a_Delta, int a_Durability)
+	{
+		if (!a_Conditions.isObject())
+		{
+			return true;
+		}
+		if (a_Conditions.isMember("item") && !MatchItemPredicate(a_Conditions["item"], a_ItemBefore))
+		{
+			return false;
+		}
+		if (a_Conditions.isMember("delta") && !MatchRange(a_Conditions["delta"], a_Delta))
+		{
+			return false;
+		}
+		if (a_Conditions.isMember("durability") && !MatchRange(a_Conditions["durability"], a_Durability))
+		{
+			return false;
+		}
+		return true;
+	}
 
 
 
@@ -1122,6 +1165,27 @@ void cAdvancementManager::TriggerEntityHurtPlayer(cPlayer & a_Player, const cEnt
 			continue;
 		}
 		if (MatchDamageSource(Entry.Conditions, a_Attacker))
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerItemDurabilityChanged(cPlayer & a_Player, const cItem & a_ItemBefore, int a_Delta, int a_Durability)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:item_durability_changed");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		if (MatchDurabilityChanged(Entry.Conditions, a_ItemBefore, a_Delta, a_Durability))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}

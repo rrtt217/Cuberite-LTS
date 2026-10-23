@@ -55,6 +55,9 @@ public:
 	/** Runs the minecraft:entity_hurt_player criteria for the hurt player. */
 	void TriggerEntityHurtPlayer(cPlayer & a_Player, const cEntity * a_Attacker);
 
+	/** Runs the minecraft:item_durability_changed criteria for the player's item. */
+	void TriggerItemDurabilityChanged(cPlayer & a_Player, const cItem & a_ItemBefore, int a_Delta, int a_Durability);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 
