@@ -10875,6 +10875,21 @@ a_Player:OpenWindow(Window);
 					},
 					Notes = "Revokes a whole advancement tree using the same mode and criterion rules as GrantAdvancementTree. Returns the number of changes, or -1 for an unknown identifier or mode."
 				},
+				TriggerEnchantedItem =
+				{
+					Params =
+					{
+						{
+							Name = "Item",
+							Type = "cItem",
+						},
+						{
+							Name = "Levels",
+							Type = "number",
+						},
+					},
+					Notes = "Notifies the advancement system that the player's item was enchanted. The Core /enchant command calls this; Levels is the XP levels spent (0 for the command)."
+				},
 				GetSuffix =
 				{
 					Returns =

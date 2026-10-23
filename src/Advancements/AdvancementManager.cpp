@@ -304,7 +304,8 @@ namespace
 			(a_Trigger == "minecraft:effects_changed") ||
 			(a_Trigger == "minecraft:changed_dimension") ||
 			(a_Trigger == "minecraft:tick") ||
-			(a_Trigger == "minecraft:enter_block");
+			(a_Trigger == "minecraft:enter_block") ||
+			(a_Trigger == "minecraft:enchanted_item");
 	}
 
 
@@ -343,6 +344,23 @@ namespace
 						a_Reason = "unsupported entity predicate \"" + Key + "\"";
 						return false;
 					}
+				}
+			}
+			return true;
+		}
+		if (a_Trigger == "minecraft:enchanted_item")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+			{
+				const AString Key = it.key().asString();
+				if ((Key != "item") && (Key != "levels"))
+				{
+					a_Reason = "unsupported condition \"" + Key + "\"";
+					return false;
 				}
 			}
 			return true;
@@ -1625,6 +1643,39 @@ void cAdvancementManager::TriggerEnterBlock(cPlayer & a_Player, BLOCKTYPE a_Bloc
 		}
 		if (!Entry.Conditions.isObject() || !Entry.Conditions.isMember("block") ||
 			MatchBlockName(Entry.Conditions["block"], a_BlockType))
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerEnchantedItem(cPlayer & a_Player, const cItem & a_Item, int a_Levels)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:enchanted_item");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		bool Matches = true;
+		if (Entry.Conditions.isObject())
+		{
+			if (Entry.Conditions.isMember("item") && !MatchItemPredicate(Entry.Conditions["item"], a_Item))
+			{
+				Matches = false;
+			}
+			if (Entry.Conditions.isMember("levels") && !MatchRange(Entry.Conditions["levels"], a_Levels))
+			{
+				Matches = false;
+			}
+		}
+		if (Matches)
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}

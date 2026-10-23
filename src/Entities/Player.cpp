@@ -1623,6 +1623,19 @@ bool cPlayer::RevokeAdvancementCriterion(const AString & a_ID, const AString & a
 
 
 
+void cPlayer::TriggerEnchantedItem(const cItem & a_Item, int a_Levels)
+{
+	auto * Manager = cRoot::Get()->GetAdvancementManager();
+	if (Manager != nullptr)
+	{
+		Manager->TriggerEnchantedItem(*this, a_Item, a_Levels);
+	}
+}
+
+
+
+
+
 bool cPlayer::IsValidAdvancement(const AString & a_ID) const
 {
 	const auto * Manager = cRoot::Get()->GetAdvancementManager();

@@ -85,6 +85,9 @@ public:
 	/** Runs the minecraft:enter_block criteria for a block the player just entered. */
 	void TriggerEnterBlock(cPlayer & a_Player, BLOCKTYPE a_BlockType);
 
+	/** Runs the minecraft:enchanted_item criteria for an enchanted item. */
+	void TriggerEnchantedItem(cPlayer & a_Player, const cItem & a_Item, int a_Levels);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 
