@@ -84,7 +84,7 @@ flags：0x1 有 background、0x2 show_toast、0x4 hidden。announce_to_chat 不�
 | 构建 | cmake --build build -j 8 → 通过 |
 | ctest | ctest -E 'UrlClient-test|Google-test' → 49/49 通过 |
 | 协议 sanity | mineflayer 1.12.2 bot 连 25565，收到包后保持在线、可查询坐标/血量 |
-| 客户端界面 | 已验（部分）：1.12.2 客户端进服后按 L，屏幕为 GuiScreenAdvancements；root 节点 "M0 Root" / "Protocol smoke test" / 钻石图标正常渲染，背景是缺失纹理（本阶段故意不写 background），客户端未断开。截图：build/tmp/adv-screen-1.png。child 节点在同一包内已声明，但截图上被 root 的 tooltip 遮住，未单独拍到 |
+| 客户端界面 | 已验：1.12.2 客户端进服后按 L，屏幕为 GuiScreenAdvancements；root（钻石图标、完成边框）与 child（木棍图标、普通边框）两个节点都正常渲染，父链连线可见，背景是缺失纹理（本阶段故意不写 background），客户端未断开。截图：build/tmp/adv-screen-1.png（root 悬停 tooltip："M0 Root" / "Protocol smoke test"）、build/tmp/adv-screen-3.png（两个节点同屏，root 完成帧 / child 未完成帧） |
 | 授予时 toast | 未单独验证：root 在入服包里就已达成，首次同步是否弹 toast 没有截到；留给 M1 用 /advancement grant 验证 |
 
 ## 6. 已知偏差与后续
