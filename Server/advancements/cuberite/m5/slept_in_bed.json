@@ -1,0 +1,27 @@
+{
+  "parent": "cuberite:m1/root",
+  "display": {
+    "title": {
+      "text": "M5 Sweet Dreams"
+    },
+    "description": {
+      "text": "Sleep in a bed"
+    },
+    "icon": {
+      "item": 355
+    },
+    "frame": "task",
+    "x": 1,
+    "y": 20
+  },
+  "criteria": {
+    "slept": {
+      "trigger": "minecraft:slept_in_bed"
+    }
+  },
+  "requirements": [
+    [
+      "slept"
+    ]
+  ]
+}

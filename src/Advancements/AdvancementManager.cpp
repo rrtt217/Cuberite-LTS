@@ -305,7 +305,8 @@ namespace
 			(a_Trigger == "minecraft:changed_dimension") ||
 			(a_Trigger == "minecraft:tick") ||
 			(a_Trigger == "minecraft:enter_block") ||
-			(a_Trigger == "minecraft:enchanted_item");
+			(a_Trigger == "minecraft:enchanted_item") ||
+			(a_Trigger == "minecraft:slept_in_bed");
 	}
 
 
@@ -347,6 +348,15 @@ namespace
 				}
 			}
 			return true;
+		}
+		if (a_Trigger == "minecraft:slept_in_bed")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			a_Reason = "slept_in_bed conditions not implemented";
+			return false;
 		}
 		if (a_Trigger == "minecraft:enchanted_item")
 		{
@@ -1676,6 +1686,23 @@ void cAdvancementManager::TriggerEnchantedItem(cPlayer & a_Player, const cItem &
 			}
 		}
 		if (Matches)
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerSleptInBed(cPlayer & a_Player)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:slept_in_bed");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (!a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}

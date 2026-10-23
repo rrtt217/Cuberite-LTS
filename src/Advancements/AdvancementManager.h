@@ -88,6 +88,9 @@ public:
 	/** Runs the minecraft:enchanted_item criteria for an enchanted item. */
 	void TriggerEnchantedItem(cPlayer & a_Player, const cItem & a_Item, int a_Levels);
 
+	/** Runs the minecraft:slept_in_bed criteria after the player successfully slept. */
+	void TriggerSleptInBed(cPlayer & a_Player);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 
