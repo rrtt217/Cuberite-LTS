@@ -290,7 +290,9 @@ namespace
 	{
 		return (a_Trigger == "minecraft:inventory_changed") ||
 			(a_Trigger == "minecraft:player_killed_entity") ||
-			(a_Trigger == "minecraft:entity_killed_player");
+			(a_Trigger == "minecraft:entity_killed_player") ||
+			(a_Trigger == "minecraft:player_hurt_entity") ||
+			(a_Trigger == "minecraft:entity_hurt_player");
 	}
 
 
@@ -304,7 +306,7 @@ namespace
 			// The M3 matcher supports a subset and ignores the rest; keep loading:
 			return true;
 		}
-		if ((a_Trigger == "minecraft:player_killed_entity") || (a_Trigger == "minecraft:entity_killed_player"))
+		if ((a_Trigger == "minecraft:player_killed_entity") || (a_Trigger == "minecraft:entity_killed_player") || (a_Trigger == "minecraft:player_hurt_entity"))
 		{
 			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
 			{
@@ -333,6 +335,47 @@ namespace
 			}
 			return true;
 		}
+		if (a_Trigger == "minecraft:entity_hurt_player")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+			{
+				const AString Key = it.key().asString();
+				if (Key != "damage")
+				{
+					a_Reason = "unsupported condition \"" + Key + "\"";
+					return false;
+				}
+			}
+			if (a_Conditions.isMember("damage") && a_Conditions["damage"].isObject())
+			{
+				for (auto it = a_Conditions["damage"].begin(); it != a_Conditions["damage"].end(); ++it)
+				{
+					const AString Key = it.key().asString();
+					if (Key != "source_entity")
+					{
+						a_Reason = "unsupported damage predicate \"" + Key + "\"";
+						return false;
+					}
+				}
+				if (a_Conditions["damage"].isMember("source_entity") && a_Conditions["damage"]["source_entity"].isObject())
+				{
+					for (auto it = a_Conditions["damage"]["source_entity"].begin(); it != a_Conditions["damage"]["source_entity"].end(); ++it)
+					{
+						const AString Key = it.key().asString();
+						if ((Key != "type") && (Key != "player"))
+						{
+							a_Reason = "unsupported source_entity predicate \"" + Key + "\"";
+							return false;
+						}
+					}
+				}
+			}
+			return true;
+		}
 		a_Reason = "trigger not implemented";
 		return false;
 	}
@@ -354,6 +397,34 @@ namespace
 			return AString("minecraft:") + AString(Name.data(), Name.size());
 		}
 		return AString();
+	}
+
+
+
+
+
+	bool MatchEntityPredicate(const Json::Value & a_Conditions, const cEntity & a_Entity);
+
+
+
+
+
+	bool MatchDamageSource(const Json::Value & a_Conditions, const cEntity * a_Attacker)
+	{
+		if (!a_Conditions.isObject() || !a_Conditions.isMember("damage"))
+		{
+			return true;
+		}
+		const auto & Damage = a_Conditions["damage"];
+		if (!Damage.isObject() || !Damage.isMember("source_entity"))
+		{
+			return true;
+		}
+		if (a_Attacker == nullptr)
+		{
+			return false;
+		}
+		return MatchEntityPredicate(Damage["source_entity"], *a_Attacker);
 	}
 
 
@@ -1009,6 +1080,48 @@ void cAdvancementManager::TriggerEntityKilledPlayer(cPlayer & a_Player, const cE
 			continue;
 		}
 		if (MatchEntityPredicate(Entry.Conditions, *a_Killer))
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerPlayerHurtEntity(cPlayer & a_Player, const cEntity & a_Victim)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:player_hurt_entity");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		if (MatchEntityPredicate(Entry.Conditions, a_Victim))
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerEntityHurtPlayer(cPlayer & a_Player, const cEntity * a_Attacker)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:entity_hurt_player");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		if (MatchDamageSource(Entry.Conditions, a_Attacker))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}

@@ -4,6 +4,7 @@
 #include "Entity.h"
 #include "EffectSpeedRules.h"
 #include "Player.h"
+#include "../Advancements/AdvancementManager.h"
 #include "../BlockInfo.h"
 #include "../World.h"
 #include "../Root.h"
@@ -617,6 +618,23 @@ bool cEntity::DoTakeDamage(TakeDamageInfo & a_TDI)
 	}());
 
 	m_InvulnerableTicks = 10;
+
+	// Fire the hurt triggers after the damage has actually landed:
+	if (a_TDI.FinalDamage > 0)
+	{
+		auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+		if (AdvancementManager != nullptr)
+		{
+			if ((a_TDI.Attacker != nullptr) && a_TDI.Attacker->IsPlayer() && (a_TDI.Attacker != this))
+			{
+				AdvancementManager->TriggerPlayerHurtEntity(*static_cast<cPlayer *>(a_TDI.Attacker), *this);
+			}
+			if (IsPlayer())
+			{
+				AdvancementManager->TriggerEntityHurtPlayer(*static_cast<cPlayer *>(this), a_TDI.Attacker);
+			}
+		}
+	}
 
 	if (m_Health <= 0)
 	{

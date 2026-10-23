@@ -1,0 +1,34 @@
+{
+  "parent": "cuberite:m1/root",
+  "display": {
+    "title": {
+      "text": "M4 Zombie Bite"
+    },
+    "description": {
+      "text": "Get hurt by a zombie"
+    },
+    "icon": {
+      "item": 367
+    },
+    "frame": "task",
+    "x": 1,
+    "y": 8
+  },
+  "criteria": {
+    "hurt_by_zombie": {
+      "trigger": "minecraft:entity_hurt_player",
+      "conditions": {
+        "damage": {
+          "source_entity": {
+            "type": "minecraft:zombie"
+          }
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "hurt_by_zombie"
+    ]
+  ]
+}

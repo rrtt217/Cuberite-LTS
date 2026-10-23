@@ -49,6 +49,12 @@ public:
 	/** Runs the minecraft:entity_killed_player criteria for the dying player. */
 	void TriggerEntityKilledPlayer(cPlayer & a_Player, const cEntity * a_Killer);
 
+	/** Runs the minecraft:player_hurt_entity criteria for the attacking player. */
+	void TriggerPlayerHurtEntity(cPlayer & a_Player, const cEntity & a_Victim);
+
+	/** Runs the minecraft:entity_hurt_player criteria for the hurt player. */
+	void TriggerEntityHurtPlayer(cPlayer & a_Player, const cEntity * a_Attacker);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 
