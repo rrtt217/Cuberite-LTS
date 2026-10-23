@@ -3636,6 +3636,19 @@ void cPlayer::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 		AdvancementManager->TriggerTick(*this);
 	}
 
+	// Detect entering a new block (enter_block trigger):
+	{
+		const BLOCKTYPE CurrentBlock = m_World->GetBlock(Vector3i(GetPosition()));
+		if (CurrentBlock != m_LastEnteredBlock)
+		{
+			m_LastEnteredBlock = CurrentBlock;
+			if ((CurrentBlock != E_BLOCK_AIR) && (AdvancementManager != nullptr))
+			{
+				AdvancementManager->TriggerEnterBlock(*this, CurrentBlock);
+			}
+		}
+	}
+
 	// Handle charging the bow:
 	if (m_IsChargingBow)
 	{

@@ -82,6 +82,9 @@ public:
 	/** Runs the minecraft:tick criteria for the player (called once per player tick). */
 	void TriggerTick(cPlayer & a_Player);
 
+	/** Runs the minecraft:enter_block criteria for a block the player just entered. */
+	void TriggerEnterBlock(cPlayer & a_Player, BLOCKTYPE a_BlockType);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 

@@ -782,6 +782,9 @@ private:
 	/** Maps an advancement identifier to the achieved criteria and their timestamps (milliseconds). */
 	std::map<AString, std::map<AString, Int64>> m_AdvancementProgress;
 
+	/** The block the player was standing in at the previous tick, for the enter_block trigger. */
+	BLOCKTYPE m_LastEnteredBlock = E_BLOCK_AIR;
+
 	/** How long till the player's inventory will be saved
 	Default save interval is #defined in PLAYER_INVENTORY_SAVE_INTERVAL */
 	unsigned int m_TicksUntilNextSave;
