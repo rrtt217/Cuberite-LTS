@@ -85,14 +85,15 @@ M2 的 /advancement 还需要遍历（父/子/全部 ID），留给 M2 导出（
 | 客户端 UI（root 授予） | 客户端日志 `Loaded 3 advancements`（root/child/grandchild）；树在已打开的进度界面里渲染。只有一个页签时客户端不画页签行（重开后仍然没有）；授予第二个 root 后同一界面立即出现两个页签（钻石 + 罗盘），说明页签行会随新 root 更新，单页签不显示是客户端行为〔待核：与原版单一页签对照〕 |
 | 客户端 UI（second_root 授予） | 授予后客户端 `Loaded 4 advancements`，同一打开的界面出现钻石（M1 Root）+ 罗盘（second_root）两个页签；罗盘页签在未授予前不存在（可见性过滤正确）。截图 build/tmp/m1-second-root.png |
 | 客户端 UI（child 授予） | 聊天公告已渲染：`rrtt217 has made the advancement [M1 Child]`（task 帧，`chat.type.advancement.task` + 标题被客户端翻译）；客户端日志 `Loaded 3 advancements` |
-| 客户端 UI（grandchild 授予） | 聊天公告已渲染：`rrtt217 has reached the goal [M1 Grandchild]`（goal 帧 → `chat.type.advancement.goal`，客户端翻译为 "has reached the goal"）；toast 未在界面打开时截到〔待验证〕 |
+| 客户端 UI（grandchild 授予） | 聊天公告已渲染：`rrtt217 has reached the goal [M1 Grandchild]`（goal 帧 → `chat.type.advancement.goal`，客户端翻译为 "has reached the goal"） |
+| 授予时 toast | 服务端 flags 实测正确（临时诊断日志：child/grandchild toast=1、root toast=0）；客户端在授予后 0.5–4.5s 的连续截图里没有出现 toast，同期聊天公告正常。可能是客户端/截图环境限制，需要人类目视或换实例复核〔待核〕 |
 
 ## 8. 已知偏差 / 后续
 
 - 可见性规则是"完成节点 + 2 步邻域 + 祖先"的近似：原版对更深的补发（depth ≥ 3）没有抓包样本，M3 触发器落地后再用实机对照。
 - M1 的 demo 数据（第二个未授予 root、root→child→grandchild）用于验证：fresh 玩家应看到空页签、root 授予后出现 3 节点、第二个 root 不应出页签。
 - 客户端在进度界面已打开时收到新增页签的增量包，只会更新数据（日志 `Loaded 3 advancements`），不会重建当前屏幕的页签列表；vanilla 是否也如此〔待核〕，实机验证时需要关闭重开界面。
-- toast 的实机确认受 MCP 覆盖层（右上角）影响；可关闭界面后再授予一次并截图，或让人类看屏幕确认。
+- toast 的实机确认受 MCP 覆盖层（右上角）影响；关闭界面后在游戏内授予仍未见 toast（0.5–4.5s 连续截图）。服务端已核对 show_toast/定义下发，问题在客户端侧〔待核〕。
 - task 与 goal 两个公告键都已在 1.12.2 客户端实测可译（"has made the advancement" / "has reached the goal"）；challenge 键仍〔待核〕。
 - 没有触发器：criteria 目前只能由 API/命令授予；M3/M4 接触发器。
 - rewards.loot 不支持。
