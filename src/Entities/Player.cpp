@@ -3168,6 +3168,12 @@ void cPlayer::AddKnownRecipe(UInt32 a_RecipeId)
 		return;
 	}
 	m_ClientHandle->SendUnlockRecipe(a_RecipeId);
+
+	auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+	if (AdvancementManager != nullptr)
+	{
+		AdvancementManager->TriggerRecipeUnlocked(*this, a_RecipeId);
+	}
 }
 
 

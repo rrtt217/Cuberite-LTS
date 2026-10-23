@@ -1,0 +1,30 @@
+{
+  "parent": "cuberite:m1/root",
+  "display": {
+    "title": {
+      "text": "M5 Recipe Book"
+    },
+    "description": {
+      "text": "Unlock a recipe"
+    },
+    "icon": {
+      "item": 340
+    },
+    "frame": "task",
+    "x": 1,
+    "y": 14
+  },
+  "criteria": {
+    "unlocked_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "minecraft:oak_boat"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "unlocked_recipe"
+    ]
+  ]
+}

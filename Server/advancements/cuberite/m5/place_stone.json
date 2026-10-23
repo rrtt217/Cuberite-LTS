@@ -26,5 +26,10 @@
     [
       "placed_stone"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "oak_boat"
+    ]
+  }
 }

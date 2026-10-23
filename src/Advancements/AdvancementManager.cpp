@@ -4,6 +4,8 @@
 #include "AdvancementManager.h"
 
 #include "../BlockType.h"
+#include "../CraftingRecipes.h"
+#include "../Root.h"
 #include "../Entities/Player.h"
 #include "../Inventory.h"
 #include "../JsonUtils.h"
@@ -297,7 +299,8 @@ namespace
 			(a_Trigger == "minecraft:consumed_item") ||
 			(a_Trigger == "minecraft:placed_block") ||
 			(a_Trigger == "minecraft:used_ender_eye") ||
-			(a_Trigger == "minecraft:used_totem");
+			(a_Trigger == "minecraft:used_totem") ||
+			(a_Trigger == "minecraft:recipe_unlocked");
 	}
 
 
@@ -336,6 +339,22 @@ namespace
 						a_Reason = "unsupported entity predicate \"" + Key + "\"";
 						return false;
 					}
+				}
+			}
+			return true;
+		}
+		if (a_Trigger == "minecraft:recipe_unlocked")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+			{
+				if (it.key().asString() != "recipe")
+				{
+					a_Reason = "unsupported condition \"" + it.key().asString() + "\"";
+					return false;
 				}
 			}
 			return true;
@@ -1383,6 +1402,51 @@ void cAdvancementManager::TriggerUsedTotem(cPlayer & a_Player, const cItem & a_I
 		}
 		if (!Entry.Conditions.isObject() || !Entry.Conditions.isMember("item") ||
 			MatchItemPredicate(Entry.Conditions["item"], a_Item))
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerRecipeUnlocked(cPlayer & a_Player, UInt32 a_RecipeId)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:recipe_unlocked");
+	if (Range.first == Range.second)
+	{
+		return;
+	}
+	AString RecipeName;
+	const auto & NameMap = cRoot::Get()->GetCraftingRecipes()->GetRecipeNameMap();
+	for (const auto & Entry : NameMap)
+	{
+		if (Entry.second == a_RecipeId)
+		{
+			RecipeName = Entry.first;
+			break;
+		}
+	}
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		bool Matches = true;
+		if (Entry.Conditions.isObject() && Entry.Conditions.isMember("recipe"))
+		{
+			AString Expected = Entry.Conditions["recipe"].asString();
+			if (Expected.compare(0, 10, "minecraft:") == 0)
+			{
+				Expected.erase(0, 10);
+			}
+			Matches = (Expected == RecipeName);
+		}
+		if (Matches)
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}

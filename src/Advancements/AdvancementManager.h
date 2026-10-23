@@ -70,6 +70,9 @@ public:
 	/** Runs the minecraft:used_totem criteria for an activated totem. */
 	void TriggerUsedTotem(cPlayer & a_Player, const cItem & a_Item);
 
+	/** Runs the minecraft:recipe_unlocked criteria for a newly unlocked recipe. */
+	void TriggerRecipeUnlocked(cPlayer & a_Player, UInt32 a_RecipeId);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 
