@@ -1,0 +1,27 @@
+{
+  "display": {
+    "title": {
+      "text": "M1 Root"
+    },
+    "description": {
+      "text": "Advancement manager smoke test"
+    },
+    "icon": {
+      "item": 264
+    },
+    "frame": "task",
+    "background": "minecraft:textures/gui/advancements/backgrounds/stone.png",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "root_criterion": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "root_criterion"
+    ]
+  ]
+}

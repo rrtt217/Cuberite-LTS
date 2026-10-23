@@ -1,0 +1,590 @@
+// AdvancementManager.cpp
+
+#include "Globals.h"
+#include "AdvancementManager.h"
+
+#include "../BlockType.h"
+#include "../JsonUtils.h"
+#include "OSSupport/File.h"
+
+#include <json/json.h>
+
+#include <algorithm>
+#include <set>
+
+
+
+
+
+namespace
+{
+
+	bool EndsWith(const AString & a_String, const AString & a_Suffix)
+	{
+		return (a_String.size() >= a_Suffix.size()) &&
+			(a_String.compare(a_String.size() - a_Suffix.size(), a_Suffix.size(), a_Suffix) == 0);
+	}
+
+
+
+
+
+	void CollectJsonFiles(const AString & a_Folder, const AString & a_Relative, std::vector<std::pair<AString, AString>> & a_Files)
+	{
+		for (const auto & Name : cFile::GetFolderContents(a_Folder))
+		{
+			const AString Full = a_Folder + cFile::GetPathSeparator() + Name;
+			const AString Relative = a_Relative.empty() ? Name : (a_Relative + "/" + Name);
+			if (cFile::IsFolder(Full))
+			{
+				CollectJsonFiles(Full, Relative, a_Files);
+			}
+			else if (EndsWith(Name, ".json"))
+			{
+				a_Files.emplace_back(Full, Relative);
+			}
+		}
+	}
+
+
+
+
+
+	/** Converts a JSON value into a raw chat component string. */
+	AString ReadChatComponent(const Json::Value & a_Value)
+	{
+		if (a_Value.isString())
+		{
+			Json::Value Object(Json::objectValue);
+			Object["text"] = a_Value.asString();
+			return JsonUtils::WriteFastString(Object);
+		}
+		if (a_Value.isObject() || a_Value.isArray())
+		{
+			return JsonUtils::WriteFastString(a_Value);
+		}
+		return "{\"text\":\"\"}";
+	}
+
+
+
+
+
+	/** Parses a raw chat component string back into a JSON value. */
+	Json::Value ParseChatComponent(const AString & a_Component)
+	{
+		Json::Value Value;
+		AString Error;
+		if (JsonUtils::ParseString(a_Component, Value, &Error) && Value.isObject())
+		{
+			return Value;
+		}
+		Value = Json::Value(Json::objectValue);
+		Value["text"] = a_Component;
+		return Value;
+	}
+
+
+
+
+
+	cItem ReadIcon(const Json::Value & a_Value)
+	{
+		if (!a_Value.isObject())
+		{
+			return cItem();
+		}
+		const short Damage = static_cast<short>(a_Value.isMember("data") ? a_Value["data"].asInt() : 0);
+		if (!a_Value.isMember("item"))
+		{
+			return cItem();
+		}
+		const auto & Item = a_Value["item"];
+		if (Item.isString())
+		{
+			cItem Result;
+			if (StringToItem(Item.asString(), Result))
+			{
+				Result.m_ItemDamage = Damage;
+				return Result;
+			}
+			return cItem();
+		}
+		if (Item.isInt())
+		{
+			return cItem(static_cast<short>(Item.asInt()), 1, Damage);
+		}
+		return cItem();
+	}
+
+
+
+
+
+	eAdvancementFrame ReadFrame(const AString & a_Frame)
+	{
+		if (a_Frame == "challenge")
+		{
+			return eAdvancementFrame::Challenge;
+		}
+		if (a_Frame == "goal")
+		{
+			return eAdvancementFrame::Goal;
+		}
+		return eAdvancementFrame::Task;
+	}
+
+
+
+
+
+	const char * FrameToKey(const eAdvancementFrame a_Frame)
+	{
+		switch (a_Frame)
+		{
+			case eAdvancementFrame::Task:      return "task";
+			case eAdvancementFrame::Challenge: return "challenge";
+			case eAdvancementFrame::Goal:      return "goal";
+		}
+		return "task";
+	}
+
+}  // namespace (anonymous)
+
+
+
+
+
+void cAdvancementManager::LoadFromFolder(const AString & a_Folder)
+{
+	m_Advancements.clear();
+	m_Children.clear();
+
+	std::vector<std::pair<AString, AString>> Files;
+	CollectJsonFiles(a_Folder, "", Files);
+	for (const auto & [Full, Relative] : Files)
+	{
+		AddFile(Full, Relative);
+	}
+
+	Validate();
+	BuildChildren();
+	LOGINFO("Loaded %zu advancement(s) from \"%s\"", m_Advancements.size(), a_Folder.c_str());
+}
+
+
+
+
+
+void cAdvancementManager::AddFile(const AString & a_FileName, const AString & a_RelativePath)
+{
+	AString Relative = a_RelativePath;
+	if (EndsWith(Relative, ".json"))
+	{
+		Relative.erase(Relative.size() - 5);
+	}
+	const auto Slash = Relative.find('/');
+	if ((Slash == AString::npos) || (Slash == 0) || (Slash + 1 >= Relative.size()))
+	{
+		LOGWARNING("Advancement file \"%s\" must be placed under a namespace folder, skipping", a_FileName.c_str());
+		return;
+	}
+	const AString ID = Relative.substr(0, Slash) + ":" + Relative.substr(Slash + 1);
+
+	const auto Contents = cFile::ReadWholeFile(a_FileName);
+	if (Contents.empty())
+	{
+		LOGWARNING("Cannot read advancement file \"%s\", skipping", a_FileName.c_str());
+		return;
+	}
+	Json::Value Root;
+	AString Error;
+	if (!JsonUtils::ParseString(Contents, Root, &Error) || !Root.isObject())
+	{
+		LOGWARNING("Cannot parse advancement file \"%s\": %s", a_FileName.c_str(), Error.c_str());
+		return;
+	}
+
+	cAdvancement Adv;
+	Adv.ID = ID;
+	Adv.Parent = Root.isMember("parent") ? Root["parent"].asString() : "";
+
+	if (Root.isMember("display") && Root["display"].isObject())
+	{
+		const auto & Display = Root["display"];
+		Adv.HasDisplay = true;
+		Adv.Display.Title = ReadChatComponent(Display["title"]);
+		Adv.Display.Description = ReadChatComponent(Display["description"]);
+		Adv.Display.Icon = ReadIcon(Display["icon"]);
+		Adv.Display.Frame = ReadFrame(Display.isMember("frame") ? Display["frame"].asString() : "task");
+		Adv.Display.Background = Display.isMember("background") ? Display["background"].asString() : "";
+		Adv.Display.ShowToast = Display.isMember("show_toast") ? Display["show_toast"].asBool() : true;
+		Adv.Display.AnnounceToChat = Display.isMember("announce_to_chat") ? Display["announce_to_chat"].asBool() : true;
+		Adv.Display.Hidden = Display.isMember("hidden") ? Display["hidden"].asBool() : false;
+		Adv.Display.X = Display.isMember("x") ? Display["x"].asFloat() : 0.0f;
+		Adv.Display.Y = Display.isMember("y") ? Display["y"].asFloat() : 0.0f;
+	}
+
+	if (Root.isMember("criteria") && Root["criteria"].isObject())
+	{
+		for (auto it = Root["criteria"].begin(); it != Root["criteria"].end(); ++it)
+		{
+			cAdvancementCriterion Criterion;
+			Criterion.Trigger = ((*it).isObject() && (*it).isMember("trigger")) ? (*it)["trigger"].asString() : "";
+			Adv.Criteria[it.key().asString()] = Criterion;
+		}
+	}
+
+	if (Root.isMember("requirements") && Root["requirements"].isArray())
+	{
+		for (const auto & Group : Root["requirements"])
+		{
+			std::vector<AString> Names;
+			if (Group.isArray())
+			{
+				for (const auto & Name : Group)
+				{
+					Names.push_back(Name.asString());
+				}
+			}
+			Adv.Requirements.push_back(std::move(Names));
+		}
+	}
+
+	if (Root.isMember("rewards") && Root["rewards"].isObject())
+	{
+		const auto & Rewards = Root["rewards"];
+		Adv.Rewards.Experience = Rewards.isMember("experience") ? Rewards["experience"].asInt() : 0;
+		if (Rewards.isMember("recipes") && Rewards["recipes"].isArray())
+		{
+			for (const auto & Recipe : Rewards["recipes"])
+			{
+				Adv.Rewards.Recipes.push_back(Recipe.asString());
+			}
+		}
+		Adv.Rewards.Function = Rewards.isMember("function") ? Rewards["function"].asString() : "";
+		if (Rewards.isMember("loot"))
+		{
+			LOGWARNING("Advancement \"%s\" has rewards.loot, which is not supported yet; ignoring", ID.c_str());
+		}
+	}
+
+	Adv.LegacyAchievement = Root.isMember("legacy_achievement") ? Root["legacy_achievement"].asString() : "";
+
+	if (m_Advancements.find(ID) != m_Advancements.end())
+	{
+		LOGWARNING("Duplicate advancement \"%s\" in \"%s\", keeping the first definition", ID.c_str(), a_FileName.c_str());
+		return;
+	}
+	m_Advancements[ID] = std::move(Adv);
+}
+
+
+
+
+
+void cAdvancementManager::Validate(void)
+{
+	// Drop advancements with missing parents or with requirements that reference unknown criteria:
+	bool Changed = true;
+	while (Changed)
+	{
+		Changed = false;
+		for (auto it = m_Advancements.begin(); it != m_Advancements.end();)
+		{
+			const auto & Adv = it->second;
+			bool Remove = false;
+			if (!Adv.Parent.empty() && (m_Advancements.find(Adv.Parent) == m_Advancements.end()))
+			{
+				LOGWARNING("Advancement \"%s\" has unknown parent \"%s\", dropping it", Adv.ID.c_str(), Adv.Parent.c_str());
+				Remove = true;
+			}
+			for (const auto & Group : Adv.Requirements)
+			{
+				for (const auto & Name : Group)
+				{
+					if (Adv.Criteria.find(Name) == Adv.Criteria.end())
+					{
+						LOGWARNING("Advancement \"%s\" requires unknown criterion \"%s\", dropping it", Adv.ID.c_str(), Name.c_str());
+						Remove = true;
+					}
+				}
+			}
+			if (Remove)
+			{
+				it = m_Advancements.erase(it);
+				Changed = true;
+			}
+			else
+			{
+				++it;
+			}
+		}
+	}
+
+	// Drop advancements that are part of a parent cycle:
+	for (auto it = m_Advancements.begin(); it != m_Advancements.end();)
+	{
+		std::set<AString> Seen;
+		const cAdvancement * Adv = &it->second;
+		bool Cycle = false;
+		while ((Adv != nullptr) && !Adv->Parent.empty())
+		{
+			if (!Seen.insert(Adv->ID).second)
+			{
+				Cycle = true;
+				break;
+			}
+			const auto Parent = m_Advancements.find(Adv->Parent);
+			Adv = (Parent == m_Advancements.end()) ? nullptr : &Parent->second;
+		}
+		if (Cycle)
+		{
+			LOGWARNING("Advancement \"%s\" is part of a parent cycle, dropping it", it->second.ID.c_str());
+			it = m_Advancements.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::BuildChildren(void)
+{
+	m_Children.clear();
+	for (const auto & [ID, Adv] : m_Advancements)
+	{
+		if (!Adv.Parent.empty())
+		{
+			m_Children[Adv.Parent].push_back(ID);
+		}
+	}
+	for (auto & [Parent, Children] : m_Children)
+	{
+		std::sort(Children.begin(), Children.end());
+	}
+}
+
+
+
+
+
+const cAdvancement * cAdvancementManager::GetAdvancement(const AString & a_ID) const
+{
+	const auto it = m_Advancements.find(a_ID);
+	return (it == m_Advancements.end()) ? nullptr : &it->second;
+}
+
+
+
+
+
+bool cAdvancementManager::IsValid(const AString & a_ID) const
+{
+	return m_Advancements.find(a_ID) != m_Advancements.end();
+}
+
+
+
+
+
+AString cAdvancementManager::GetParent(const AString & a_ID) const
+{
+	const auto it = m_Advancements.find(a_ID);
+	return (it == m_Advancements.end()) ? AString() : it->second.Parent;
+}
+
+
+
+
+
+AStringVector cAdvancementManager::GetChildren(const AString & a_ID) const
+{
+	const auto it = m_Children.find(a_ID);
+	return (it == m_Children.end()) ? AStringVector() : it->second;
+}
+
+
+
+
+
+AStringVector cAdvancementManager::GetAllIDs(void) const
+{
+	AStringVector IDs;
+	IDs.reserve(m_Advancements.size());
+	for (const auto & [ID, Adv] : m_Advancements)
+	{
+		IDs.push_back(ID);
+	}
+	return IDs;
+}
+
+
+
+
+
+bool cAdvancementManager::IsCompleted(const cAdvancement & a_Advancement, const std::map<AString, Int64> & a_Progress) const
+{
+	if (a_Advancement.Criteria.empty())
+	{
+		return false;
+	}
+	if (a_Advancement.Requirements.empty())
+	{
+		for (const auto & [Name, Criterion] : a_Advancement.Criteria)
+		{
+			if (a_Progress.find(Name) == a_Progress.end())
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	for (const auto & Group : a_Advancement.Requirements)
+	{
+		bool AnyAchieved = false;
+		for (const auto & Name : Group)
+		{
+			if (a_Progress.find(Name) != a_Progress.end())
+			{
+				AnyAchieved = true;
+				break;
+			}
+		}
+		if (!AnyAchieved)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+
+
+
+
+cAdvancementProgress cAdvancementManager::BuildProgress(const cAdvancement & a_Advancement, const std::map<AString, Int64> & a_Progress) const
+{
+	cAdvancementProgress Result;
+	Result.ID = a_Advancement.ID;
+	for (const auto & [Name, Criterion] : a_Advancement.Criteria)
+	{
+		const auto it = a_Progress.find(Name);
+		if (it != a_Progress.end())
+		{
+			Result.Criteria[Name] = it->second;
+		}
+		else
+		{
+			Result.Criteria[Name] = std::nullopt;
+		}
+	}
+	return Result;
+}
+
+
+
+
+
+cAdvancementUpdate cAdvancementManager::BuildJoinUpdate(const std::map<AString, std::map<AString, Int64>> & a_Progress) const
+{
+	cAdvancementUpdate Update;
+	Update.Reset = true;
+	for (const auto & [ID, Adv] : m_Advancements)
+	{
+		Update.Advancements.push_back(Adv);
+		if (Adv.Criteria.empty())
+		{
+			continue;
+		}
+		const auto it = a_Progress.find(ID);
+		static const std::map<AString, Int64> EmptyProgress;
+		Update.Progress.push_back(BuildProgress(Adv, (it == a_Progress.end()) ? EmptyProgress : it->second));
+	}
+	return Update;
+}
+
+
+
+
+
+cAdvancementUpdate cAdvancementManager::BuildProgressUpdate(const AString & a_ID, const std::map<AString, Int64> & a_Progress) const
+{
+	cAdvancementUpdate Update;
+	Update.Reset = false;
+	const auto * Adv = GetAdvancement(a_ID);
+	if ((Adv != nullptr) && !Adv->Criteria.empty())
+	{
+		Update.Progress.push_back(BuildProgress(*Adv, a_Progress));
+	}
+	return Update;
+}
+
+
+
+
+
+AString cAdvancementManager::BuildAnnouncementJson(const cAdvancement & a_Advancement, const AString & a_PlayerName, const AString & a_PlayerUUID)
+{
+	Json::Value Title = ParseChatComponent(a_Advancement.Display.Title);
+	Json::Value Description = ParseChatComponent(a_Advancement.Display.Description);
+	Title["color"] = "green";
+
+	// The hover text of the title shows the title, a newline and the description:
+	Json::Value HoverValue(Json::objectValue);
+	HoverValue["text"] = "";
+	Json::Value HoverExtra(Json::arrayValue);
+	Json::Value TitleInHover = Title;
+	TitleInHover["color"] = "green";
+	HoverExtra.append(TitleInHover);
+	Json::Value Newline;
+	Newline["text"] = "\n";
+	HoverExtra.append(Newline);
+	HoverExtra.append(Description);
+	HoverValue["extra"] = HoverExtra;
+	Json::Value Hover;
+	Hover["action"] = "show_text";
+	Hover["value"] = HoverValue;
+	Title["hoverEvent"] = Hover;
+
+	// The second argument is a green "[title]" component:
+	Json::Value Green(Json::objectValue);
+	Green["color"] = "green";
+	Green["text"] = "[";
+	Json::Value GreenExtra(Json::arrayValue);
+	GreenExtra.append(Title);
+	Json::Value Close;
+	Close["text"] = "]";
+	GreenExtra.append(Close);
+	Green["extra"] = GreenExtra;
+
+	// The first argument is the player name with the vanilla click / hover actions:
+	Json::Value Player(Json::objectValue);
+	Player["text"] = a_PlayerName;
+	Player["insertion"] = a_PlayerName;
+	Json::Value Click;
+	Click["action"] = "suggest_command";
+	Click["value"] = "/msg " + a_PlayerName + " ";
+	Player["clickEvent"] = Click;
+	Json::Value Entity;
+	const AString Separator = ",";
+	Entity["text"] = "{name:\"" + a_PlayerName + "\"" + Separator + "id:\"" + a_PlayerUUID + "\"}";
+	Json::Value HoverEntity;
+	HoverEntity["action"] = "show_entity";
+	HoverEntity["value"] = Entity;
+	Player["hoverEvent"] = HoverEntity;
+
+	Json::Value With(Json::arrayValue);
+	With.append(Player);
+	With.append(Green);
+
+	Json::Value Root(Json::objectValue);
+	Root["translate"] = AString("chat.type.advancement.") + FrameToKey(a_Advancement.Display.Frame);
+	Root["with"] = With;
+	return JsonUtils::WriteFastString(Root);
+}

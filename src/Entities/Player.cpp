@@ -31,6 +31,9 @@
 
 #include "../CraftingRecipes.h"
 
+#include "../Advancements/AdvancementManager.h"
+#include "../CommandOrigin.h"
+
 
 
 
@@ -1408,6 +1411,213 @@ void cPlayer::AwardAchievement(const CustomStatistic a_Ach)
 
 
 
+static Int64 GetAdvancementTimeMillis(void)
+{
+	return std::chrono::duration_cast<std::chrono::milliseconds>(
+		std::chrono::system_clock::now().time_since_epoch()
+	).count();
+}
+
+
+
+
+
+void cPlayer::SendAdvancementProgress(const AString & a_ID)
+{
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	if (Manager == nullptr)
+	{
+		return;
+	}
+	static const std::map<AString, Int64> EmptyProgress;
+	const auto it = m_AdvancementProgress.find(a_ID);
+	m_ClientHandle->SendAdvancements(Manager->BuildProgressUpdate(a_ID, (it == m_AdvancementProgress.end()) ? EmptyProgress : it->second));
+}
+
+
+
+
+
+void cPlayer::OnAdvancementCompleted(const cAdvancement & a_Advancement)
+{
+	// Announce the advancement to the player's world (roots have announce_to_chat disabled):
+	if (a_Advancement.HasDisplay && a_Advancement.Display.AnnounceToChat && (m_World != nullptr))
+	{
+		const auto Json = cAdvancementManager::BuildAnnouncementJson(a_Advancement, GetName(), GetUUID().ToLongString());
+		m_World->ForEachPlayer([&Json](cPlayer & a_Target)
+			{
+				a_Target.SendMessageRaw(Json, eChatType::ctSystem);
+				return false;
+			}
+		);
+	}
+
+	// Rewards:
+	if (a_Advancement.Rewards.Experience != 0)
+	{
+		DeltaExperience(a_Advancement.Rewards.Experience);
+	}
+	if (!a_Advancement.Rewards.Recipes.empty())
+	{
+		const auto & RecipeNameMap = cRoot::Get()->GetCraftingRecipes()->GetRecipeNameMap();
+		for (const auto & Name : a_Advancement.Rewards.Recipes)
+		{
+			const auto it = RecipeNameMap.find(Name);
+			if (it == RecipeNameMap.end())
+			{
+				LOGWARNING("Advancement \"%s\" rewards unknown recipe \"%s\", ignoring", a_Advancement.ID.c_str(), Name.c_str());
+				continue;
+			}
+			AddKnownRecipe(it->second);
+		}
+	}
+	if (!a_Advancement.Rewards.Function.empty())
+	{
+		AString Output;
+		int SuccessCount = 1;
+		cRoot::Get()->GetPluginManager()->ExecuteCommandFromOrigin(
+			cCommandOrigin(m_World, GetPosition(), this),
+			this,
+			"function " + a_Advancement.Rewards.Function,
+			Output,
+			SuccessCount
+		);
+	}
+}
+
+
+
+
+
+bool cPlayer::GrantAdvancement(const AString & a_ID)
+{
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	const auto * Advancement = (Manager == nullptr) ? nullptr : Manager->GetAdvancement(a_ID);
+	if (Advancement == nullptr)
+	{
+		return false;
+	}
+
+	auto & Progress = m_AdvancementProgress[a_ID];
+	const bool WasCompleted = Manager->IsCompleted(*Advancement, Progress);
+	bool Changed = false;
+	for (const auto & [Name, Criterion] : Advancement->Criteria)
+	{
+		if (Progress.find(Name) == Progress.end())
+		{
+			Progress[Name] = GetAdvancementTimeMillis();
+			Changed = true;
+		}
+	}
+	if (!Changed)
+	{
+		return false;
+	}
+	if (Manager->IsCompleted(*Advancement, Progress) && !WasCompleted)
+	{
+		OnAdvancementCompleted(*Advancement);
+	}
+	SendAdvancementProgress(a_ID);
+	return true;
+}
+
+
+
+
+
+bool cPlayer::GrantAdvancementCriterion(const AString & a_ID, const AString & a_Criterion)
+{
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	const auto * Advancement = (Manager == nullptr) ? nullptr : Manager->GetAdvancement(a_ID);
+	if ((Advancement == nullptr) || (Advancement->Criteria.find(a_Criterion) == Advancement->Criteria.end()))
+	{
+		return false;
+	}
+
+	auto & Progress = m_AdvancementProgress[a_ID];
+	if (Progress.find(a_Criterion) != Progress.end())
+	{
+		return false;
+	}
+
+	const bool WasCompleted = Manager->IsCompleted(*Advancement, Progress);
+	Progress[a_Criterion] = GetAdvancementTimeMillis();
+	if (Manager->IsCompleted(*Advancement, Progress) && !WasCompleted)
+	{
+		OnAdvancementCompleted(*Advancement);
+	}
+	SendAdvancementProgress(a_ID);
+	return true;
+}
+
+
+
+
+
+bool cPlayer::RevokeAdvancement(const AString & a_ID)
+{
+	const auto it = m_AdvancementProgress.find(a_ID);
+	if (it == m_AdvancementProgress.end())
+	{
+		return false;
+	}
+	m_AdvancementProgress.erase(it);
+	SendAdvancementProgress(a_ID);
+	return true;
+}
+
+
+
+
+
+bool cPlayer::RevokeAdvancementCriterion(const AString & a_ID, const AString & a_Criterion)
+{
+	const auto it = m_AdvancementProgress.find(a_ID);
+	if (it == m_AdvancementProgress.end())
+	{
+		return false;
+	}
+	const auto Criterion = it->second.find(a_Criterion);
+	if (Criterion == it->second.end())
+	{
+		return false;
+	}
+	it->second.erase(Criterion);
+	SendAdvancementProgress(a_ID);
+	return true;
+}
+
+
+
+
+
+bool cPlayer::HasAdvancement(const AString & a_ID) const
+{
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	const auto * Advancement = (Manager == nullptr) ? nullptr : Manager->GetAdvancement(a_ID);
+	if (Advancement == nullptr)
+	{
+		return false;
+	}
+	static const std::map<AString, Int64> EmptyProgress;
+	const auto it = m_AdvancementProgress.find(a_ID);
+	return Manager->IsCompleted(*Advancement, (it == m_AdvancementProgress.end()) ? EmptyProgress : it->second);
+}
+
+
+
+
+
+bool cPlayer::HasAdvancementCriterion(const AString & a_ID, const AString & a_Criterion) const
+{
+	const auto it = m_AdvancementProgress.find(a_ID);
+	return (it != m_AdvancementProgress.end()) && (it->second.find(a_Criterion) != it->second.end());
+}
+
+
+
+
+
 void cPlayer::TeleportToCoords(double a_PosX, double a_PosY, double a_PosZ)
 {
 	//  ask plugins to allow teleport to the new position.
@@ -1888,6 +2098,20 @@ void cPlayer::LoadFromDisk()
 
 	m_GameMode = static_cast<eGameMode>(Root.get("gamemode", eGameMode_NotSet).asInt());
 
+	const auto & JSON_Advancements = Root["advancements"];
+	if (JSON_Advancements.isObject())
+	{
+		for (auto it = JSON_Advancements.begin(); it != JSON_Advancements.end(); ++it)
+		{
+			std::map<AString, Int64> Criteria;
+			for (auto Criterion = it->begin(); Criterion != it->end(); ++Criterion)
+			{
+				Criteria[Criterion.key().asString()] = Criterion->asInt64();
+			}
+			m_AdvancementProgress[it.key().asString()] = std::move(Criteria);
+		}
+	}
+
 	m_Inventory.LoadFromJson(Root["inventory"]);
 	m_Inventory.SetEquippedSlotNum(Root.get("equippedItemSlot", 0).asInt());
 
@@ -2000,6 +2224,18 @@ void cPlayer::SaveToDisk()
 	root["enchantmentSeed"]     = m_EnchantmentSeed;
 	root["world"]               = m_CurrentWorldName;
 	root["gamemode"]            = static_cast<int>(m_GameMode);
+
+	Json::Value JSON_Advancements(Json::objectValue);
+	for (const auto & [ID, Criteria] : m_AdvancementProgress)
+	{
+		Json::Value JSON_Criteria(Json::objectValue);
+		for (const auto & [Name, Date] : Criteria)
+		{
+			JSON_Criteria[Name] = Json::Int64(Date);
+		}
+		JSON_Advancements[ID] = JSON_Criteria;
+	}
+	root["advancements"] = JSON_Advancements;
 
 	auto JsonData = JsonUtils::WriteStyledString(root);
 	AString SourceFile = GetUUIDFileName(UUID);

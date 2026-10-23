@@ -34,6 +34,7 @@
 #include "BrewingRecipes.h"
 #include "FurnaceRecipe.h"
 #include "CraftingRecipes.h"
+#include "Advancements/AdvancementManager.h"
 #include "Protocol/RecipeMapper.h"
 #include "Bindings/PluginManager.h"
 #include "MonsterConfig.h"
@@ -175,6 +176,8 @@ bool cRoot::Run(cSettingsRepositoryInterface & a_OverridesRepo)
 	m_RecipeMapper.reset(new cRecipeMapper());
 	m_FurnaceRecipe   = new cFurnaceRecipe();
 	m_BrewingRecipes.reset(new cBrewingRecipes());
+	m_AdvancementManager.reset(new cAdvancementManager());
+	m_AdvancementManager->LoadFromFolder("advancements");
 
 	LOGD("Loading worlds...");
 	LoadWorlds(dd, *settingsRepo, IsNewIniFile);

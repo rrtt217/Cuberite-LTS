@@ -11,6 +11,8 @@
 
 #include "../UUID.h"
 
+#include <map>
+
 
 
 
@@ -18,6 +20,7 @@
 class cWindow;
 class cClientHandle;
 class cTeam;
+struct cAdvancement;
 
 
 
@@ -244,7 +247,34 @@ public:
 	/** Sets the player team, nullptr if none */
 	void SetTeam(cTeam * a_Team);
 
+	/** Grants every criterion of the advancement to the player. Returns true if anything changed. */
+	bool GrantAdvancement(const AString & a_ID);
+
+	/** Grants a single criterion of the advancement to the player. Returns true if anything changed. */
+	bool GrantAdvancementCriterion(const AString & a_ID, const AString & a_Criterion);
+
+	/** Removes all progress on the advancement. Returns true if anything changed. */
+	bool RevokeAdvancement(const AString & a_ID);
+
+	/** Removes a single criterion from the advancement progress. Returns true if anything changed. */
+	bool RevokeAdvancementCriterion(const AString & a_ID, const AString & a_Criterion);
+
+	/** Returns true if the advancement is completed. */
+	bool HasAdvancement(const AString & a_ID) const;
+
+	/** Returns true if the specified criterion of the advancement is achieved. */
+	bool HasAdvancementCriterion(const AString & a_ID, const AString & a_Criterion) const;
+
 	// tolua_end
+
+	/** Returns the achieved criteria of all advancements (internal, not exported to Lua). */
+	const std::map<AString, std::map<AString, Int64>> & GetAdvancementProgress(void) const { return m_AdvancementProgress; }
+
+	/** Sends the current progress of one advancement to the client. */
+	void SendAdvancementProgress(const AString & a_ID);
+
+	/** Applies the announcement and rewards of a newly completed advancement. */
+	void OnAdvancementCompleted(const cAdvancement & a_Advancement);
 
 	/** Forces the player to query the scoreboard for his team */
 	cTeam * UpdateTeam(void);
@@ -736,6 +766,9 @@ private:
 	cEntity * m_Spectating;
 
 	StatisticsManager m_Stats;
+
+	/** Maps an advancement identifier to the achieved criteria and their timestamps (milliseconds). */
+	std::map<AString, std::map<AString, Int64>> m_AdvancementProgress;
 
 	/** How long till the player's inventory will be saved
 	Default save interval is #defined in PLAYER_INVENTORY_SAVE_INTERVAL */

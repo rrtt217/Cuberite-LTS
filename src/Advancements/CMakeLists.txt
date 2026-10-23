@@ -1,8 +1,8 @@
 target_sources(
 	${CMAKE_PROJECT_NAME} PRIVATE
 
-	AdvancementTestData.cpp
+	AdvancementManager.cpp
 
 	Advancement.h
-	AdvancementTestData.h
+	AdvancementManager.h
 )

@@ -1,7 +1,7 @@
 #include "Globals.h"  // NOTE: MSVC stupidness requires this to be the same across all modules
 
 #include "ClientHandle.h"
-#include "Advancements/AdvancementTestData.h"
+#include "Advancements/AdvancementManager.h"
 #include "BlockInfo.h"
 #include "Server.h"
 #include "World.h"
@@ -494,7 +494,11 @@ void cClientHandle::FinishAuthenticate()
 	// see the M0 protocol spec (vanilla-1.12.2-advancements-protocol.md) under the specs directory:
 	if ((GetProtocolVersion() >= 335) && (GetProtocolVersion() < 393))
 	{
-		SendAdvancements(BuildAdvancementTestTree());
+		auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+		if (AdvancementManager != nullptr)
+		{
+			SendAdvancements(AdvancementManager->BuildJoinUpdate(m_Player->GetAdvancementProgress()));
+		}
 	}
 
 	// Delay the first ping until the client "settles down"

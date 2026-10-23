@@ -16,6 +16,7 @@
 class cItem;
 class cMonsterConfig;
 class cBrewingRecipes;
+class cAdvancementManager;
 class cCraftingRecipes;
 class cRecipeMapper;
 class cFurnaceRecipe;
@@ -93,6 +94,7 @@ public:
 	cRecipeMapper * GetRecipeMapper(void) { return m_RecipeMapper.get(); }
 	cFurnaceRecipe *   GetFurnaceRecipe  (void) { return m_FurnaceRecipe; }    // Exported in ManualBindings.cpp with quite a different signature
 	cBrewingRecipes *  GetBrewingRecipes (void) { return m_BrewingRecipes.get(); }    // Exported in ManualBindings.cpp
+	cAdvancementManager * GetAdvancementManager(void) { return m_AdvancementManager.get(); }
 
 	/** Returns the (read-write) storage for registered block types. */
 	// BlockTypeRegistry & GetBlockTypeRegistry() { return m_BlockTypeRegistry; }
@@ -222,6 +224,7 @@ private:
 	std::unique_ptr<cRecipeMapper> m_RecipeMapper;
 	cFurnaceRecipe *   m_FurnaceRecipe;
 	std::unique_ptr<cBrewingRecipes> m_BrewingRecipes;
+	std::unique_ptr<cAdvancementManager> m_AdvancementManager;
 	cWebAdmin *        m_WebAdmin;
 	cPluginManager *   m_PluginManager;
 	cAuthenticator     m_Authenticator;

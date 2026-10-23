@@ -1,8 +1,7 @@
 // Advancement.h
 
-// Declares the data structures describing a single advancement and its per-player progress.
-// Only the fields needed by the 1.12.2 Advancements packet are modelled here; the JSON loader and
-// the criteria engine are added by follow-up branches.
+// Declares the data structures describing a single advancement, its per-player progress and the
+// update carried by one 1.12.2 Advancements packet.
 
 #pragma once
 
@@ -10,6 +9,7 @@
 #include "../Item.h"
 
 #include <map>
+#include <optional>
 #include <vector>
 
 
@@ -17,8 +17,7 @@
 
 
 /** The frame drawn around an advancement's icon.
-The values are not the on-wire values; the protocol translates them when serializing
-(see cProtocol_1_12::SendAdvancements). */
+The values are not the on-wire values; the protocol translates them when serializing. */
 enum class eAdvancementFrame
 {
 	Task,
@@ -39,10 +38,35 @@ struct cAdvancementDisplay
 	cItem Icon;
 	eAdvancementFrame Frame = eAdvancementFrame::Task;
 	bool ShowToast = true;
+	bool AnnounceToChat = true;
 	bool Hidden = false;
 	AString Background;  // Empty when the advancement has no background texture
 	float X = 0;
 	float Y = 0;
+};
+
+
+
+
+
+/** A single criterion of an advancement.
+The trigger and its conditions are consumed by the trigger layer (a follow-up branch); the manager
+only needs the criterion name and trigger for now. */
+struct cAdvancementCriterion
+{
+	AString Trigger;
+};
+
+
+
+
+
+/** The rewards granted when an advancement is completed. */
+struct cAdvancementRewards
+{
+	int Experience = 0;
+	AStringVector Recipes;
+	AString Function;
 };
 
 
@@ -56,21 +80,22 @@ struct cAdvancement
 	AString Parent;  // Empty for root advancements
 	bool HasDisplay = false;
 	cAdvancementDisplay Display;
-	std::vector<AString> Criteria;
+	std::map<AString, cAdvancementCriterion> Criteria;
 	std::vector<std::vector<AString>> Requirements;  // Empty means "all criteria are required"
+	cAdvancementRewards Rewards;
+	AString LegacyAchievement;  // Non-empty maps the completion to a 1.8-1.11 achievement (M6)
 };
 
 
 
 
 
-/** The progress a player has made on a single advancement. */
+/** The progress a player has made on a single advancement.
+Every criterion of the advancement is listed; an empty optional means "not achieved yet". */
 struct cAdvancementProgress
 {
 	AString ID;
-
-	/** Maps an achieved criterion name to the time it was achieved, in milliseconds since the Unix epoch. */
-	std::map<AString, Int64> AchievedCriteria;
+	std::map<AString, std::optional<Int64>> Criteria;
 };
 
 

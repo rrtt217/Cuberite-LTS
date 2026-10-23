@@ -256,6 +256,7 @@ set(symlinks
 	Plugins
 	Prefabs
 	Protocol
+	advancements
 	webadmin
 	brewing.txt
 	crafting.txt

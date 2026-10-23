@@ -1,0 +1,30 @@
+{
+  "parent": "cuberite:m1/root",
+  "display": {
+    "title": {
+      "text": "M1 Child"
+    },
+    "description": {
+      "text": "Granted from Lua to test the update path"
+    },
+    "icon": {
+      "item": 280
+    },
+    "frame": "task",
+    "x": 1,
+    "y": 1
+  },
+  "criteria": {
+    "child_criterion": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "child_criterion"
+    ]
+  ],
+  "rewards": {
+    "experience": 10
+  }
+}

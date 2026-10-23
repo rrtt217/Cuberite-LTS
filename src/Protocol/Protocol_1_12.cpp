@@ -1172,9 +1172,9 @@ void cProtocol_1_12::SendAdvancements(const cAdvancementUpdate & a_Update)
 		}
 
 		Pkt.WriteVarInt32(static_cast<UInt32>(Adv.Criteria.size()));
-		for (const auto & Criterion : Adv.Criteria)
+		for (const auto & [Name, Criterion] : Adv.Criteria)
 		{
-			Pkt.WriteString(Criterion);
+			Pkt.WriteString(Name);
 		}
 
 		Pkt.WriteVarInt32(static_cast<UInt32>(Adv.Requirements.size()));
@@ -1198,12 +1198,15 @@ void cProtocol_1_12::SendAdvancements(const cAdvancementUpdate & a_Update)
 	for (const auto & Progress : a_Update.Progress)
 	{
 		Pkt.WriteString(Progress.ID);
-		Pkt.WriteVarInt32(static_cast<UInt32>(Progress.AchievedCriteria.size()));
-		for (const auto & [Criterion, Date] : Progress.AchievedCriteria)
+		Pkt.WriteVarInt32(static_cast<UInt32>(Progress.Criteria.size()));
+		for (const auto & [Criterion, Date] : Progress.Criteria)
 		{
 			Pkt.WriteString(Criterion);
-			Pkt.WriteBool(true);
-			Pkt.WriteBEInt64(Date);
+			Pkt.WriteBool(Date.has_value());
+			if (Date.has_value())
+			{
+				Pkt.WriteBEInt64(*Date);
+			}
 		}
 	}
 }
