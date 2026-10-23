@@ -266,6 +266,17 @@ public:
 	/** Returns true if the specified criterion of the advancement is achieved. */
 	bool HasAdvancementCriterion(const AString & a_ID, const AString & a_Criterion) const;
 
+	/** Returns true if the identifier names a loaded advancement. */
+	bool IsValidAdvancement(const AString & a_ID) const;
+
+	/** Grants the advancement tree selected by a_Mode (only / until / from / through / everything).
+	Returns the number of changed advancements, or -1 when the identifier or mode is invalid.
+	When a_Criterion is non-empty, only that criterion is granted on each selected advancement. */
+	int GrantAdvancementTree(const AString & a_ID, const AString & a_Mode, const AString & a_Criterion);
+
+	/** Revokes the advancement tree selected by a_Mode. Returns the number of changes, or -1. */
+	int RevokeAdvancementTree(const AString & a_ID, const AString & a_Mode, const AString & a_Criterion);
+
 	// tolua_end
 
 	/** Returns the achieved criteria of all advancements (internal, not exported to Lua). */

@@ -1617,6 +1617,152 @@ bool cPlayer::RevokeAdvancementCriterion(const AString & a_ID, const AString & a
 
 
 
+bool cPlayer::IsValidAdvancement(const AString & a_ID) const
+{
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	return (Manager != nullptr) && Manager->IsValid(a_ID);
+}
+
+
+
+
+
+static void CollectDescendants(const cAdvancementManager & a_Manager, const AString & a_ID, std::vector<AString> & a_Out)
+{
+	std::set<AString> Seen;
+	std::vector<AString> Frontier{a_ID};
+	while (!Frontier.empty())
+	{
+		std::vector<AString> Next;
+		for (const auto & Current : Frontier)
+		{
+			for (const auto & Child : a_Manager.GetChildren(Current))
+			{
+				if (Seen.insert(Child).second)
+				{
+					a_Out.push_back(Child);
+					Next.push_back(Child);
+				}
+			}
+		}
+		Frontier = std::move(Next);
+	}
+}
+
+
+
+
+
+static bool CollectAdvancementTree(const cAdvancementManager & a_Manager, const AString & a_ID, const AString & a_Mode, std::vector<AString> & a_Out)
+{
+	if (a_Mode == "everything")
+	{
+		a_Out = a_Manager.GetAllIDs();
+		return true;
+	}
+	if (!a_Manager.IsValid(a_ID))
+	{
+		return false;
+	}
+
+	if ((a_Mode != "only") && (a_Mode != "until") && (a_Mode != "from") && (a_Mode != "through"))
+	{
+		return false;
+	}
+
+	std::set<AString> Selected;
+	Selected.insert(a_ID);
+	if ((a_Mode == "until") || (a_Mode == "through"))
+	{
+		AString Current = a_Manager.GetParent(a_ID);
+		while (!Current.empty())
+		{
+			Selected.insert(Current);
+			Current = a_Manager.GetParent(Current);
+		}
+	}
+	if ((a_Mode == "from") || (a_Mode == "through"))
+	{
+		std::vector<AString> Descendants;
+		CollectDescendants(a_Manager, a_ID, Descendants);
+		Selected.insert(Descendants.begin(), Descendants.end());
+	}
+	a_Out.assign(Selected.begin(), Selected.end());
+	return true;
+}
+
+
+
+
+
+int cPlayer::GrantAdvancementTree(const AString & a_ID, const AString & a_Mode, const AString & a_Criterion)
+{
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	if (Manager == nullptr)
+	{
+		return -1;
+	}
+	std::vector<AString> IDs;
+	if (!CollectAdvancementTree(*Manager, a_ID, a_Mode, IDs))
+	{
+		return -1;
+	}
+	int Changed = 0;
+	for (const auto & ID : IDs)
+	{
+		if (a_Criterion.empty())
+		{
+			if (GrantAdvancement(ID))
+			{
+				++Changed;
+			}
+		}
+		else if (GrantAdvancementCriterion(ID, a_Criterion))
+		{
+			++Changed;
+		}
+	}
+	return Changed;
+}
+
+
+
+
+
+int cPlayer::RevokeAdvancementTree(const AString & a_ID, const AString & a_Mode, const AString & a_Criterion)
+{
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	if (Manager == nullptr)
+	{
+		return -1;
+	}
+	std::vector<AString> IDs;
+	if (!CollectAdvancementTree(*Manager, a_ID, a_Mode, IDs))
+	{
+		return -1;
+	}
+	int Changed = 0;
+	for (const auto & ID : IDs)
+	{
+		if (a_Criterion.empty())
+		{
+			if (RevokeAdvancement(ID))
+			{
+				++Changed;
+			}
+		}
+		else if (RevokeAdvancementCriterion(ID, a_Criterion))
+		{
+			++Changed;
+		}
+	}
+	return Changed;
+}
+
+
+
+
+
 bool cPlayer::HasAdvancement(const AString & a_ID) const
 {
 	const auto * Manager = cRoot::Get()->GetAdvancementManager();

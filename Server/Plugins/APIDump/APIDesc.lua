@@ -10732,6 +10732,31 @@ a_Player:OpenWindow(Window);
 					},
 					Notes = "Grants a single criterion of the advancement to the player. Returns true if anything changed. The advancement is completed (and announced) when its requirements are met."
 				},
+				GrantAdvancementTree =
+				{
+					Params =
+					{
+						{
+							Name = "ID",
+							Type = "string",
+						},
+						{
+							Name = "Mode",
+							Type = "string",
+						},
+						{
+							Name = "Criterion",
+							Type = "string",
+						},
+					},
+					Returns =
+					{
+						{
+							Type = "number",
+						},
+					},
+					Notes = "Grants a whole advancement tree: only = the advancement itself, until = it and its ancestors, from = it and its descendants, through = both, everything = every loaded advancement. An empty Criterion grants whole advancements; a non-empty one grants just that criterion on each selected advancement. Returns the number of changes, or -1 for an unknown identifier or mode."
+				},
 				HasAdvancement =
 				{
 					Params =
@@ -10770,6 +10795,23 @@ a_Player:OpenWindow(Window);
 					},
 					Notes = "Returns true if the specified criterion of the advancement is achieved."
 				},
+				IsValidAdvancement =
+				{
+					Params =
+					{
+						{
+							Name = "ID",
+							Type = "string",
+						},
+					},
+					Returns =
+					{
+						{
+							Type = "boolean",
+						},
+					},
+					Notes = "Returns true if the identifier names a loaded advancement."
+				},
 				RevokeAdvancement =
 				{
 					Params =
@@ -10807,6 +10849,31 @@ a_Player:OpenWindow(Window);
 						},
 					},
 					Notes = "Removes a single criterion from the advancement progress. Returns true if anything changed."
+				},
+				RevokeAdvancementTree =
+				{
+					Params =
+					{
+						{
+							Name = "ID",
+							Type = "string",
+						},
+						{
+							Name = "Mode",
+							Type = "string",
+						},
+						{
+							Name = "Criterion",
+							Type = "string",
+						},
+					},
+					Returns =
+					{
+						{
+							Type = "number",
+						},
+					},
+					Notes = "Revokes a whole advancement tree using the same mode and criterion rules as GrantAdvancementTree. Returns the number of changes, or -1 for an unknown identifier or mode."
 				},
 				GetSuffix =
 				{
