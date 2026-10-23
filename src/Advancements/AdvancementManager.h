@@ -76,6 +76,9 @@ public:
 	/** Runs the minecraft:effects_changed criteria after the player's effects changed. */
 	void TriggerEffectsChanged(cPlayer & a_Player);
 
+	/** Runs the minecraft:changed_dimension criteria after a player changed dimension. */
+	void TriggerChangedDimension(cPlayer & a_Player, int a_From, int a_To);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 

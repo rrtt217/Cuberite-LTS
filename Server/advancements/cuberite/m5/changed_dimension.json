@@ -1,0 +1,31 @@
+{
+  "parent": "cuberite:m1/root",
+  "display": {
+    "title": {
+      "text": "M5 Netherbound"
+    },
+    "description": {
+      "text": "Travel from the overworld to the nether"
+    },
+    "icon": {
+      "item": 348
+    },
+    "frame": "task",
+    "x": 1,
+    "y": 16
+  },
+  "criteria": {
+    "travelled": {
+      "trigger": "minecraft:changed_dimension",
+      "conditions": {
+        "from": "overworld",
+        "to": "the_nether"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "travelled"
+    ]
+  ]
+}

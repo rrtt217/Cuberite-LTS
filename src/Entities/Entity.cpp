@@ -1671,11 +1671,22 @@ void cEntity::DoMoveToWorld(const sWorldChangeInfo & a_WorldChangeInfo)
 
 	// Remove from the old world
 	const auto OldWorld = m_World;
+	const int OldDimension = OldWorld->GetDimension();
+	const int NewDimension = a_WorldChangeInfo.m_NewWorld->GetDimension();
 	auto Self = m_World->RemoveEntity(*this);
 
 	// Update entity:
 	ResetPosition(a_WorldChangeInfo.m_NewPosition);
 	SetWorld(a_WorldChangeInfo.m_NewWorld);
+
+	if (IsPlayer() && (OldDimension != NewDimension))
+	{
+		auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+		if (AdvancementManager != nullptr)
+		{
+			AdvancementManager->TriggerChangedDimension(*static_cast<cPlayer *>(this), OldDimension, NewDimension);
+		}
+	}
 
 	// Don't do anything after adding as the old world's CS no longer protects us
 	a_WorldChangeInfo.m_NewWorld->AddEntity(std::move(Self), OldWorld);

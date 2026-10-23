@@ -301,7 +301,8 @@ namespace
 			(a_Trigger == "minecraft:used_ender_eye") ||
 			(a_Trigger == "minecraft:used_totem") ||
 			(a_Trigger == "minecraft:recipe_unlocked") ||
-			(a_Trigger == "minecraft:effects_changed");
+			(a_Trigger == "minecraft:effects_changed") ||
+			(a_Trigger == "minecraft:changed_dimension");
 	}
 
 
@@ -340,6 +341,23 @@ namespace
 						a_Reason = "unsupported entity predicate \"" + Key + "\"";
 						return false;
 					}
+				}
+			}
+			return true;
+		}
+		if (a_Trigger == "minecraft:changed_dimension")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+			{
+				const AString Key = it.key().asString();
+				if ((Key != "from") && (Key != "to"))
+				{
+					a_Reason = "unsupported condition \"" + Key + "\"";
+					return false;
 				}
 			}
 			return true;
@@ -1478,6 +1496,69 @@ void cAdvancementManager::TriggerEffectsChanged(cPlayer & a_Player)
 			continue;
 		}
 		if (!Entry.Conditions.isObject() || (Entry.Conditions.size() == 0))
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+	AString DimensionName(int a_Dimension)
+	{
+		switch (a_Dimension)
+		{
+			case dimNether: return "the_nether";
+			case dimEnd:    return "the_end";
+			default:        return "overworld";
+		}
+	}
+
+
+
+
+
+	AString NormalizeDimensionName(const AString & a_Name)
+	{
+		AString Name = a_Name;
+		if (Name.compare(0, 10, "minecraft:") == 0)
+		{
+			Name.erase(0, 10);
+		}
+		return Name;
+	}
+
+
+
+
+
+void cAdvancementManager::TriggerChangedDimension(cPlayer & a_Player, int a_From, int a_To)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:changed_dimension");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		bool Matches = true;
+		if (Entry.Conditions.isObject())
+		{
+			if (Entry.Conditions.isMember("from") &&
+				(NormalizeDimensionName(Entry.Conditions["from"].asString()) != DimensionName(a_From)))
+			{
+				Matches = false;
+			}
+			if (Entry.Conditions.isMember("to") &&
+				(NormalizeDimensionName(Entry.Conditions["to"].asString()) != DimensionName(a_To)))
+			{
+				Matches = false;
+			}
+		}
+		if (Matches)
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
