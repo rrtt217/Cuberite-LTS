@@ -2,6 +2,8 @@
 #include "Globals.h"  // NOTE: MSVC stupidness requires this to be the same across all modules
 
 #include "Wolf.h"
+#include "../Advancements/AdvancementManager.h"
+#include "../Root.h"
 #include "../World.h"
 #include "../Entities/Player.h"
 #include "../Items/ItemHandler.h"
@@ -186,6 +188,12 @@ void cWolf::OnRightClicked(cPlayer & a_Player)
 				SetIsTame(true);
 				SetOwner(a_Player.GetName(), a_Player.GetUUID());
 				m_World->BroadcastEntityAnimation(*this, EntityAnimation::WolfTamingSucceeds);
+
+				auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+				if (AdvancementManager != nullptr)
+				{
+					AdvancementManager->TriggerTameAnimal(a_Player, *this);
+				}
 			}
 			else
 			{

@@ -94,6 +94,9 @@ public:
 	/** Runs the minecraft:summoned_entity criteria for an entity the player summoned. */
 	void TriggerSummonedEntity(cPlayer & a_Player, const cEntity & a_Entity);
 
+	/** Runs the minecraft:tame_animal criteria for a tamed animal. */
+	void TriggerTameAnimal(cPlayer & a_Player, const cEntity & a_Animal);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 

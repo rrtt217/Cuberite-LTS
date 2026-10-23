@@ -307,7 +307,8 @@ namespace
 			(a_Trigger == "minecraft:enter_block") ||
 			(a_Trigger == "minecraft:enchanted_item") ||
 			(a_Trigger == "minecraft:slept_in_bed") ||
-			(a_Trigger == "minecraft:summoned_entity");
+			(a_Trigger == "minecraft:summoned_entity") ||
+			(a_Trigger == "minecraft:tame_animal");
 	}
 
 
@@ -346,6 +347,22 @@ namespace
 						a_Reason = "unsupported entity predicate \"" + Key + "\"";
 						return false;
 					}
+				}
+			}
+			return true;
+		}
+		if (a_Trigger == "minecraft:tame_animal")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+			{
+				if (it.key().asString() != "entity")
+				{
+					a_Reason = "unsupported condition \"" + it.key().asString() + "\"";
+					return false;
 				}
 			}
 			return true;
@@ -1741,6 +1758,27 @@ void cAdvancementManager::TriggerSummonedEntity(cPlayer & a_Player, const cEntit
 			continue;
 		}
 		if (MatchEntityPredicate(Entry.Conditions, a_Entity))
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerTameAnimal(cPlayer & a_Player, const cEntity & a_Animal)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:tame_animal");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		if (MatchEntityPredicate(Entry.Conditions, a_Animal))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
