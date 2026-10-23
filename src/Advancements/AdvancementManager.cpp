@@ -491,20 +491,95 @@ cAdvancementProgress cAdvancementManager::BuildProgress(const cAdvancement & a_A
 
 
 
+std::set<AString> cAdvancementManager::ComputeVisible(const std::map<AString, std::map<AString, Int64>> & a_Progress) const
+{
+	std::set<AString> Visible;
+
+	// Adds the advancement and all its ancestors up to the tab root:
+	const auto AddWithAncestors = [this, &Visible](const AString & a_ID)
+	{
+		AString Current = a_ID;
+		while (!Current.empty())
+		{
+			Visible.insert(Current);
+			const auto It = m_Advancements.find(Current);
+			if (It == m_Advancements.end())
+			{
+				break;
+			}
+			Current = It->second.Parent;
+		}
+	};
+
+	for (const auto & [ID, Advancement] : m_Advancements)
+	{
+		const auto ProgressIt = a_Progress.find(ID);
+		if (ProgressIt == a_Progress.end())
+		{
+			continue;
+		}
+		if (!IsCompleted(Advancement, ProgressIt->second))
+		{
+			continue;
+		}
+
+		// Two parent / child steps around the completed advancement:
+		std::set<AString> Reachable{ID};
+		std::vector<AString> Frontier{ID};
+		for (int Depth = 0; Depth < 2; ++Depth)
+		{
+			std::vector<AString> Next;
+			for (const auto & Current : Frontier)
+			{
+				const auto CurrentIt = m_Advancements.find(Current);
+				if ((CurrentIt != m_Advancements.end()) && !CurrentIt->second.Parent.empty() && Reachable.insert(CurrentIt->second.Parent).second)
+				{
+					Next.push_back(CurrentIt->second.Parent);
+				}
+				const auto Children = m_Children.find(Current);
+				if (Children != m_Children.end())
+				{
+					for (const auto & Child : Children->second)
+					{
+						if (Reachable.insert(Child).second)
+						{
+							Next.push_back(Child);
+						}
+					}
+				}
+			}
+			Frontier = std::move(Next);
+		}
+		for (const auto & VisibleID : Reachable)
+		{
+			AddWithAncestors(VisibleID);
+		}
+	}
+	return Visible;
+}
+
+
+
+
+
 cAdvancementUpdate cAdvancementManager::BuildJoinUpdate(const std::map<AString, std::map<AString, Int64>> & a_Progress) const
 {
 	cAdvancementUpdate Update;
 	Update.Reset = true;
-	for (const auto & [ID, Adv] : m_Advancements)
+	static const std::map<AString, Int64> EmptyProgress;
+	for (const auto & ID : ComputeVisible(a_Progress))
 	{
-		Update.Advancements.push_back(Adv);
-		if (Adv.Criteria.empty())
+		const auto * Advancement = GetAdvancement(ID);
+		if (Advancement == nullptr)
 		{
 			continue;
 		}
-		const auto it = a_Progress.find(ID);
-		static const std::map<AString, Int64> EmptyProgress;
-		Update.Progress.push_back(BuildProgress(Adv, (it == a_Progress.end()) ? EmptyProgress : it->second));
+		Update.Advancements.push_back(*Advancement);
+		if (!Advancement->Criteria.empty())
+		{
+			const auto It = a_Progress.find(ID);
+			Update.Progress.push_back(BuildProgress(*Advancement, (It == a_Progress.end()) ? EmptyProgress : It->second));
+		}
 	}
 	return Update;
 }
@@ -513,14 +588,55 @@ cAdvancementUpdate cAdvancementManager::BuildJoinUpdate(const std::map<AString, 
 
 
 
-cAdvancementUpdate cAdvancementManager::BuildProgressUpdate(const AString & a_ID, const std::map<AString, Int64> & a_Progress) const
+cAdvancementUpdate cAdvancementManager::BuildUpdate(
+	const std::map<AString, std::map<AString, Int64>> & a_Progress,
+	const std::set<AString> & a_VisibleBefore,
+	const std::set<AString> & a_VisibleAfter,
+	const AString & a_ChangedID
+) const
 {
 	cAdvancementUpdate Update;
 	Update.Reset = false;
-	const auto * Adv = GetAdvancement(a_ID);
-	if ((Adv != nullptr) && !Adv->Criteria.empty())
+	static const std::map<AString, Int64> EmptyProgress;
+
+	// The definitions that became visible:
+	std::set<AString> ProgressIDs;
+	for (const auto & ID : a_VisibleAfter)
 	{
-		Update.Progress.push_back(BuildProgress(*Adv, a_Progress));
+		if (a_VisibleBefore.find(ID) == a_VisibleBefore.end())
+		{
+			const auto * Advancement = GetAdvancement(ID);
+			if (Advancement != nullptr)
+			{
+				Update.Advancements.push_back(*Advancement);
+			}
+			ProgressIDs.insert(ID);
+		}
+	}
+
+	// The changed advancement, if it is visible:
+	if (a_VisibleAfter.find(a_ChangedID) != a_VisibleAfter.end())
+	{
+		ProgressIDs.insert(a_ChangedID);
+	}
+	for (const auto & ID : ProgressIDs)
+	{
+		const auto * Advancement = GetAdvancement(ID);
+		if ((Advancement == nullptr) || Advancement->Criteria.empty())
+		{
+			continue;
+		}
+		const auto It = a_Progress.find(ID);
+		Update.Progress.push_back(BuildProgress(*Advancement, (It == a_Progress.end()) ? EmptyProgress : It->second));
+	}
+
+	// The advancements that are no longer visible:
+	for (const auto & ID : a_VisibleBefore)
+	{
+		if (a_VisibleAfter.find(ID) == a_VisibleAfter.end())
+		{
+			Update.Removals.push_back(ID);
+		}
 	}
 	return Update;
 }

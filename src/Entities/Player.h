@@ -12,6 +12,7 @@
 #include "../UUID.h"
 
 #include <map>
+#include <set>
 
 
 
@@ -270,8 +271,8 @@ public:
 	/** Returns the achieved criteria of all advancements (internal, not exported to Lua). */
 	const std::map<AString, std::map<AString, Int64>> & GetAdvancementProgress(void) const { return m_AdvancementProgress; }
 
-	/** Sends the current progress of one advancement to the client. */
-	void SendAdvancementProgress(const AString & a_ID);
+	/** Sends an incremental advancement update to the client. */
+	void SendAdvancementUpdate(const std::set<AString> & a_VisibleBefore, const std::set<AString> & a_VisibleAfter, const AString & a_ChangedID);
 
 	/** Applies the announcement and rewards of a newly completed advancement. */
 	void OnAdvancementCompleted(const cAdvancement & a_Advancement);

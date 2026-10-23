@@ -46,8 +46,8 @@
 
 ## 3. 发送行为
 
-- 入服：1.12–1.12.2 玩家在 SendStatistics 之后收到一次 reset=true 的更新，内容是**当前加载的全部 advancement** + 每个 advancement 的全部 criteria 进度（管理器 BuildJoinUpdate）。这是原版"可见集合"的超集；客户端按父节点完成情况过滤显示（见观察记录 §6）。
-- 授予/移除：reset=false，只带该 advancement 的 progress（全部 criteria）；客户端已知定义，不需要重复声明。
+- 入服：1.12–1.12.2 玩家在 SendStatistics 之后收到一次 reset=true 的更新，内容是**当前可见集合** + 每个条目的全部 criteria 进度（管理器 BuildJoinUpdate / ComputeVisible）。可见性按观察记录推导：某个 advancement 完成时，它自身 + 父/子方向 2 步内的节点 + 到 root 的祖先链进入可见集合；未授予 root 的页签不会被下发（客户端不会按进度过滤，实测它会显示收到的全部节点与 root 页签）。
+- 授予/移除：reset=false；映射段只放**新变为可见**的定义，进度段放被改动的条目 + 新可见条目，移除段放不再可见的条目。
 - root：数据里显式 show_toast=false / announce_to_chat=false；非 root 默认 true。
 
 ## 4. 授予 / 移除语义
@@ -85,7 +85,8 @@ M2 的 /advancement 还需要遍历（父/子/全部 ID），留给 M2 导出（
 
 ## 8. 已知偏差 / 后续
 
-- 入服发全树而非原版可见集合；客户端过滤行为需三节点对照（M1 的 demo 数据已包含 root→child→grandchild）。
+- 可见性规则是"完成节点 + 2 步邻域 + 祖先"的近似：原版对更深的补发（depth ≥ 3）没有抓包样本，M3 触发器落地后再用实机对照。
+- M1 的 demo 数据（第二个未授予 root、root→child→grandchild）用于验证：fresh 玩家应看到空页签、root 授予后出现 3 节点、第二个 root 不应出页签。
 - 没有触发器：criteria 目前只能由 API/命令授予；M3/M4 接触发器。
 - rewards.loot 不支持。
 - GetAdvancementProgress 未导出到 Lua（M2 若需要再导）。

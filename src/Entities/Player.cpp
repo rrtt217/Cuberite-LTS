@@ -1422,16 +1422,14 @@ static Int64 GetAdvancementTimeMillis(void)
 
 
 
-void cPlayer::SendAdvancementProgress(const AString & a_ID)
+void cPlayer::SendAdvancementUpdate(const std::set<AString> & a_VisibleBefore, const std::set<AString> & a_VisibleAfter, const AString & a_ChangedID)
 {
 	const auto * Manager = cRoot::Get()->GetAdvancementManager();
 	if (Manager == nullptr)
 	{
 		return;
 	}
-	static const std::map<AString, Int64> EmptyProgress;
-	const auto it = m_AdvancementProgress.find(a_ID);
-	m_ClientHandle->SendAdvancements(Manager->BuildProgressUpdate(a_ID, (it == m_AdvancementProgress.end()) ? EmptyProgress : it->second));
+	m_ClientHandle->SendAdvancements(Manager->BuildUpdate(m_AdvancementProgress, a_VisibleBefore, a_VisibleAfter, a_ChangedID));
 }
 
 
@@ -1498,6 +1496,7 @@ bool cPlayer::GrantAdvancement(const AString & a_ID)
 		return false;
 	}
 
+	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
 	auto & Progress = m_AdvancementProgress[a_ID];
 	const bool WasCompleted = Manager->IsCompleted(*Advancement, Progress);
 	bool Changed = false;
@@ -1517,7 +1516,8 @@ bool cPlayer::GrantAdvancement(const AString & a_ID)
 	{
 		OnAdvancementCompleted(*Advancement);
 	}
-	SendAdvancementProgress(a_ID);
+	const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+	SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
 	return true;
 }
 
@@ -1534,6 +1534,7 @@ bool cPlayer::GrantAdvancementCriterion(const AString & a_ID, const AString & a_
 		return false;
 	}
 
+	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
 	auto & Progress = m_AdvancementProgress[a_ID];
 	if (Progress.find(a_Criterion) != Progress.end())
 	{
@@ -1546,7 +1547,8 @@ bool cPlayer::GrantAdvancementCriterion(const AString & a_ID, const AString & a_
 	{
 		OnAdvancementCompleted(*Advancement);
 	}
-	SendAdvancementProgress(a_ID);
+	const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+	SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
 	return true;
 }
 
@@ -1561,8 +1563,14 @@ bool cPlayer::RevokeAdvancement(const AString & a_ID)
 	{
 		return false;
 	}
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	const auto VisibleBefore = (Manager == nullptr) ? std::set<AString>() : Manager->ComputeVisible(m_AdvancementProgress);
 	m_AdvancementProgress.erase(it);
-	SendAdvancementProgress(a_ID);
+	if (Manager != nullptr)
+	{
+		const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+		SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
+	}
 	return true;
 }
 
@@ -1582,8 +1590,14 @@ bool cPlayer::RevokeAdvancementCriterion(const AString & a_ID, const AString & a
 	{
 		return false;
 	}
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	const auto VisibleBefore = (Manager == nullptr) ? std::set<AString>() : Manager->ComputeVisible(m_AdvancementProgress);
 	it->second.erase(Criterion);
-	SendAdvancementProgress(a_ID);
+	if (Manager != nullptr)
+	{
+		const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+		SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
+	}
 	return true;
 }
 

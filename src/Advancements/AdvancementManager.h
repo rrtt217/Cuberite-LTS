@@ -8,6 +8,7 @@
 #include "Advancement.h"
 
 #include <map>
+#include <set>
 
 
 
@@ -43,11 +44,23 @@ public:
 	/** Builds the progress entry for the advancement, listing every criterion. */
 	cAdvancementProgress BuildProgress(const cAdvancement & a_Advancement, const std::map<AString, Int64> & a_Progress) const;
 
-	/** Builds the full-tree update sent when a 1.12+ player joins. */
+	/** Returns the identifiers of the advancements that are currently visible to the player:
+	a completed advancement and everything within two parent / child steps of it, plus the ancestors
+	up to the tab root (so that the client can create the tab). */
+	std::set<AString> ComputeVisible(const std::map<AString, std::map<AString, Int64>> & a_Progress) const;
+
+	/** Builds the update sent when a 1.12+ player joins: only visible advancements, with progress. */
 	cAdvancementUpdate BuildJoinUpdate(const std::map<AString, std::map<AString, Int64>> & a_Progress) const;
 
-	/** Builds a progress-only update for one advancement. */
-	cAdvancementUpdate BuildProgressUpdate(const AString & a_ID, const std::map<AString, Int64> & a_Progress) const;
+	/** Builds an incremental update after a progress change.
+	Mapping carries the advancements that became visible, progress carries the changed advancement
+	and the newly visible ones, removals carries the advancements that are no longer visible. */
+	cAdvancementUpdate BuildUpdate(
+		const std::map<AString, std::map<AString, Int64>> & a_Progress,
+		const std::set<AString> & a_VisibleBefore,
+		const std::set<AString> & a_VisibleAfter,
+		const AString & a_ChangedID
+	) const;
 
 	/** Builds the chat message announced when an advancement with announce_to_chat is completed. */
 	static AString BuildAnnouncementJson(const cAdvancement & a_Advancement, const AString & a_PlayerName, const AString & a_PlayerUUID);
