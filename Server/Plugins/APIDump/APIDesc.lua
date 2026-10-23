@@ -10694,6 +10694,120 @@ a_Player:OpenWindow(Window);
 					},
 					Notes = "Returns the player's statistics manager."
 				},
+				GrantAdvancement =
+				{
+					Params =
+					{
+						{
+							Name = "ID",
+							Type = "string",
+						},
+					},
+					Returns =
+					{
+						{
+							Type = "boolean",
+						},
+					},
+					Notes = "Grants every criterion of the advancement to the player. Returns true if anything changed. The advancement must be loaded from the advancements folder."
+				},
+				GrantAdvancementCriterion =
+				{
+					Params =
+					{
+						{
+							Name = "ID",
+							Type = "string",
+						},
+						{
+							Name = "Criterion",
+							Type = "string",
+						},
+					},
+					Returns =
+					{
+						{
+							Type = "boolean",
+						},
+					},
+					Notes = "Grants a single criterion of the advancement to the player. Returns true if anything changed. The advancement is completed (and announced) when its requirements are met."
+				},
+				HasAdvancement =
+				{
+					Params =
+					{
+						{
+							Name = "ID",
+							Type = "string",
+						},
+					},
+					Returns =
+					{
+						{
+							Type = "boolean",
+						},
+					},
+					Notes = "Returns true if the advancement is completed (its requirements are met)."
+				},
+				HasAdvancementCriterion =
+				{
+					Params =
+					{
+						{
+							Name = "ID",
+							Type = "string",
+						},
+						{
+							Name = "Criterion",
+							Type = "string",
+						},
+					},
+					Returns =
+					{
+						{
+							Type = "boolean",
+						},
+					},
+					Notes = "Returns true if the specified criterion of the advancement is achieved."
+				},
+				RevokeAdvancement =
+				{
+					Params =
+					{
+						{
+							Name = "ID",
+							Type = "string",
+						},
+					},
+					Returns =
+					{
+						{
+							Type = "boolean",
+						},
+					},
+					Notes = "Removes all progress on the advancement. Returns true if anything changed."
+				},
+				RevokeAdvancementCriterion =
+				{
+					Params =
+					{
+						{
+							Name = "ID",
+							Type = "string",
+						},
+						{
+							Name = "Criterion",
+							Type = "string",
+						},
+					},
+					Returns =
+					{
+						{
+							Type = "boolean",
+						},
+					},
+					Notes = "Removes a single criterion from the advancement progress. Returns true if anything changed."
+				},
 				GetSuffix =
 				{
 					Returns =
