@@ -16,7 +16,7 @@
   },
   "criteria": {
     "ate_apple": {
-      "trigger": "minecraft:consumed_item",
+      "trigger": "minecraft:consume_item",
       "conditions": {
         "item": {
           "item": "minecraft:apple"

@@ -1,7 +1,7 @@
-# 1.12.2 进度触发器：consumed_item spec
+# 1.12.2 进度触发器：consume_item spec
 
 > **状态**：实现中（feature/advancements-triggers-consumed-item，叠在 feature/advancements-triggers-durability 之上）。
-> **来源**：[Advancement（2017-09-27 修订）](https://minecraft.wiki/w/Advancement?oldid=1151757) 的 `minecraft:consumed_item` 小节。
+> **来源**：[Advancement（2017-09-27 修订）](https://minecraft.wiki/w/Advancement?oldid=1151757) 的 `minecraft:consume_item` 小节。
 
 ## 1. 原版行为（文档）
 
@@ -11,7 +11,7 @@
 
 ## 2. 实现
 
-- trigger 白名单加入 `minecraft:consumed_item`；加载期只接受 `item`，其他键 warning 并跳过（fail-closed）。
+- trigger 白名单加入 `minecraft:consume_item`；加载期只接受 `item`，其他键 warning 并跳过（fail-closed）。
 - 匹配：`MatchItemPredicate`（item/data/count/durability；nbt/enchantments 仍忽略）。
 - 调用点：`cPlayer::FinishEating()`（[Player.cpp:530](../../src/Entities/Player.cpp)）：
   - 复制当前手持物品为 count=1 的 `Item`；
@@ -30,6 +30,7 @@
 
 ## 4. 已知偏差 / 后续
 
-- 只覆盖 `cPlayer::FinishEating`（食物）；药水等若走别的消耗路径不会触发〔待核：原版药水是否算 consumed_item〕。
+- 只覆盖 `cPlayer::FinishEating`（食物）；药水等若走别的消耗路径不会触发〔待核：原版药水是否算 consume_item〕。
 - `item` 谓词的 nbt/enchantments 未实现（与 M3/M5 一致）。
 - 食物计数：`Item` 固定 count=1，与一次消耗一份的行为一致。
+- 注意：vanilla husbandry root 的 **criterion 名**是 `consumed_item`，但它对应的 **trigger** 是 `minecraft:consume_item`；本实现早期误用了 `consumed_item` 作为 trigger，已在 fix 分支改正。
