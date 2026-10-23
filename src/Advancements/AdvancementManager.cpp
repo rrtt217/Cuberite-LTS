@@ -300,7 +300,8 @@ namespace
 			(a_Trigger == "minecraft:placed_block") ||
 			(a_Trigger == "minecraft:used_ender_eye") ||
 			(a_Trigger == "minecraft:used_totem") ||
-			(a_Trigger == "minecraft:recipe_unlocked");
+			(a_Trigger == "minecraft:recipe_unlocked") ||
+			(a_Trigger == "minecraft:effects_changed");
 	}
 
 
@@ -342,6 +343,15 @@ namespace
 				}
 			}
 			return true;
+		}
+		if (a_Trigger == "minecraft:effects_changed")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			a_Reason = "effects predicate not implemented";
+			return false;
 		}
 		if (a_Trigger == "minecraft:recipe_unlocked")
 		{
@@ -1447,6 +1457,27 @@ void cAdvancementManager::TriggerRecipeUnlocked(cPlayer & a_Player, UInt32 a_Rec
 			Matches = (Expected == RecipeName);
 		}
 		if (Matches)
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerEffectsChanged(cPlayer & a_Player)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:effects_changed");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		if (!Entry.Conditions.isObject() || (Entry.Conditions.size() == 0))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}

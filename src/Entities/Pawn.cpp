@@ -277,6 +277,14 @@ void cPawn::AddEntityEffect(cEntityEffect::eType a_EffectType, int a_Duration, s
 				// clients are told the new remaining time, which is what they count down from:
 				Active->SetDuration(ExtendedTotalDuration(Active->GetTicks(), a_Duration));
 				m_World->BroadcastEntityEffect(*this, a_EffectType, Active->GetIntensity(), a_Duration);
+				if (IsPlayer())
+				{
+					auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+					if (AdvancementManager != nullptr)
+					{
+						AdvancementManager->TriggerEffectsChanged(*static_cast<cPlayer *>(this));
+					}
+				}
 				return;
 			}
 			case EffectCombine::Replace:
@@ -296,6 +304,15 @@ void cPawn::AddEntityEffect(cEntityEffect::eType a_EffectType, int a_Duration, s
 	m_World->BroadcastEntityEffect(*this, a_EffectType, a_Intensity, a_Duration);
 	cEntityEffect * Effect = Res.first->second.get();
 	Effect->OnActivate(*this);
+
+	if (IsPlayer())
+	{
+		auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+		if (AdvancementManager != nullptr)
+		{
+			AdvancementManager->TriggerEffectsChanged(*static_cast<cPlayer *>(this));
+		}
+	}
 }
 
 

@@ -73,6 +73,9 @@ public:
 	/** Runs the minecraft:recipe_unlocked criteria for a newly unlocked recipe. */
 	void TriggerRecipeUnlocked(cPlayer & a_Player, UInt32 a_RecipeId);
 
+	/** Runs the minecraft:effects_changed criteria after the player's effects changed. */
+	void TriggerEffectsChanged(cPlayer & a_Player);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 
