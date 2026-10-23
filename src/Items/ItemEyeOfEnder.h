@@ -4,6 +4,11 @@
 #include "ItemHandler.h"
 #include "ItemThrowable.h"
 
+#include "../Advancements/AdvancementManager.h"
+#include "../Root.h"
+
+#include <cmath>
+
 
 
 
@@ -89,6 +94,14 @@ public:
 
 		// The launch sound (Minecraft Wiki: entity.ender_eye.launch, volume 0.5, pitch one third to one half):
 		a_World->BroadcastSoundEffect("entity.ender_eye.launch", StartPos, 0.5f, GetRandomProvider().RandReal(0.33f, 0.5f));
+
+		auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+		if (AdvancementManager != nullptr)
+		{
+			const Vector3d Delta = Vector3d(a_Player->GetPosition()) - TargetPos;
+			const int Distance = static_cast<int>(std::hypot(Delta.x, Delta.z) + 0.5);
+			AdvancementManager->TriggerUsedEnderEye(*a_Player, Distance);
+		}
 
 		if (!a_Player->IsGameModeCreative())
 		{

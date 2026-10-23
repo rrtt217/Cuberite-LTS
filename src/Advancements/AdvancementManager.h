@@ -64,6 +64,9 @@ public:
 	/** Runs the minecraft:placed_block criteria for a successfully placed block. */
 	void TriggerPlacedBlock(cPlayer & a_Player, BLOCKTYPE a_BlockType, const cItem & a_HeldItem);
 
+	/** Runs the minecraft:used_ender_eye criteria for a thrown eye of ender, with the horizontal stronghold distance. */
+	void TriggerUsedEnderEye(cPlayer & a_Player, int a_Distance);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 

@@ -1,0 +1,27 @@
+{
+  "parent": "cuberite:m1/root",
+  "display": {
+    "title": {
+      "text": "M5 Eye Spy"
+    },
+    "description": {
+      "text": "Throw an eye of ender"
+    },
+    "icon": {
+      "item": 381
+    },
+    "frame": "task",
+    "x": 1,
+    "y": 12
+  },
+  "criteria": {
+    "threw_eye": {
+      "trigger": "minecraft:used_ender_eye"
+    }
+  },
+  "requirements": [
+    [
+      "threw_eye"
+    ]
+  ]
+}

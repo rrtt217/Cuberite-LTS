@@ -295,7 +295,8 @@ namespace
 			(a_Trigger == "minecraft:entity_hurt_player") ||
 			(a_Trigger == "minecraft:item_durability_changed") ||
 			(a_Trigger == "minecraft:consumed_item") ||
-			(a_Trigger == "minecraft:placed_block");
+			(a_Trigger == "minecraft:placed_block") ||
+			(a_Trigger == "minecraft:used_ender_eye");
 	}
 
 
@@ -334,6 +335,22 @@ namespace
 						a_Reason = "unsupported entity predicate \"" + Key + "\"";
 						return false;
 					}
+				}
+			}
+			return true;
+		}
+		if (a_Trigger == "minecraft:used_ender_eye")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+			{
+				if (it.key().asString() != "distance")
+				{
+					a_Reason = "unsupported condition \"" + it.key().asString() + "\"";
+					return false;
 				}
 			}
 			return true;
@@ -1305,6 +1322,28 @@ void cAdvancementManager::TriggerPlacedBlock(cPlayer & a_Player, BLOCKTYPE a_Blo
 			}
 		}
 		if (Matches)
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerUsedEnderEye(cPlayer & a_Player, int a_Distance)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:used_ender_eye");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		if (!Entry.Conditions.isObject() || !Entry.Conditions.isMember("distance") ||
+			MatchRange(Entry.Conditions["distance"], a_Distance))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
