@@ -10,8 +10,10 @@
 #include "../Bindings/PluginManager.h"
 #include "../BoundingBox.h"
 #include "../Blocks/BlockHandler.h"
+#include "../Advancements/AdvancementManager.h"
 #include "../Blocks/BlockFarmland.h"
 #include "../EffectID.h"
+#include "../Root.h"
 #include "../Mobs/Monster.h"
 
 
@@ -142,6 +144,15 @@ void cPawn::KilledBy(TakeDamageInfo & a_TDI)
 		AddEntityEffect(cEntityEffect::effFireResistance, 800, 0);
 
 		m_Health = 1;
+
+		if (IsPlayer())
+		{
+			auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+			if (AdvancementManager != nullptr)
+			{
+				AdvancementManager->TriggerUsedTotem(*static_cast<cPlayer *>(this), cItem(E_ITEM_TOTEM_OF_UNDYING));
+			}
+		}
 		return;
 	}
 

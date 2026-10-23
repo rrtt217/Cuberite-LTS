@@ -67,6 +67,9 @@ public:
 	/** Runs the minecraft:used_ender_eye criteria for a thrown eye of ender, with the horizontal stronghold distance. */
 	void TriggerUsedEnderEye(cPlayer & a_Player, int a_Distance);
 
+	/** Runs the minecraft:used_totem criteria for an activated totem. */
+	void TriggerUsedTotem(cPlayer & a_Player, const cItem & a_Item);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 

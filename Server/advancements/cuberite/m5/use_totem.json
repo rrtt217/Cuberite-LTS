@@ -1,0 +1,32 @@
+{
+  "parent": "cuberite:m1/root",
+  "display": {
+    "title": {
+      "text": "M5 Totem Saver"
+    },
+    "description": {
+      "text": "Activate a totem of undying"
+    },
+    "icon": {
+      "item": 449
+    },
+    "frame": "goal",
+    "x": 1,
+    "y": 13
+  },
+  "criteria": {
+    "used_totem": {
+      "trigger": "minecraft:used_totem",
+      "conditions": {
+        "item": {
+          "item": "minecraft:totem_of_undying"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "used_totem"
+    ]
+  ]
+}
