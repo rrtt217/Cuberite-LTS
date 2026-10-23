@@ -2,6 +2,8 @@
 
 #include "ThrownEnderEyeEntity.h"
 #include "FastRandom.h"
+#include "../EffectID.h"
+#include "../World.h"
 
 
 
