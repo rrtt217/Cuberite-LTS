@@ -59,7 +59,7 @@ flags：0x1 有 background、0x2 show_toast、0x4 hidden。announce_to_chat 不�
   - Removals = 0；
   - Progress = 7：每个船条目包含 entered_water=1 + date（毫秒，例如 1791966590000）与 has_the_recipe=0；root 的 impossible=0。
 - 结论：wiki 的字段顺序、frame/flags 前的元素顺序、date 的「仅 achieved 时出现、单位毫秒」都在实测里成立；本分支的序列化按同一顺序实现。
-- 未覆盖：这次会话没有打开进度界面（没有 serverbound 0x19），所以只看到原版入服时下发的 recipe 进度，没有看到五棵主树的全量包；「原版是否/何时下发主树」仍是〔待核〕（后续用同一 Proxy 让客户端按 L 抓包）。
+- 未覆盖（已由后续抓包补齐）：这次会话没有打开进度界面（没有 serverbound 0x19），所以只看到原版入服时下发的 recipe 进度。2026-10-23 的完整会话抓包解出了完整可见集合（14177 字节，3 个页签 + recipe）与 9 个"获得进度"更新包、1 条公告、页签 0x19→0x37 回显；详见 [同步实测记录](vanilla-1.12.2-advancements-observation.md)。
 
 ## 3. 实现映射
 
@@ -93,4 +93,5 @@ flags：0x1 有 background、0x2 show_toast、0x4 hidden。announce_to_chat 不�
 - 只对 1.12–1.12.2 下发；1.13/1.14 只登记 ID、不下发（AGENTS §9 冻结）。
 - progress 只写已达成条件（原版会同时写 achieved=false 的条件）；1.12.2 客户端对缺失的 criterion progress 是否按未达成处理〔待核〕，M1 改成写全条件。
 - 不发送 Select Advancement Tab；不处理页签包（只丢弃）。
-- 无公告、无命令、无持久化：M1/M2 处理。
+- 无公告、无命令、无持久化：M1/M2 处理。公告的确切 JSON 形状已由 [同步实测记录](vanilla-1.12.2-advancements-observation.md) 抓到。
+- 原版入服包是"可见集合"而非全树；M0 的测试树只有 2 个节点，无法区分"全树"与"可见集合"的客户端渲染差异。M1 需用三节点（root→child→grandchild，child 未完成）做对照。
