@@ -1,0 +1,35 @@
+{
+  "parent": "cuberite:m1/root",
+  "display": {
+    "title": {
+      "text": "M4 Zombie Hunter"
+    },
+    "description": {
+      "text": "Kill a zombie"
+    },
+    "icon": {
+      "item": 367
+    },
+    "frame": "task",
+    "x": 1,
+    "y": 4
+  },
+  "criteria": {
+    "killed_zombie": {
+      "trigger": "minecraft:player_killed_entity",
+      "conditions": {
+        "entity": {
+          "type": "minecraft:zombie"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "killed_zombie"
+    ]
+  ],
+  "rewards": {
+    "experience": 10
+  }
+}

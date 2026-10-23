@@ -7,6 +7,8 @@
 #include "../Entities/Player.h"
 #include "../Inventory.h"
 #include "../JsonUtils.h"
+#include "../Mobs/Monster.h"
+#include "../WorldStorage/NamespaceSerializer.h"
 #include "OSSupport/File.h"
 
 #include <json/json.h>
@@ -284,6 +286,106 @@ namespace
 
 
 
+	bool IsImplementedTrigger(const AString & a_Trigger)
+	{
+		return (a_Trigger == "minecraft:inventory_changed") ||
+			(a_Trigger == "minecraft:player_killed_entity") ||
+			(a_Trigger == "minecraft:entity_killed_player");
+	}
+
+
+
+
+
+	bool AreTriggerConditionsSupported(const AString & a_Trigger, const Json::Value & a_Conditions, AString & a_Reason)
+	{
+		if (a_Trigger == "minecraft:inventory_changed")
+		{
+			// The M3 matcher supports a subset and ignores the rest; keep loading:
+			return true;
+		}
+		if ((a_Trigger == "minecraft:player_killed_entity") || (a_Trigger == "minecraft:entity_killed_player"))
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+			{
+				const AString Key = it.key().asString();
+				if (Key != "entity")
+				{
+					a_Reason = "unsupported condition \"" + Key + "\"";
+					return false;
+				}
+			}
+			if (a_Conditions.isMember("entity") && a_Conditions["entity"].isObject())
+			{
+				for (auto it = a_Conditions["entity"].begin(); it != a_Conditions["entity"].end(); ++it)
+				{
+					const AString Key = it.key().asString();
+					if ((Key != "type") && (Key != "player"))
+					{
+						a_Reason = "unsupported entity predicate \"" + Key + "\"";
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+		a_Reason = "trigger not implemented";
+		return false;
+	}
+
+
+
+
+
+	AString EntityTypeName(const cEntity & a_Entity)
+	{
+		if (a_Entity.IsPlayer())
+		{
+			return "minecraft:player";
+		}
+		if (a_Entity.IsMob())
+		{
+			const auto & Monster = static_cast<const cMonster &>(a_Entity);
+			const auto Name = NamespaceSerializer::From(Monster.GetMobType());
+			return AString("minecraft:") + AString(Name.data(), Name.size());
+		}
+		return AString();
+	}
+
+
+
+
+
+	bool MatchEntityPredicate(const Json::Value & a_Conditions, const cEntity & a_Entity)
+	{
+		if (!a_Conditions.isObject() || !a_Conditions.isMember("entity"))
+		{
+			return true;
+		}
+		const auto & Predicate = a_Conditions["entity"];
+		if (!Predicate.isObject())
+		{
+			return true;
+		}
+		if (Predicate.isMember("type") && (Predicate["type"].asString() != EntityTypeName(a_Entity)))
+		{
+			return false;
+		}
+		if (Predicate.isMember("player") && (Predicate["player"].asBool() != a_Entity.IsPlayer()))
+		{
+			return false;
+		}
+		return true;
+	}
+
+
+
+
+
 	bool MatchInventoryChanged(const Json::Value & a_Conditions, const cInventory & a_Inventory)
 	{
 		if (!a_Conditions.isObject())
@@ -328,10 +430,22 @@ void cAdvancementManager::LoadFromFolder(const AString & a_Folder)
 	for (const auto & [Trigger, Entry] : m_PendingTriggers)
 	{
 		const auto It = m_Advancements.find(Entry.AdvancementID);
-		if ((It != m_Advancements.end()) && (It->second.Criteria.find(Entry.Criterion) != It->second.Criteria.end()))
+		if ((It == m_Advancements.end()) || (It->second.Criteria.find(Entry.Criterion) == It->second.Criteria.end()))
 		{
-			m_Triggers.emplace(Trigger, Entry);
+			continue;
 		}
+		if (!IsImplementedTrigger(Trigger))
+		{
+			continue;
+		}
+		AString Reason;
+		if (!AreTriggerConditionsSupported(Trigger, Entry.Conditions, Reason))
+		{
+			LOGWARNING("Advancement \"%s\" criterion \"%s\": %s; criterion will never trigger",
+				Entry.AdvancementID.c_str(), Entry.Criterion.c_str(), Reason.c_str());
+			continue;
+		}
+		m_Triggers.emplace(Trigger, Entry);
 	}
 
 	LOGINFO("Loaded %zu advancement(s) from \"%s\"", m_Advancements.size(), a_Folder.c_str());
@@ -849,6 +963,52 @@ void cAdvancementManager::TriggerInventoryChanged(cPlayer & a_Player)
 			continue;
 		}
 		if (MatchInventoryChanged(Entry.Conditions, Inventory))
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerPlayerKilledEntity(cPlayer & a_Player, const cEntity & a_Victim)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:player_killed_entity");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		if (MatchEntityPredicate(Entry.Conditions, a_Victim))
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerEntityKilledPlayer(cPlayer & a_Player, const cEntity * a_Killer)
+{
+	if (a_Killer == nullptr)
+	{
+		return;
+	}
+	const auto Range = m_Triggers.equal_range("minecraft:entity_killed_player");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		if (MatchEntityPredicate(Entry.Conditions, *a_Killer))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}

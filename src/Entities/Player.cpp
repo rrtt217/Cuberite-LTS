@@ -890,6 +890,12 @@ void cPlayer::KilledBy(TakeDamageInfo & a_TDI)
 	m_Stats.Custom[CustomStatistic::TimeSinceDeath] = 0;
 
 	m_World->GetScoreBoard().AddPlayerScore(GetName(), cObjective::otDeathCount, 1);
+
+	auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+	if (AdvancementManager != nullptr)
+	{
+		AdvancementManager->TriggerEntityKilledPlayer(*this, a_TDI.Attacker);
+	}
 }
 
 
@@ -930,6 +936,12 @@ void cPlayer::Killed(const cEntity & a_Victim, eDamageType a_DamageType)
 	}
 
 	ScoreBoard.AddPlayerScore(GetName(), cObjective::otTotalKillCount, 1);
+
+	auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+	if (AdvancementManager != nullptr)
+	{
+		AdvancementManager->TriggerPlayerKilledEntity(*this, a_Victim);
+	}
 }
 
 

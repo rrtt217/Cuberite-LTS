@@ -18,6 +18,7 @@
 
 
 
+class cEntity;
 class cPlayer;
 
 
@@ -41,6 +42,12 @@ public:
 
 	/** Runs the minecraft:inventory_changed criteria against the player's current inventory. */
 	void TriggerInventoryChanged(cPlayer & a_Player);
+
+	/** Runs the minecraft:player_killed_entity criteria for the killing player. */
+	void TriggerPlayerKilledEntity(cPlayer & a_Player, const cEntity & a_Victim);
+
+	/** Runs the minecraft:entity_killed_player criteria for the dying player. */
+	void TriggerEntityKilledPlayer(cPlayer & a_Player, const cEntity * a_Killer);
 
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
