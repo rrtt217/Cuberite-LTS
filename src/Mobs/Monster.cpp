@@ -4,6 +4,7 @@
 #include "IncludeAllMonsters.h"
 #include "LineBlockTracer.h"
 #include "../BlockInfo.h"
+#include "../Advancements/AdvancementManager.h"
 #include "../Root.h"
 #include "../Server.h"
 #include "../ClientHandle.h"
@@ -1467,6 +1468,12 @@ void cMonster::LoveTick(void)
 				if (GetMobType() == eMonsterType::mtCow)
 				{
 					a_Player.AwardAchievement(CustomStatistic::AchBreedCow);
+				}
+
+				auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+				if (AdvancementManager != nullptr)
+				{
+					AdvancementManager->TriggerBredAnimals(a_Player, *this, *m_LovePartner, Baby);
 				}
 				return true;
 			});

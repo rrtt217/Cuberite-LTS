@@ -308,7 +308,8 @@ namespace
 			(a_Trigger == "minecraft:enchanted_item") ||
 			(a_Trigger == "minecraft:slept_in_bed") ||
 			(a_Trigger == "minecraft:summoned_entity") ||
-			(a_Trigger == "minecraft:tame_animal");
+			(a_Trigger == "minecraft:tame_animal") ||
+			(a_Trigger == "minecraft:bred_animals");
 	}
 
 
@@ -347,6 +348,23 @@ namespace
 						a_Reason = "unsupported entity predicate \"" + Key + "\"";
 						return false;
 					}
+				}
+			}
+			return true;
+		}
+		if (a_Trigger == "minecraft:bred_animals")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+			{
+				const AString Key = it.key().asString();
+				if ((Key != "parent") && (Key != "partner") && (Key != "child"))
+				{
+					a_Reason = "unsupported condition \"" + Key + "\"";
+					return false;
 				}
 			}
 			return true;
@@ -708,26 +726,34 @@ namespace
 
 
 
+	bool MatchEntityPredicateValue(const Json::Value & a_Predicate, const cEntity & a_Entity)
+	{
+		if (!a_Predicate.isObject())
+		{
+			return true;
+		}
+		if (a_Predicate.isMember("type") && (a_Predicate["type"].asString() != EntityTypeName(a_Entity)))
+		{
+			return false;
+		}
+		if (a_Predicate.isMember("player") && (a_Predicate["player"].asBool() != a_Entity.IsPlayer()))
+		{
+			return false;
+		}
+		return true;
+	}
+
+
+
+
+
 	bool MatchEntityPredicate(const Json::Value & a_Conditions, const cEntity & a_Entity)
 	{
 		if (!a_Conditions.isObject() || !a_Conditions.isMember("entity"))
 		{
 			return true;
 		}
-		const auto & Predicate = a_Conditions["entity"];
-		if (!Predicate.isObject())
-		{
-			return true;
-		}
-		if (Predicate.isMember("type") && (Predicate["type"].asString() != EntityTypeName(a_Entity)))
-		{
-			return false;
-		}
-		if (Predicate.isMember("player") && (Predicate["player"].asBool() != a_Entity.IsPlayer()))
-		{
-			return false;
-		}
-		return true;
+		return MatchEntityPredicateValue(a_Conditions["entity"], a_Entity);
 	}
 
 
@@ -1779,6 +1805,43 @@ void cAdvancementManager::TriggerTameAnimal(cPlayer & a_Player, const cEntity & 
 			continue;
 		}
 		if (MatchEntityPredicate(Entry.Conditions, a_Animal))
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerBredAnimals(cPlayer & a_Player, const cEntity & a_Parent, const cEntity & a_Partner, const cEntity * a_Child)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:bred_animals");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		bool Matches = true;
+		if (Entry.Conditions.isObject())
+		{
+			if (Entry.Conditions.isMember("parent") && !MatchEntityPredicateValue(Entry.Conditions["parent"], a_Parent))
+			{
+				Matches = false;
+			}
+			if (Entry.Conditions.isMember("partner") && !MatchEntityPredicateValue(Entry.Conditions["partner"], a_Partner))
+			{
+				Matches = false;
+			}
+			if (Entry.Conditions.isMember("child") && ((a_Child == nullptr) || !MatchEntityPredicateValue(Entry.Conditions["child"], *a_Child)))
+			{
+				Matches = false;
+			}
+		}
+		if (Matches)
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}

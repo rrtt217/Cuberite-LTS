@@ -97,6 +97,9 @@ public:
 	/** Runs the minecraft:tame_animal criteria for a tamed animal. */
 	void TriggerTameAnimal(cPlayer & a_Player, const cEntity & a_Animal);
 
+	/** Runs the minecraft:bred_animals criteria for a completed breeding. */
+	void TriggerBredAnimals(cPlayer & a_Player, const cEntity & a_Parent, const cEntity & a_Partner, const cEntity * a_Child);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 

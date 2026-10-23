@@ -1,0 +1,35 @@
+{
+  "parent": "cuberite:m1/root",
+  "display": {
+    "title": {
+      "text": "M5 Love is in the Air"
+    },
+    "description": {
+      "text": "Breed two cows"
+    },
+    "icon": {
+      "item": 296
+    },
+    "frame": "task",
+    "x": 1,
+    "y": 23
+  },
+  "criteria": {
+    "bred_cows": {
+      "trigger": "minecraft:bred_animals",
+      "conditions": {
+        "parent": {
+          "type": "minecraft:cow"
+        },
+        "partner": {
+          "type": "minecraft:cow"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "bred_cows"
+    ]
+  ]
+}
