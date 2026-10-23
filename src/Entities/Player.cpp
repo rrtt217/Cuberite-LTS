@@ -2911,6 +2911,12 @@ bool cPlayer::PlaceBlocks(const std::initializer_list<sSetBlock> a_Blocks)
 		// Set the blocks:
 		m_World->PlaceBlock(Block.GetAbsolutePos(), Block.m_BlockType, Block.m_BlockMeta);
 
+		auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+		if (AdvancementManager != nullptr)
+		{
+			AdvancementManager->TriggerPlacedBlock(*this, Block.m_BlockType, GetEquippedItem());
+		}
+
 		// Call the "placed" hooks:
 		pm->CallHookPlayerPlacedBlock(*this, Block);
 	}

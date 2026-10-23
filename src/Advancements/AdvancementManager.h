@@ -61,6 +61,9 @@ public:
 	/** Runs the minecraft:consumed_item criteria for the eaten item. */
 	void TriggerConsumedItem(cPlayer & a_Player, const cItem & a_Item);
 
+	/** Runs the minecraft:placed_block criteria for a successfully placed block. */
+	void TriggerPlacedBlock(cPlayer & a_Player, BLOCKTYPE a_BlockType, const cItem & a_HeldItem);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 

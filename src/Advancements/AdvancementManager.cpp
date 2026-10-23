@@ -294,7 +294,8 @@ namespace
 			(a_Trigger == "minecraft:player_hurt_entity") ||
 			(a_Trigger == "minecraft:entity_hurt_player") ||
 			(a_Trigger == "minecraft:item_durability_changed") ||
-			(a_Trigger == "minecraft:consumed_item");
+			(a_Trigger == "minecraft:consumed_item") ||
+			(a_Trigger == "minecraft:placed_block");
 	}
 
 
@@ -333,6 +334,23 @@ namespace
 						a_Reason = "unsupported entity predicate \"" + Key + "\"";
 						return false;
 					}
+				}
+			}
+			return true;
+		}
+		if (a_Trigger == "minecraft:placed_block")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+			{
+				const AString Key = it.key().asString();
+				if ((Key != "block") && (Key != "item"))
+				{
+					a_Reason = "unsupported condition \"" + Key + "\"";
+					return false;
 				}
 			}
 			return true;
@@ -439,6 +457,35 @@ namespace
 
 
 	bool MatchEntityPredicate(const Json::Value & a_Conditions, const cEntity & a_Entity);
+
+
+
+
+
+	AString NormalizeBlockName(const AString & a_Name)
+	{
+		AString Name = a_Name;
+		if (Name.compare(0, 10, "minecraft:") == 0)
+		{
+			Name.erase(0, 10);
+		}
+		return Name;
+	}
+
+
+
+
+
+	bool MatchBlockName(const Json::Value & a_Value, BLOCKTYPE a_BlockType)
+	{
+		if (!a_Value.isString())
+		{
+			return false;
+		}
+		const AString Expected = NormalizeBlockName(a_Value.asString());
+		const AString Actual = NormalizeBlockName(ItemToString(cItem(a_BlockType)));
+		return (Expected == Actual);
+	}
 
 
 
@@ -1225,6 +1272,39 @@ void cAdvancementManager::TriggerConsumedItem(cPlayer & a_Player, const cItem & 
 		}
 		if (!Entry.Conditions.isObject() || !Entry.Conditions.isMember("item") ||
 			MatchItemPredicate(Entry.Conditions["item"], a_Item))
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerPlacedBlock(cPlayer & a_Player, BLOCKTYPE a_BlockType, const cItem & a_HeldItem)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:placed_block");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		bool Matches = true;
+		if (Entry.Conditions.isObject())
+		{
+			if (Entry.Conditions.isMember("block") && !MatchBlockName(Entry.Conditions["block"], a_BlockType))
+			{
+				Matches = false;
+			}
+			if (Entry.Conditions.isMember("item") && !MatchItemPredicate(Entry.Conditions["item"], a_HeldItem))
+			{
+				Matches = false;
+			}
+		}
+		if (Matches)
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
