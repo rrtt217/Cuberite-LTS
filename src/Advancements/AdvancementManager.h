@@ -91,6 +91,9 @@ public:
 	/** Runs the minecraft:slept_in_bed criteria after the player successfully slept. */
 	void TriggerSleptInBed(cPlayer & a_Player);
 
+	/** Runs the minecraft:summoned_entity criteria for an entity the player summoned. */
+	void TriggerSummonedEntity(cPlayer & a_Player, const cEntity & a_Entity);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 

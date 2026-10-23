@@ -10890,6 +10890,17 @@ a_Player:OpenWindow(Window);
 					},
 					Notes = "Notifies the advancement system that the player's item was enchanted. The Core /enchant command calls this; Levels is the XP levels spent (0 for the command)."
 				},
+				TriggerSummonedEntity =
+				{
+					Params =
+					{
+						{
+							Name = "Entity",
+							Type = "cEntity",
+						},
+					},
+					Notes = "Notifies the advancement system that the player summoned an entity. The Core /summon command calls this for mobs, minecarts and projectiles."
+				},
 				GetSuffix =
 				{
 					Returns =

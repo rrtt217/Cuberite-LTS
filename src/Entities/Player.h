@@ -272,6 +272,9 @@ public:
 	/** Notifies the advancement system that this player's item was enchanted (used by the Core /enchant command). */
 	void TriggerEnchantedItem(const cItem & a_Item, int a_Levels);
 
+	/** Notifies the advancement system that this player summoned an entity (used by the Core /summon command). */
+	void TriggerSummonedEntity(cEntity & a_Entity);
+
 	/** Grants the advancement tree selected by a_Mode (only / until / from / through / everything).
 	Returns the number of changed advancements, or -1 when the identifier or mode is invalid.
 	When a_Criterion is non-empty, only that criterion is granted on each selected advancement. */

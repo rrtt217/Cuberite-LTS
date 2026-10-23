@@ -1636,6 +1636,19 @@ void cPlayer::TriggerEnchantedItem(const cItem & a_Item, int a_Levels)
 
 
 
+void cPlayer::TriggerSummonedEntity(cEntity & a_Entity)
+{
+	auto * Manager = cRoot::Get()->GetAdvancementManager();
+	if (Manager != nullptr)
+	{
+		Manager->TriggerSummonedEntity(*this, a_Entity);
+	}
+}
+
+
+
+
+
 bool cPlayer::IsValidAdvancement(const AString & a_ID) const
 {
 	const auto * Manager = cRoot::Get()->GetAdvancementManager();
