@@ -293,7 +293,8 @@ namespace
 			(a_Trigger == "minecraft:entity_killed_player") ||
 			(a_Trigger == "minecraft:player_hurt_entity") ||
 			(a_Trigger == "minecraft:entity_hurt_player") ||
-			(a_Trigger == "minecraft:item_durability_changed");
+			(a_Trigger == "minecraft:item_durability_changed") ||
+			(a_Trigger == "minecraft:consumed_item");
 	}
 
 
@@ -332,6 +333,22 @@ namespace
 						a_Reason = "unsupported entity predicate \"" + Key + "\"";
 						return false;
 					}
+				}
+			}
+			return true;
+		}
+		if (a_Trigger == "minecraft:consumed_item")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+			{
+				if (it.key().asString() != "item")
+				{
+					a_Reason = "unsupported condition \"" + it.key().asString() + "\"";
+					return false;
 				}
 			}
 			return true;
@@ -1186,6 +1203,28 @@ void cAdvancementManager::TriggerItemDurabilityChanged(cPlayer & a_Player, const
 			continue;
 		}
 		if (MatchDurabilityChanged(Entry.Conditions, a_ItemBefore, a_Delta, a_Durability))
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerConsumedItem(cPlayer & a_Player, const cItem & a_Item)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:consumed_item");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		if (!Entry.Conditions.isObject() || !Entry.Conditions.isMember("item") ||
+			MatchItemPredicate(Entry.Conditions["item"], a_Item))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}

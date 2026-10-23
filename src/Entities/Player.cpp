@@ -545,6 +545,12 @@ void cPlayer::FinishEating(void)
 		return;
 	}
 	ItemHandler.OnFoodEaten(m_World, this, &Item);
+
+	auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+	if (AdvancementManager != nullptr)
+	{
+		AdvancementManager->TriggerConsumedItem(*this, Item);
+	}
 }
 
 

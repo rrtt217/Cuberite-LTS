@@ -58,6 +58,9 @@ public:
 	/** Runs the minecraft:item_durability_changed criteria for the player's item. */
 	void TriggerItemDurabilityChanged(cPlayer & a_Player, const cItem & a_ItemBefore, int a_Delta, int a_Durability);
 
+	/** Runs the minecraft:consumed_item criteria for the eaten item. */
+	void TriggerConsumedItem(cPlayer & a_Player, const cItem & a_Item);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 
