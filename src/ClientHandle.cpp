@@ -1,6 +1,7 @@
 #include "Globals.h"  // NOTE: MSVC stupidness requires this to be the same across all modules
 
 #include "ClientHandle.h"
+#include "Advancements/AdvancementTestData.h"
 #include "BlockInfo.h"
 #include "Server.h"
 #include "World.h"
@@ -487,6 +488,14 @@ void cClientHandle::FinishAuthenticate()
 
 	// Send statistics:
 	SendStatistics(m_Player->GetStatistics());
+
+	// Send the advancement tree (1.12 - 1.12.2 only; 1.13 / 1.14 are frozen and get no advancements).
+	// The hardcoded tree is temporary M0 test data, replaced by cAdvancementManager in a follow-up;
+	// see the M0 protocol spec (vanilla-1.12.2-advancements-protocol.md) under the specs directory:
+	if ((GetProtocolVersion() >= 335) && (GetProtocolVersion() < 393))
+	{
+		SendAdvancements(BuildAdvancementTestTree());
+	}
 
 	// Delay the first ping until the client "settles down"
 	// This should fix #889, "BadCast exception, cannot convert bit to fm" error in client
@@ -3192,6 +3201,15 @@ void cClientHandle::SendSpawnEntity(const cEntity & a_Entity)
 void cClientHandle::SendSpawnMob(const cMonster & a_Mob)
 {
 	m_Protocol->SendSpawnMob(a_Mob);
+}
+
+
+
+
+
+void cClientHandle::SendAdvancements(const cAdvancementUpdate & a_Update)
+{
+	m_Protocol->SendAdvancements(a_Update);
 }
 
 

@@ -58,6 +58,7 @@ AString cPacketizer::PacketTypeToStr(cProtocol::ePacketType a_PacketType)
 	switch (a_PacketType)
 	{
 		case cProtocol::pktAttachEntity:           return "pktAttachEntity";
+		case cProtocol::pktAdvancements:           return "pktAdvancements";
 		case cProtocol::pktBlockAction:            return "pktBlockAction";
 		case cProtocol::pktBlockBreakAnim:         return "pktBlockBreakAnim";
 		case cProtocol::pktBlockChange:            return "pktBlockChange";
@@ -106,6 +107,7 @@ AString cPacketizer::PacketTypeToStr(cProtocol::ePacketType a_PacketType)
 		case cProtocol::pktResourcePack:           return "pktResourcePack";
 		case cProtocol::pktRespawn:                return "pktRespawn";
 		case cProtocol::pktScoreboardObjective:    return "pktScoreboardObjective";
+		case cProtocol::pktSelectAdvancementTab:   return "pktSelectAdvancementTab";
 		case cProtocol::pktSpawnObject:            return "pktSpawnObject";
 		case cProtocol::pktSoundEffect:            return "pktSoundEffect";
 		case cProtocol::pktSoundParticleEffect:    return "pktSoundParticleEffect";

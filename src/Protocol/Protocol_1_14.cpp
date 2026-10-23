@@ -455,6 +455,7 @@ UInt32 cProtocol_1_14::GetPacketID(ePacketType a_PacketType) const
 	switch (a_PacketType)
 	{
 		case cProtocol::pktAttachEntity:         return 0x4A;
+		case cProtocol::pktAdvancements:         return 0x51;
 		case cProtocol::pktCameraSetTo:          return 0x3E;
 		case cProtocol::pktCollectEntity:        return 0x55;
 		case cProtocol::pktDestroyEntity:        return 0x37;
@@ -482,6 +483,7 @@ UInt32 cProtocol_1_14::GetPacketID(ePacketType a_PacketType) const
 		case cProtocol::pktResourcePack:         return 0x39;
 		case cProtocol::pktRespawn:              return 0x3A;
 		case cProtocol::pktScoreboardObjective:  return 0x49;
+		case cProtocol::pktSelectAdvancementTab: return 0x3A;
 		case cProtocol::pktSoundEffect:          return 0x19;
 		case cProtocol::pktSoundParticleEffect:  return 0x22;
 		case cProtocol::pktSpawnPosition:        return 0x4D;

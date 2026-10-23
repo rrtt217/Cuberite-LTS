@@ -12,6 +12,8 @@ Implements the 1.12 protocol classes:
 #include "Protocol_1_12.h"
 #include "Packetizer.h"
 
+#include "../Advancements/Advancement.h"
+
 #include "../Entities/Boat.h"
 #include "../Entities/AreaEffectCloud.h"
 #include "../Entities/EnderCrystal.h"
@@ -1025,6 +1027,7 @@ UInt32 cProtocol_1_12::GetPacketID(cProtocol::ePacketType a_Packet) const
 	switch (a_Packet)
 	{
 		case pktAttachEntity:        return 0x42;
+		case pktAdvancements:        return 0x4c;
 		case pktCameraSetTo:         return 0x38;
 		case pktCollectEntity:       return 0x4a;
 		case pktDestroyEntity:       return 0x31;
@@ -1045,6 +1048,7 @@ UInt32 cProtocol_1_12::GetPacketID(cProtocol::ePacketType a_Packet) const
 		case pktResourcePack:        return 0x33;
 		case pktRespawn:             return 0x34;
 		case pktScoreboardObjective: return 0x41;
+		case pktSelectAdvancementTab: return 0x36;
 		case pktSpawnPosition:       return 0x45;
 		case pktTeleportEntity:      return 0x4b;
 		case pktTimeUpdate:          return 0x46;
@@ -1091,8 +1095,117 @@ void cProtocol_1_12::HandlePacketCraftingBookData(cByteBuffer & a_ByteBuffer)
 
 void cProtocol_1_12::HandlePacketAdvancementTab(cByteBuffer & a_ByteBuffer)
 {
+	// The client tells us which tab it switched to. The server does not need this to render the tree,
+	// and the packet carries no data we persist, so discard it:
 	a_ByteBuffer.SkipRead(a_ByteBuffer.GetReadableSpace());
-	m_Client->GetPlayer()->SendMessageInfo("The new advancements are not implemented.");
+}
+
+
+
+
+
+static UInt32 FrameToProtocol(const eAdvancementFrame a_Frame)
+{
+	switch (a_Frame)
+	{
+		case eAdvancementFrame::Task:      return 0;
+		case eAdvancementFrame::Challenge: return 1;
+		case eAdvancementFrame::Goal:      return 2;
+	}
+
+	UNREACHABLE("Unsupported advancement frame");
+}
+
+
+
+
+
+void cProtocol_1_12::SendAdvancements(const cAdvancementUpdate & a_Update)
+{
+	ASSERT(m_State == 3);  // In game mode?
+
+	constexpr Int32 FlagHasBackground = 0x1;
+	constexpr Int32 FlagShowToast     = 0x2;
+	constexpr Int32 FlagHidden        = 0x4;
+
+	cPacketizer Pkt(*this, pktAdvancements);
+	Pkt.WriteBool(a_Update.Reset);
+
+	Pkt.WriteVarInt32(static_cast<UInt32>(a_Update.Advancements.size()));
+	for (const auto & Adv : a_Update.Advancements)
+	{
+		Pkt.WriteString(Adv.ID);
+		Pkt.WriteBool(!Adv.Parent.empty());
+		if (!Adv.Parent.empty())
+		{
+			Pkt.WriteString(Adv.Parent);
+		}
+
+		Pkt.WriteBool(Adv.HasDisplay);
+		if (Adv.HasDisplay)
+		{
+			Pkt.WriteString(Adv.Display.Title);
+			Pkt.WriteString(Adv.Display.Description);
+			WriteItem(Pkt, Adv.Display.Icon);
+			Pkt.WriteVarInt32(FrameToProtocol(Adv.Display.Frame));
+
+			Int32 Flags = 0;
+			if (!Adv.Display.Background.empty())
+			{
+				Flags |= FlagHasBackground;
+			}
+			if (Adv.Display.ShowToast)
+			{
+				Flags |= FlagShowToast;
+			}
+			if (Adv.Display.Hidden)
+			{
+				Flags |= FlagHidden;
+			}
+			Pkt.WriteBEInt32(Flags);
+			if (!Adv.Display.Background.empty())
+			{
+				Pkt.WriteString(Adv.Display.Background);
+			}
+			Pkt.WriteBEFloat(Adv.Display.X);
+			Pkt.WriteBEFloat(Adv.Display.Y);
+		}
+
+		Pkt.WriteVarInt32(static_cast<UInt32>(Adv.Criteria.size()));
+		for (const auto & Criterion : Adv.Criteria)
+		{
+			Pkt.WriteString(Criterion);
+		}
+
+		Pkt.WriteVarInt32(static_cast<UInt32>(Adv.Requirements.size()));
+		for (const auto & Group : Adv.Requirements)
+		{
+			Pkt.WriteVarInt32(static_cast<UInt32>(Group.size()));
+			for (const auto & Criterion : Group)
+			{
+				Pkt.WriteString(Criterion);
+			}
+		}
+	}
+
+	Pkt.WriteVarInt32(static_cast<UInt32>(a_Update.Removals.size()));
+	for (const auto & ID : a_Update.Removals)
+	{
+		Pkt.WriteString(ID);
+	}
+
+	Pkt.WriteVarInt32(static_cast<UInt32>(a_Update.Progress.size()));
+	for (const auto & Progress : a_Update.Progress)
+	{
+		Pkt.WriteString(Progress.ID);
+		Pkt.WriteVarInt32(static_cast<UInt32>(Progress.AchievedCriteria.size()));
+		for (const auto & [Criterion, Date] : Progress.AchievedCriteria)
+		{
+			Pkt.WriteString(Criterion);
+			Pkt.WriteBool(true);
+			Pkt.WriteBEInt64(Date);
+		}
+	}
 }
 
 
@@ -1219,6 +1332,7 @@ UInt32 cProtocol_1_12_1::GetPacketID(ePacketType a_Packet) const
 	switch (a_Packet)
 	{
 		case pktAttachEntity:           return 0x43;
+		case pktAdvancements:           return 0x4d;
 		case pktCameraSetTo:            return 0x39;
 		case pktCollectEntity:          return 0x4b;
 		case pktDestroyEntity:          return 0x32;
@@ -1240,6 +1354,7 @@ UInt32 cProtocol_1_12_1::GetPacketID(ePacketType a_Packet) const
 		case pktResourcePack:           return 0x34;
 		case pktRespawn:                return 0x35;
 		case pktScoreboardObjective:    return 0x42;
+		case pktSelectAdvancementTab:   return 0x37;
 		case pktSpawnPosition:          return 0x46;
 		case pktUnlockRecipe:           return 0x31;
 		case pktUpdateHealth:           return 0x41;

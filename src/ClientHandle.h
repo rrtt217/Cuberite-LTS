@@ -39,6 +39,7 @@ class cMap;
 class cClientHandle;
 
 struct StatisticsManager;
+struct cAdvancementUpdate;
 
 typedef std::shared_ptr<cClientHandle> cClientHandlePtr;
 
@@ -226,6 +227,7 @@ public:  // tolua_export
 	void SendSoundParticleEffect        (const EffectID a_EffectID, Vector3i a_Source, int a_Data);
 	void SendSpawnEntity                (const cEntity & a_Entity);
 	void SendSpawnMob                   (const cMonster & a_Mob);
+	void SendAdvancements              (const cAdvancementUpdate & a_Update);
 	void SendStatistics                 (const StatisticsManager & a_Manager);
 	void SendTabCompletionResults       (const AStringVector & a_Results);
 	void SendThunderbolt                (Vector3i a_BlockPos);  // tolua_export

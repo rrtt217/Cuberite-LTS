@@ -35,6 +35,7 @@ public:
 protected:
 
 	virtual UInt32 GetPacketID(ePacketType a_Packet) const override;
+	virtual void SendAdvancements(const cAdvancementUpdate & a_Update) override;
 	virtual signed char GetProtocolEntityStatus(EntityAnimation a_Animation) const override;
 	virtual UInt32 GetProtocolMobType(eMonsterType a_MobType) const override;
 	virtual Version GetProtocolVersion() const override;

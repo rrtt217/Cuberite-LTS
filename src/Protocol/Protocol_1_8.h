@@ -40,6 +40,7 @@ public:
 	virtual void DataPrepared(ContiguousByteBuffer & a_Data) override;
 
 	// Sending stuff to clients (alphabetically sorted):
+	virtual void SendAdvancements               (const cAdvancementUpdate & a_Update) override;
 	virtual void SendAttachEntity               (const cEntity & a_Entity, const cEntity & a_Vehicle) override;
 	virtual void SendBlockAction                (Vector3i a_BlockPos, char a_Byte1, char a_Byte2, BLOCKTYPE a_BlockType) override;
 	virtual void SendBlockBreakAnim	            (UInt32 a_EntityID, Vector3i a_BlockPos, char a_Stage) override;

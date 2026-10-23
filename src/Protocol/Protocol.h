@@ -32,6 +32,7 @@ class cCompositeChat;
 class cPacketizer;
 
 struct StatisticsManager;
+struct cAdvancementUpdate;
 
 
 
@@ -56,6 +57,7 @@ public:
 	enum ePacketType
 	{
 		pktAttachEntity = 0,
+		pktAdvancements,
 		pktBlockAction,
 		pktBlockBreakAnim,
 		pktBlockChange,
@@ -104,6 +106,7 @@ public:
 		pktResourcePack,
 		pktRespawn,
 		pktScoreboardObjective,
+		pktSelectAdvancementTab,
 		pktSpawnObject,
 		pktSoundEffect,
 		pktSoundParticleEffect,
@@ -371,6 +374,7 @@ public:
 	virtual void DataPrepared(ContiguousByteBuffer & a_Data) = 0;
 
 	// Sending stuff to clients (alphabetically sorted):
+	virtual void SendAdvancements               (const cAdvancementUpdate & a_Update) = 0;
 	virtual void SendAttachEntity               (const cEntity & a_Entity, const cEntity & a_Vehicle) = 0;
 	virtual void SendBlockAction                (Vector3i a_BlockPos, char a_Byte1, char a_Byte2, BLOCKTYPE a_BlockType) = 0;
 	virtual void SendBlockBreakAnim             (UInt32 a_EntityID, Vector3i a_BlockPos, char a_Stage) = 0;

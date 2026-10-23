@@ -168,6 +168,16 @@ void cProtocol_1_8_0::DataPrepared(ContiguousByteBuffer & a_Data)
 
 
 
+void cProtocol_1_8_0::SendAdvancements(const cAdvancementUpdate & a_Update)
+{
+	// Advancements were introduced in 1.12; pre-1.12 clients only have the statistics channel.
+	UNUSED(a_Update);
+}
+
+
+
+
+
 void cProtocol_1_8_0::SendAttachEntity(const cEntity & a_Entity, const cEntity & a_Vehicle)
 {
 	ASSERT(m_State == 3);  // In game mode?
