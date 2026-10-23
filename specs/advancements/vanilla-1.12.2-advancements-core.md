@@ -82,7 +82,8 @@ M2 的 /advancement 还需要遍历（父/子/全部 ID），留给 M2 导出（
 | 授予 API | execute_lua：GrantAdvancementCriterion(root) → true，GrantAdvancement(child) → true，HasAdvancement(child) → true |
 | 持久化 | 机器人退出后 players/30/...json 里出现 cuberite:m1/child / root 的 criteria 与时间戳 |
 | 客户端 UI（fresh） | 已验：客户端重连后日志 `Loaded 0 advancements`，进度界面显示 "There doesn't seem to be anything here..."（无页签）——未授予 root 不再下发；截图 build/tmp/m1-fresh.png |
-| 客户端 UI（root 授予） | 客户端日志 `Loaded 3 advancements`（root/child/grandchild）；树随后在已打开的进度界面里渲染出来（截图 build/tmp/m1-grandchild-toast.png），但页签图标行仍是打开时的空列表——客户端只在打开界面时构建页签行〔待核实是否与 vanilla 一致〕；需关闭重开确认页签 |
+| 客户端 UI（root 授予） | 客户端日志 `Loaded 3 advancements`（root/child/grandchild）；树在已打开的进度界面里渲染。只有一个页签时客户端不画页签行（重开后仍然没有）；授予第二个 root 后同一界面立即出现两个页签（钻石 + 罗盘），说明页签行会随新 root 更新，单页签不显示是客户端行为〔待核：与原版单一页签对照〕 |
+| 客户端 UI（second_root 授予） | 授予后客户端 `Loaded 4 advancements`，同一打开的界面出现钻石（M1 Root）+ 罗盘（second_root）两个页签；罗盘页签在未授予前不存在（可见性过滤正确）。截图 build/tmp/m1-second-root.png |
 | 客户端 UI（child 授予） | 聊天公告已渲染：`rrtt217 has made the advancement [M1 Child]`（task 帧，`chat.type.advancement.task` + 标题被客户端翻译）；客户端日志 `Loaded 3 advancements` |
 | 客户端 UI（grandchild 授予） | 聊天公告已渲染：`rrtt217 has reached the goal [M1 Grandchild]`（goal 帧 → `chat.type.advancement.goal`，客户端翻译为 "has reached the goal"）；toast 未在界面打开时截到〔待验证〕 |
 
