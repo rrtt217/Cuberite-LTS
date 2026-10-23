@@ -9,6 +9,8 @@
 #include "Root.h"
 #include "World.h"
 
+#include "Advancements/AdvancementManager.h"
+
 #include "json/json.h"
 
 #include "Items/ItemHandler.h"
@@ -883,4 +885,11 @@ void cInventory::OnSlotChanged(cItemGrid * a_ItemGrid, int a_SlotNum)
 	}
 
 	SendSlot(Base + a_SlotNum);
+
+	// Let the advancement manager evaluate its inventory_changed criteria:
+	auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+	if (AdvancementManager != nullptr)
+	{
+		AdvancementManager->TriggerInventoryChanged(m_Owner);
+	}
 }

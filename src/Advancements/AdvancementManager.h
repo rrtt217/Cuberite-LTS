@@ -7,8 +7,18 @@
 
 #include "Advancement.h"
 
+#include <json/json.h>
+
 #include <map>
 #include <set>
+#include <utility>
+#include <vector>
+
+
+
+
+
+class cPlayer;
 
 
 
@@ -28,6 +38,9 @@ public:
 
 	/** Returns true if the identifier names a loaded advancement. */
 	bool IsValid(const AString & a_ID) const;
+
+	/** Runs the minecraft:inventory_changed criteria against the player's current inventory. */
+	void TriggerInventoryChanged(cPlayer & a_Player);
 
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
@@ -67,11 +80,25 @@ public:
 
 private:
 
+	/** One criterion that waits for a trigger, with the parsed conditions. */
+	struct cTriggerEntry
+	{
+		AString AdvancementID;
+		AString Criterion;
+		Json::Value Conditions;
+	};
+
 	/** Loaded advancements, keyed by identifier. A std::map keeps the join update deterministic. */
 	std::map<AString, cAdvancement> m_Advancements;
 
 	/** Direct children of each advancement. */
 	std::map<AString, AStringVector> m_Children;
+
+	/** Criteria indexed by trigger name; only criteria of surviving advancements are present. */
+	std::multimap<AString, cTriggerEntry> m_Triggers;
+
+	/** Trigger entries collected while loading, filtered against m_Advancements after validation. */
+	std::vector<std::pair<AString, cTriggerEntry>> m_PendingTriggers;
 
 	/** Adds one parsed JSON file to the manager. */
 	void AddFile(const AString & a_FileName, const AString & a_RelativePath);

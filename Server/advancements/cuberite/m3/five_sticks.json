@@ -1,0 +1,37 @@
+{
+  "parent": "cuberite:m3/stick",
+  "display": {
+    "title": {
+      "text": "M3 Five Sticks"
+    },
+    "description": {
+      "text": "Obtain at least five sticks"
+    },
+    "icon": {
+      "item": 280
+    },
+    "frame": "challenge",
+    "x": 2,
+    "y": 2
+  },
+  "criteria": {
+    "has_five_sticks": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": "minecraft:stick",
+            "count": {
+              "min": 5
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_five_sticks"
+    ]
+  ]
+}

@@ -4,6 +4,8 @@
 #include "AdvancementManager.h"
 
 #include "../BlockType.h"
+#include "../Entities/Player.h"
+#include "../Inventory.h"
 #include "../JsonUtils.h"
 #include "OSSupport/File.h"
 
@@ -149,6 +151,156 @@ namespace
 		return "task";
 	}
 
+	bool MatchRange(const Json::Value & a_Value, const int a_Actual)
+	{
+		if (a_Value.isInt())
+		{
+			return (a_Actual == a_Value.asInt());
+		}
+		if (a_Value.isObject())
+		{
+			if (a_Value.isMember("min") && (a_Actual < a_Value["min"].asInt()))
+			{
+				return false;
+			}
+			if (a_Value.isMember("max") && (a_Actual > a_Value["max"].asInt()))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+
+
+
+
+	bool MatchItemPredicate(const Json::Value & a_Predicate, const cItem & a_Item)
+	{
+		if (a_Predicate.isMember("item"))
+		{
+			const auto & Item = a_Predicate["item"];
+			if (Item.isString())
+			{
+				cItem Required;
+				if (!StringToItem(Item.asString(), Required) || (Required.m_ItemType != a_Item.m_ItemType))
+				{
+					return false;
+				}
+			}
+			else if (Item.isInt() && (Item.asInt() != a_Item.m_ItemType))
+			{
+				return false;
+			}
+		}
+		if (a_Predicate.isMember("data") && (a_Predicate["data"].asInt() != a_Item.m_ItemDamage))
+		{
+			return false;
+		}
+		if (a_Predicate.isMember("count") && !MatchRange(a_Predicate["count"], a_Item.m_ItemCount))
+		{
+			return false;
+		}
+		if (a_Predicate.isMember("durability"))
+		{
+			if (!a_Item.IsDamageable())
+			{
+				return false;
+			}
+			const int Durability = static_cast<int>(a_Item.GetMaxDamage()) - static_cast<int>(a_Item.m_ItemDamage);
+			if (!MatchRange(a_Predicate["durability"], Durability))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+
+
+
+
+	bool InventoryContains(const cInventory & a_Inventory, const Json::Value & a_Items)
+	{
+		for (const auto & Predicate : a_Items)
+		{
+			bool Found = false;
+			for (int Slot = 0; Slot < cInventory::invNumSlots; ++Slot)
+			{
+				const auto & Item = a_Inventory.GetSlot(Slot);
+				if (!Item.IsEmpty() && MatchItemPredicate(Predicate, Item))
+				{
+					Found = true;
+					break;
+				}
+			}
+			if (!Found)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+
+
+
+
+	bool MatchSlotCounts(const Json::Value & a_Slots, const cInventory & a_Inventory)
+	{
+		int Empty = 0;
+		int Full = 0;
+		int Occupied = 0;
+		for (int Slot = 0; Slot < cInventory::invNumSlots; ++Slot)
+		{
+			const auto & Item = a_Inventory.GetSlot(Slot);
+			if (Item.IsEmpty())
+			{
+				++Empty;
+				continue;
+			}
+			++Occupied;
+			if (Item.m_ItemCount >= Item.GetMaxStackSize())
+			{
+				++Full;
+			}
+		}
+		if (a_Slots.isMember("empty") && !MatchRange(a_Slots["empty"], Empty))
+		{
+			return false;
+		}
+		if (a_Slots.isMember("full") && !MatchRange(a_Slots["full"], Full))
+		{
+			return false;
+		}
+		if (a_Slots.isMember("occupied") && !MatchRange(a_Slots["occupied"], Occupied))
+		{
+			return false;
+		}
+		return true;
+	}
+
+
+
+
+
+	bool MatchInventoryChanged(const Json::Value & a_Conditions, const cInventory & a_Inventory)
+	{
+		if (!a_Conditions.isObject())
+		{
+			return true;
+		}
+		if (a_Conditions.isMember("items") && !InventoryContains(a_Inventory, a_Conditions["items"]))
+		{
+			return false;
+		}
+		if (a_Conditions.isMember("slots") && !MatchSlotCounts(a_Conditions["slots"], a_Inventory))
+		{
+			return false;
+		}
+		return true;
+	}
+
 }  // namespace (anonymous)
 
 
@@ -159,6 +311,8 @@ void cAdvancementManager::LoadFromFolder(const AString & a_Folder)
 {
 	m_Advancements.clear();
 	m_Children.clear();
+	m_Triggers.clear();
+	m_PendingTriggers.clear();
 
 	std::vector<std::pair<AString, AString>> Files;
 	CollectJsonFiles(a_Folder, "", Files);
@@ -169,6 +323,17 @@ void cAdvancementManager::LoadFromFolder(const AString & a_Folder)
 
 	Validate();
 	BuildChildren();
+
+	// Keep only the trigger entries whose advancement and criterion survived validation:
+	for (const auto & [Trigger, Entry] : m_PendingTriggers)
+	{
+		const auto It = m_Advancements.find(Entry.AdvancementID);
+		if ((It != m_Advancements.end()) && (It->second.Criteria.find(Entry.Criterion) != It->second.Criteria.end()))
+		{
+			m_Triggers.emplace(Trigger, Entry);
+		}
+	}
+
 	LOGINFO("Loaded %zu advancement(s) from \"%s\"", m_Advancements.size(), a_Folder.c_str());
 }
 
@@ -231,7 +396,17 @@ void cAdvancementManager::AddFile(const AString & a_FileName, const AString & a_
 		{
 			cAdvancementCriterion Criterion;
 			Criterion.Trigger = ((*it).isObject() && (*it).isMember("trigger")) ? (*it)["trigger"].asString() : "";
-			Adv.Criteria[it.key().asString()] = Criterion;
+			const AString CriterionName = it.key().asString();
+			Adv.Criteria[CriterionName] = Criterion;
+			if (!Criterion.Trigger.empty())
+			{
+				Json::Value Conditions;
+				if ((*it).isObject() && (*it).isMember("conditions"))
+				{
+					Conditions = (*it)["conditions"];
+				}
+				m_PendingTriggers.emplace_back(Criterion.Trigger, cTriggerEntry{ID, CriterionName, Conditions});
+			}
 		}
 	}
 
@@ -652,6 +827,32 @@ cAdvancementUpdate cAdvancementManager::BuildUpdate(
 		}
 	}
 	return Update;
+}
+
+
+
+
+
+void cAdvancementManager::TriggerInventoryChanged(cPlayer & a_Player)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:inventory_changed");
+	if (Range.first == Range.second)
+	{
+		return;
+	}
+	const auto & Inventory = a_Player.GetInventory();
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		if (MatchInventoryChanged(Entry.Conditions, Inventory))
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
 }
 
 
