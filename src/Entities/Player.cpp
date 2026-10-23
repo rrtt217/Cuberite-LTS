@@ -3630,6 +3630,12 @@ void cPlayer::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 
 	Super::Tick(a_Dt, a_Chunk);
 
+	auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+	if (AdvancementManager != nullptr)
+	{
+		AdvancementManager->TriggerTick(*this);
+	}
+
 	// Handle charging the bow:
 	if (m_IsChargingBow)
 	{
