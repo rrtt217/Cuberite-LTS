@@ -614,9 +614,22 @@ cAdvancementUpdate cAdvancementManager::BuildUpdate(
 		}
 	}
 
-	// The changed advancement, if it is visible:
+	// The changed advancement, if it is visible. Its definition is sent alongside the progress:
+	// the client uses the display data when it decides to show the toast.
 	if (a_VisibleAfter.find(a_ChangedID) != a_VisibleAfter.end())
 	{
+		if (a_VisibleBefore.find(a_ChangedID) == a_VisibleBefore.end())
+		{
+			// Already added above as newly visible.
+		}
+		else
+		{
+			const auto * Changed = GetAdvancement(a_ChangedID);
+			if (Changed != nullptr)
+			{
+				Update.Advancements.push_back(*Changed);
+			}
+		}
 		ProgressIDs.insert(a_ChangedID);
 	}
 	for (const auto & ID : ProgressIDs)
