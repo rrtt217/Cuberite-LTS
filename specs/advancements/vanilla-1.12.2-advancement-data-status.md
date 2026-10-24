@@ -210,3 +210,9 @@
 - MoveToWorld('world_the_end') 实测 ok=true，world=world_the_end（轮 40 的失败是传送到旧世界的 SetPosition 顺序问题）。
 - end city target 83,0,-68；对 y=0..130 全部 IsInsideStructure('EndCity',83,y,-68)=false → cEndCity::IsInside / pieces 有问题。
 - 下一步：在 cEndCity::IsInside 记录 pieces 数量与每个 piece 的 pos/size，定位为什么目标 x/z 不在任何 piece 盒子内。
+
+## 结构查询回退只读（轮 44）
+
+- 恢复 IsInsideStructure 为只读：cache-only + GetNearestStructureTarget 保守盒，不再在 tick 线程 CreateStructure（末地城 Build 会触发 deadlock detector）。
+- 实测：服务器保持在线；stronghold 144=true，344=true（fallback 盒太宽，m_MaxStructureSize=384 覆盖 344）。
+- end city：GetNearestStructureTarget('EndCity',1500,64,0) 返回 (0,0,0)（未命中/零向量）；IsInsideStructure('EndCity',0,0,0)=true（缓存结构命中，需进一步核对）。
