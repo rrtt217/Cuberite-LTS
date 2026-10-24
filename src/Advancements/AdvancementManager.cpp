@@ -498,7 +498,7 @@ namespace
 				for (auto PredIt = it->begin(); PredIt != it->end(); ++PredIt)
 				{
 					const AString PredKey = PredIt.key().asString();
-					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location") && (PredKey != "distance") && (PredKey != "flags"))
+					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location") && (PredKey != "distance") && (PredKey != "flags") && (PredKey != "effects"))
 					{
 						a_Reason = "unsupported entity predicate \"" + PredKey + "\"";
 						return false;
@@ -1026,6 +1026,27 @@ namespace
 		if (!a_Predicate.isObject())
 		{
 			return true;
+		}
+		if (a_Predicate.isMember("effects") && a_Predicate["effects"].isObject())
+		{
+			if (!a_Entity.IsPlayer() && !a_Entity.IsMob())
+			{
+				return false;
+			}
+			const auto & Pawn = static_cast<const cPawn &>(a_Entity);
+			for (auto it = a_Predicate["effects"].begin(); it != a_Predicate["effects"].end(); ++it)
+			{
+				const auto Type = EffectNameToType(it.key().asString());
+				if (Type == cEntityEffect::effNoEffect)
+				{
+					return false;
+				}
+				const auto * Effect = Pawn.GetEntityEffect(Type);
+				if ((Effect == nullptr) || !MatchEffectPredicate(*it, *Effect))
+				{
+					return false;
+				}
+			}
 		}
 		if (a_Predicate.isMember("flags") && a_Predicate["flags"].isObject())
 		{
