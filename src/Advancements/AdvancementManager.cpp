@@ -498,7 +498,7 @@ namespace
 				for (auto PredIt = it->begin(); PredIt != it->end(); ++PredIt)
 				{
 					const AString PredKey = PredIt.key().asString();
-					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location") && (PredKey != "distance") && (PredKey != "flags") && (PredKey != "effects") && (PredKey != "equipment") && (PredKey != "advancements") && (PredKey != "scores") && (PredKey != "team"))
+					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location") && (PredKey != "distance") && (PredKey != "flags") && (PredKey != "effects") && (PredKey != "equipment") && (PredKey != "advancements") && (PredKey != "scores") && (PredKey != "team") && (PredKey != "targeted_entity"))
 					{
 						a_Reason = "unsupported entity predicate \"" + PredKey + "\"";
 						return false;
@@ -1026,6 +1026,19 @@ namespace
 		if (!a_Predicate.isObject())
 		{
 			return true;
+		}
+		if (a_Predicate.isMember("targeted_entity"))
+		{
+			if (!a_Entity.IsMob())
+			{
+				return false;
+			}
+			// cMonster::GetTarget() is non-const, so cast away constness for this read-only test:
+			const auto * Target = const_cast<cMonster &>(static_cast<const cMonster &>(a_Entity)).GetTarget();
+			if ((Target == nullptr) || !MatchEntityPredicateValue(a_Predicate["targeted_entity"], *Target, a_Origin))
+			{
+				return false;
+			}
 		}
 		if (a_Predicate.isMember("scores") && a_Predicate["scores"].isObject())
 		{
