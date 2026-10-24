@@ -233,3 +233,9 @@
 - 维护者在客户端确认：bot 与玩家实测都获得了进度 —— 进度系统端到端工作。
 - 测试脚本的 stronghold 触发失败是坐标问题：tp TestBot 144 37 -189 后服务端位置为 144,64,-189（y 被抬到地面），stronghold piece 高度 36..43，因此 IsInsideStructure(...,64,...)=false；不是功能问题。
 - 调试日志已全部清理；构建/风格通过；ctest 全绿。
+
+## sniper_duel 距离条件修复（本轮）
+
+- 问题：adventure/sniper_duel 的 entity 谓词只有 type，没有 distance，导致近距离击杀骷髅也授予。
+- 修复：补上 entity.distance = {"min": 50}（原版要求 50 格以上）；这是数据中唯一使用实体距离谓词的条目。
+- 证据：全量扫描 488 条后仅 sniper_duel 使用 entity.distance。
