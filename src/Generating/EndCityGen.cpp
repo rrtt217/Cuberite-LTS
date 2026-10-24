@@ -1397,14 +1397,17 @@ protected:
 	/** Returns true if the specified block position is inside one of the city's pieces. */
 	virtual bool IsInside(const Vector3i & a_Position) const override
 	{
+		LOGINFO("endcityinside pieces=%d pos=%d,%d,%d", static_cast<int>(m_Pieces.size()), a_Position.x, a_Position.y, a_Position.z);
 		for (const auto & Piece : m_Pieces)
 		{
 			const Vector3i Size = Piece.m_Prefab->GetSize();
-			if (
+			const bool In = (
 				(a_Position.x >= Piece.m_Pos.x) && (a_Position.x < Piece.m_Pos.x + Size.x) &&
 				(a_Position.y >= Piece.m_Pos.y) && (a_Position.y < Piece.m_Pos.y + Size.y) &&
 				(a_Position.z >= Piece.m_Pos.z) && (a_Position.z < Piece.m_Pos.z + Size.z)
-			)
+			);
+			LOGINFO("endcityinside piece pos=%d,%d,%d size=%d,%d,%d in=%d", Piece.m_Pos.x, Piece.m_Pos.y, Piece.m_Pos.z, Size.x, Size.y, Size.z, In ? 1 : 0);
+			if (In)
 			{
 				return true;
 			}
@@ -1906,7 +1909,35 @@ bool cEndCityGen::GetNearestStructureTarget(const AString & a_Structure, Vector3
 	{
 		return false;
 	}
-	return Super::GetNearestStructureTarget(a_Position, a_Target);
+
+	// The vanilla origin is computed by GetCellOrigin() (0..8 chunks after the cell's grid point), which
+	// is also what CreateStructure() uses; the base class's jitter must not be used here:
+	const int GridX = FAST_FLOOR_DIV(a_Position.x, END_CITY_GRID_SIZE) * END_CITY_GRID_SIZE;
+	const int GridZ = FAST_FLOOR_DIV(a_Position.z, END_CITY_GRID_SIZE) * END_CITY_GRID_SIZE;
+	const Vector3i Origin = GetCellOrigin(m_Seed, GridX, GridZ);
+	if (Vector3d(Origin.x, 0, Origin.z).Length() <= END_CITY_MIN_DISTANCE)
+	{
+		return false;
+	}
+
+	// The base of the city sits on the highest point of its footprint (see the end city spec, section 2.2):
+	int MinH = cChunkDef::Height;
+	int MaxH = 0;
+	for (int dz = -(END_CITY_FOOTPRINT / 2); dz <= (END_CITY_FOOTPRINT / 2); dz++)
+	{
+		for (int dx = -(END_CITY_FOOTPRINT / 2); dx <= (END_CITY_FOOTPRINT / 2); dx++)
+		{
+			const int H = m_HeightGen.GetHeightAt(Origin.x + dx, Origin.z + dz);
+			MinH = std::min(MinH, H);
+			MaxH = std::max(MaxH, H);
+		}
+	}
+	if ((MaxH < END_CITY_MIN_LAND_Y) || ((MaxH - MinH) > END_CITY_MAX_HEIGHT_DIFFERENCE))
+	{
+		return false;
+	}
+	a_Target = Vector3i(Origin.x, MaxH, Origin.z);
+	return true;
 }
 
 
