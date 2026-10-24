@@ -169,8 +169,9 @@ bool cGridStructGen::GetNearestStructureTarget(Vector3i a_Position, Vector3i & a
 
 
 
-void cGridStructGen::GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructurePtrs & a_Structures)
+void cGridStructGen::GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructurePtrs & a_Structures, bool a_CreateIfNeeded)
 {
+	cCSLock Lock(m_CacheCS);
 	// Calculate the min and max grid coords of the structures to be returned:
 	int MinBlockX = a_ChunkX * cChunkDef::Width - m_MaxStructureSizeX - m_MaxOffsetX;
 	int MinBlockZ = a_ChunkZ * cChunkDef::Width - m_MaxStructureSizeZ - m_MaxOffsetZ;
@@ -222,6 +223,10 @@ void cGridStructGen::GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructur
 			}  // for itr - a_Structures[]
 			if (!Found)
 			{
+				if (!a_CreateIfNeeded)
+				{
+					continue;
+				}
 				int OriginX = GridX + ((m_Noise.IntNoise2DInt(GridX + 3, GridZ + 5) / 7) % (m_MaxOffsetX * 2)) - m_MaxOffsetX;
 				int OriginZ = GridZ + ((m_Noise.IntNoise2DInt(GridX + 5, GridZ + 3) / 7) % (m_MaxOffsetZ * 2)) - m_MaxOffsetZ;
 				cStructurePtr Structure = CreateStructure(GridX, GridZ, OriginX, OriginZ);
@@ -250,6 +255,30 @@ void cGridStructGen::GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructur
 			break;
 		}
 	}
+}
+
+
+
+
+
+bool cGridStructGen::IsInsideStructure(const Vector3i & a_Position)
+{
+	// Take the structures that may intersect the position's chunk (the cache creates them in the generator
+	// thread, so the pieces have the final terrain-adjusted height), and test their real bounding boxes:
+	// Strict, read-only query: only structures that the generator thread has already placed (and that are
+	// still cached) count. A structure that has not been generated must never report "inside", and the tick
+	// thread must never create structures itself (the end city layout would trip the deadlock detector):
+	cStructurePtrs Structures;
+	const auto ChunkCoords = cChunkDef::BlockToChunk(Vector3i(a_Position.x, 0, a_Position.z));
+	GetStructuresForChunk(ChunkCoords.m_ChunkX, ChunkCoords.m_ChunkZ, Structures, false);
+	for (const auto & Structure : Structures)
+	{
+		if (Structure->IsInside(a_Position))
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 

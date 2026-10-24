@@ -11,6 +11,7 @@
 
 #include "ComposableGenerator.h"
 #include "../Noise/Noise.h"
+#include "OSSupport/CriticalSection.h"
 
 
 
@@ -73,6 +74,13 @@ public:
 
 		/** Returns the cost of keeping this structure in the cache */
 		virtual size_t GetCacheCost(void) const { return 1; }
+
+		/** Returns true if the specified block position is inside this structure's bounding box. */
+		virtual bool IsInside(const Vector3i & a_Position) const
+		{
+			UNUSED(a_Position);
+			return false;
+		}
 	} ;
 	typedef std::shared_ptr<cStructure> cStructurePtr;
 	typedef std::list<cStructurePtr> cStructurePtrs;
@@ -103,6 +111,9 @@ public:
 	time and the piece pool's Reset() is a no-op, so it is safe to call it from the tick thread while the
 	generator thread is generating chunks. */
 	virtual bool GetNearestStructureTarget(Vector3i a_Position, Vector3i & a_Target);
+
+	/** Returns true if the specified block position is inside the structure of this generator (using the pieces' bounding boxes). */
+	bool IsInsideStructure(const Vector3i & a_Position);
 
 	// cFinishGen override:
 	virtual void GenFinish(cChunkDesc & a_ChunkDesc) override;
@@ -147,6 +158,9 @@ protected:
 	/** Cache for the most recently generated structures, ordered by the recentness. */
 	cStructurePtrs m_Cache;
 
+	/** Protects m_Cache against concurrent access from the generator thread and the tick thread. */
+	cCriticalSection m_CacheCS;
+
 
 	/** Clears everything from the cache */
 	void ClearCache(void);
@@ -154,7 +168,7 @@ protected:
 	/** Returns all structures that may intersect the given chunk.
 	The structures are considered as intersecting iff their bounding box (defined by m_MaxStructureSize)
 	around their gridpoint intersects the chunk. */
-	void GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructurePtrs & a_Structures);
+	void GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructurePtrs & a_Structures, bool a_CreateIfNeeded = true);
 
 	// Functions for the descendants to override:
 	/** Create a new structure at the specified gridpoint */

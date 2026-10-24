@@ -14,7 +14,7 @@
 - trigger 白名单加入 `minecraft:recipe_unlocked`；加载期只接受 `recipe`，其他键 warning 并跳过（fail-closed）。
 - 调用点：`cPlayer::AddKnownRecipe(UInt32)` 插入成功并发送 UnlockRecipe 包之后 → `TriggerRecipeUnlocked(*this, a_RecipeId)`。
 - 配方名：用 `cRoot::Get()->GetCraftingRecipes()->GetRecipeNameMap()` 反查 ID → 名字（`crafting.txt` 里的名字，如 `oak_boat`）；条件里的 `minecraft:` 前缀会被去掉后比较。
-- demo：`Server/advancements/cuberite/m5/recipe_unlocked.json`（recipe=minecraft:oak_boat）；为验证奖励路径，`m5/place_stone.json` 增加了 `rewards.recipes=["oak_boat"]`。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 - 注意：`AddKnownRecipe` 的既有实现直接解引用 `m_ClientHandle`，因此只在有客户端的路径（拾取/合成/奖励）触发；玩家读档阶段不会经过这里。
 
 ## 3. 验证

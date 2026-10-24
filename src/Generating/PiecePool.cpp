@@ -504,6 +504,8 @@ cPiece::cConnector cPlacedPiece::GetRotatedConnector(const cPiece::cConnector & 
 void cPlacedPiece::MoveToGroundBy(int a_OffsetY)
 {
 	m_Coords.y += a_OffsetY;
+	m_HitBox.p1.y += a_OffsetY;
+	m_HitBox.p2.y += a_OffsetY;
 	m_HasBeenMovedToGround = true;
 }
 

@@ -900,7 +900,7 @@ void cPlayer::KilledBy(TakeDamageInfo & a_TDI)
 	auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
 	if (AdvancementManager != nullptr)
 	{
-		AdvancementManager->TriggerEntityKilledPlayer(*this, a_TDI.Attacker);
+		AdvancementManager->TriggerEntityKilledPlayer(*this, a_TDI.Attacker, a_TDI);
 	}
 }
 
@@ -946,7 +946,7 @@ void cPlayer::Killed(const cEntity & a_Victim, eDamageType a_DamageType)
 	auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
 	if (AdvancementManager != nullptr)
 	{
-		AdvancementManager->TriggerPlayerKilledEntity(*this, a_Victim);
+		AdvancementManager->TriggerPlayerKilledEntity(*this, a_Victim, a_DamageType);
 	}
 }
 
@@ -1397,6 +1397,30 @@ void cPlayer::UpdateCapabilities()
 
 
 
+void cPlayer::AwardLegacyAchievement(const CustomStatistic a_Ach)
+{
+	// The achievement is driven by the advancement system, so the old achievement tree's prerequisites
+	// are not checked here. Only the first award broadcasts and notifies the client.
+	if (m_Stats.Custom[a_Ach]++ != 0)
+	{
+		return;
+	}
+
+	if (m_World->ShouldBroadcastAchievementMessages())
+	{
+		cCompositeChat Msg;
+		Msg.SetMessageType(mtSuccess);
+		Msg.AddTextPart("Achievement get!");
+		m_World->BroadcastChat(Msg);
+	}
+
+	m_ClientHandle->SendStatistics(m_Stats);
+}
+
+
+
+
+
 void cPlayer::AwardAchievement(const CustomStatistic a_Ach)
 {
 	// Check if the prerequisites are met:
@@ -1423,6 +1447,57 @@ void cPlayer::AwardAchievement(const CustomStatistic a_Ach)
 
 	// Achievement Get!
 	m_ClientHandle->SendStatistics(m_Stats);
+}
+
+
+
+
+
+static bool LegacyAchievementFromName(const AString & a_Name, CustomStatistic & a_Ach)
+{
+	static const std::map<AString, CustomStatistic> Map =
+	{
+		{"AchOpenInventory", CustomStatistic::AchOpenInventory},
+		{"AchMineWood", CustomStatistic::AchMineWood},
+		{"AchBuildWorkBench", CustomStatistic::AchBuildWorkBench},
+		{"AchBuildPickaxe", CustomStatistic::AchBuildPickaxe},
+		{"AchBuildFurnace", CustomStatistic::AchBuildFurnace},
+		{"AchAcquireIron", CustomStatistic::AchAcquireIron},
+		{"AchBuildHoe", CustomStatistic::AchBuildHoe},
+		{"AchMakeBread", CustomStatistic::AchMakeBread},
+		{"AchBakeCake", CustomStatistic::AchBakeCake},
+		{"AchBuildBetterPickaxe", CustomStatistic::AchBuildBetterPickaxe},
+		{"AchCookFish", CustomStatistic::AchCookFish},
+		{"AchOnARail", CustomStatistic::AchOnARail},
+		{"AchBuildSword", CustomStatistic::AchBuildSword},
+		{"AchKillEnemy", CustomStatistic::AchKillEnemy},
+		{"AchKillCow", CustomStatistic::AchKillCow},
+		{"AchFlyPig", CustomStatistic::AchFlyPig},
+		{"AchSnipeSkeleton", CustomStatistic::AchSnipeSkeleton},
+		{"AchDiamonds", CustomStatistic::AchDiamonds},
+		{"AchPortal", CustomStatistic::AchPortal},
+		{"AchGhast", CustomStatistic::AchGhast},
+		{"AchBlazeRod", CustomStatistic::AchBlazeRod},
+		{"AchPotion", CustomStatistic::AchPotion},
+		{"AchTheEnd", CustomStatistic::AchTheEnd},
+		{"AchTheEnd2", CustomStatistic::AchTheEnd2},
+		{"AchEnchantments", CustomStatistic::AchEnchantments},
+		{"AchOverkill", CustomStatistic::AchOverkill},
+		{"AchBookcase", CustomStatistic::AchBookcase},
+		{"AchExploreAllBiomes", CustomStatistic::AchExploreAllBiomes},
+		{"AchSpawnWither", CustomStatistic::AchSpawnWither},
+		{"AchKillWither", CustomStatistic::AchKillWither},
+		{"AchFullBeacon", CustomStatistic::AchFullBeacon},
+		{"AchBreedCow", CustomStatistic::AchBreedCow},
+		{"AchDiamondsToYou", CustomStatistic::AchDiamondsToYou},
+	};
+	const auto It = Map.find(a_Name);
+	if (It == Map.end())
+	{
+		return false;
+	}
+	a_Ach = It->second;
+	return true;
 }
 
 
@@ -1476,8 +1551,14 @@ void cPlayer::OnAdvancementCompleted(const cAdvancement & a_Advancement)
 	if (!a_Advancement.Rewards.Recipes.empty())
 	{
 		const auto & RecipeNameMap = cRoot::Get()->GetCraftingRecipes()->GetRecipeNameMap();
-		for (const auto & Name : a_Advancement.Rewards.Recipes)
+		for (auto Name : a_Advancement.Rewards.Recipes)
 		{
+			// The data uses namespaced recipe IDs ("minecraft:stick"), while the crafting table is keyed
+			// by the bare recipe name:
+			if (Name.compare(0, 10, "minecraft:") == 0)
+			{
+				Name.erase(0, 10);
+			}
 			const auto it = RecipeNameMap.find(Name);
 			if (it == RecipeNameMap.end())
 			{
@@ -1499,6 +1580,20 @@ void cPlayer::OnAdvancementCompleted(const cAdvancement & a_Advancement)
 			SuccessCount
 		);
 	}
+
+	// Legacy achievement bridge (M6): the advancement completion awards the mapped 1.8-1.11 achievement:
+	if (!a_Advancement.LegacyAchievement.empty())
+	{
+		CustomStatistic Ach;
+		if (LegacyAchievementFromName(a_Advancement.LegacyAchievement, Ach))
+		{
+			AwardLegacyAchievement(Ach);
+		}
+		else
+		{
+			LOGWARNING("Advancement \"%s\" has an unknown legacy_achievement \"%s\"", a_Advancement.ID.c_str(), a_Advancement.LegacyAchievement.c_str());
+		}
+	}
 }
 
 
@@ -1508,13 +1603,33 @@ void cPlayer::OnAdvancementCompleted(const cAdvancement & a_Advancement)
 bool cPlayer::GrantAdvancement(const AString & a_ID)
 {
 	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	if (Manager == nullptr)
+	{
+		return false;
+	}
+	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
+	if (!GrantAdvancementInternal(a_ID))
+	{
+		return false;
+	}
+	const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+	SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
+	return true;
+}
+
+
+
+
+
+bool cPlayer::GrantAdvancementInternal(const AString & a_ID)
+{
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
 	const auto * Advancement = (Manager == nullptr) ? nullptr : Manager->GetAdvancement(a_ID);
 	if (Advancement == nullptr)
 	{
 		return false;
 	}
 
-	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
 	auto & Progress = m_AdvancementProgress[a_ID];
 	const bool WasCompleted = Manager->IsCompleted(*Advancement, Progress);
 	bool Changed = false;
@@ -1534,8 +1649,6 @@ bool cPlayer::GrantAdvancement(const AString & a_ID)
 	{
 		OnAdvancementCompleted(*Advancement);
 	}
-	const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
-	SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
 	return true;
 }
 
@@ -1546,13 +1659,33 @@ bool cPlayer::GrantAdvancement(const AString & a_ID)
 bool cPlayer::GrantAdvancementCriterion(const AString & a_ID, const AString & a_Criterion)
 {
 	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	if (Manager == nullptr)
+	{
+		return false;
+	}
+	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
+	if (!GrantAdvancementCriterionInternal(a_ID, a_Criterion))
+	{
+		return false;
+	}
+	const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+	SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
+	return true;
+}
+
+
+
+
+
+bool cPlayer::GrantAdvancementCriterionInternal(const AString & a_ID, const AString & a_Criterion)
+{
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
 	const auto * Advancement = (Manager == nullptr) ? nullptr : Manager->GetAdvancement(a_ID);
 	if ((Advancement == nullptr) || (Advancement->Criteria.find(a_Criterion) == Advancement->Criteria.end()))
 	{
 		return false;
 	}
 
-	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
 	auto & Progress = m_AdvancementProgress[a_ID];
 	if (Progress.find(a_Criterion) != Progress.end())
 	{
@@ -1565,8 +1698,6 @@ bool cPlayer::GrantAdvancementCriterion(const AString & a_ID, const AString & a_
 	{
 		OnAdvancementCompleted(*Advancement);
 	}
-	const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
-	SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
 	return true;
 }
 
@@ -1576,19 +1707,33 @@ bool cPlayer::GrantAdvancementCriterion(const AString & a_ID, const AString & a_
 
 bool cPlayer::RevokeAdvancement(const AString & a_ID)
 {
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	if (Manager == nullptr)
+	{
+		return false;
+	}
+	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
+	if (!RevokeAdvancementInternal(a_ID))
+	{
+		return false;
+	}
+	const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+	SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
+	return true;
+}
+
+
+
+
+
+bool cPlayer::RevokeAdvancementInternal(const AString & a_ID)
+{
 	const auto it = m_AdvancementProgress.find(a_ID);
 	if (it == m_AdvancementProgress.end())
 	{
 		return false;
 	}
-	const auto * Manager = cRoot::Get()->GetAdvancementManager();
-	const auto VisibleBefore = (Manager == nullptr) ? std::set<AString>() : Manager->ComputeVisible(m_AdvancementProgress);
 	m_AdvancementProgress.erase(it);
-	if (Manager != nullptr)
-	{
-		const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
-		SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
-	}
 	return true;
 }
 
@@ -1597,6 +1742,27 @@ bool cPlayer::RevokeAdvancement(const AString & a_ID)
 
 
 bool cPlayer::RevokeAdvancementCriterion(const AString & a_ID, const AString & a_Criterion)
+{
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	if (Manager == nullptr)
+	{
+		return false;
+	}
+	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
+	if (!RevokeAdvancementCriterionInternal(a_ID, a_Criterion))
+	{
+		return false;
+	}
+	const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+	SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
+	return true;
+}
+
+
+
+
+
+bool cPlayer::RevokeAdvancementCriterionInternal(const AString & a_ID, const AString & a_Criterion)
 {
 	const auto it = m_AdvancementProgress.find(a_ID);
 	if (it == m_AdvancementProgress.end())
@@ -1608,14 +1774,7 @@ bool cPlayer::RevokeAdvancementCriterion(const AString & a_ID, const AString & a
 	{
 		return false;
 	}
-	const auto * Manager = cRoot::Get()->GetAdvancementManager();
-	const auto VisibleBefore = (Manager == nullptr) ? std::set<AString>() : Manager->ComputeVisible(m_AdvancementProgress);
 	it->second.erase(Criterion);
-	if (Manager != nullptr)
-	{
-		const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
-		SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
-	}
 	return true;
 }
 
@@ -1641,7 +1800,7 @@ void cPlayer::TriggerSummonedEntity(cEntity & a_Entity)
 	auto * Manager = cRoot::Get()->GetAdvancementManager();
 	if (Manager != nullptr)
 	{
-		Manager->TriggerSummonedEntity(*this, a_Entity);
+		Manager->TriggerSummonedEntity(a_Entity);
 	}
 }
 
@@ -1739,20 +1898,26 @@ int cPlayer::GrantAdvancementTree(const AString & a_ID, const AString & a_Mode, 
 	{
 		return -1;
 	}
+	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
 	int Changed = 0;
 	for (const auto & ID : IDs)
 	{
 		if (a_Criterion.empty())
 		{
-			if (GrantAdvancement(ID))
+			if (GrantAdvancementInternal(ID))
 			{
 				++Changed;
 			}
 		}
-		else if (GrantAdvancementCriterion(ID, a_Criterion))
+		else if (GrantAdvancementCriterionInternal(ID, a_Criterion))
 		{
 			++Changed;
 		}
+	}
+	if (Changed > 0)
+	{
+		const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+		SendAdvancementUpdate(VisibleBefore, VisibleAfter, AString());
 	}
 	return Changed;
 }
@@ -1773,20 +1938,26 @@ int cPlayer::RevokeAdvancementTree(const AString & a_ID, const AString & a_Mode,
 	{
 		return -1;
 	}
+	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
 	int Changed = 0;
 	for (const auto & ID : IDs)
 	{
 		if (a_Criterion.empty())
 		{
-			if (RevokeAdvancement(ID))
+			if (RevokeAdvancementInternal(ID))
 			{
 				++Changed;
 			}
 		}
-		else if (RevokeAdvancementCriterion(ID, a_Criterion))
+		else if (RevokeAdvancementCriterionInternal(ID, a_Criterion))
 		{
 			++Changed;
 		}
+	}
+	if (Changed > 0)
+	{
+		const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+		SendAdvancementUpdate(VisibleBefore, VisibleAfter, AString());
 	}
 	return Changed;
 }
@@ -2310,6 +2481,11 @@ void cPlayer::LoadFromDisk()
 			std::map<AString, Int64> Criteria;
 			for (auto Criterion = it->begin(); Criterion != it->end(); ++Criterion)
 			{
+				if (Criterion->isNull())
+				{
+					// A null date means the criterion was not achieved; do not mark it as achieved with a zero date:
+					continue;
+				}
 				Criteria[Criterion.key().asString()] = Criterion->asInt64();
 			}
 			m_AdvancementProgress[it.key().asString()] = std::move(Criteria);

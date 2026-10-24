@@ -311,6 +311,9 @@ public:
 	If the achievement has been already awarded to the player, this method will just increment the stat counter. */
 	void AwardAchievement(CustomStatistic a_Ach);
 
+	/** Awards a legacy achievement without prerequisite checks; used by the advancement bridge. */
+	void AwardLegacyAchievement(CustomStatistic a_Ach);
+
 	/** Forces the player to move in the given direction.
 	@deprecated Use SetSpeed instead. */
 	void ForceSetSpeed(const Vector3d & a_Speed);  // tolua_export
@@ -661,6 +664,18 @@ public:
 	virtual bool IsSprinting(void) const override;
 
 private:
+
+	/** Grants the advancement's missing criteria without sending an incremental update; used by the tree batch. */
+	bool GrantAdvancementInternal(const AString & a_ID);
+
+	/** Grants a single criterion without sending an incremental update; used by the tree batch. */
+	bool GrantAdvancementCriterionInternal(const AString & a_ID, const AString & a_Criterion);
+
+	/** Revokes the advancement without sending an incremental update; used by the tree batch. */
+	bool RevokeAdvancementInternal(const AString & a_ID);
+
+	/** Revokes a single criterion without sending an incremental update; used by the tree batch. */
+	bool RevokeAdvancementCriterionInternal(const AString & a_ID, const AString & a_Criterion);
 
 	typedef std::vector<std::vector<AString> > AStringVectorVector;
 

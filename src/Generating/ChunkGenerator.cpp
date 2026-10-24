@@ -91,3 +91,14 @@ bool cChunkGenerator::GetNearestStructureTarget(const AString & a_Structure, Vec
 
 
 
+
+bool cChunkGenerator::IsInsideStructure(const AString & a_Structure, const Vector3i & a_Position)
+{
+	UNUSED(a_Structure);
+	UNUSED(a_Position);
+	return false;
+}
+
+
+
+

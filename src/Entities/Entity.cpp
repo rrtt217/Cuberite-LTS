@@ -627,11 +627,11 @@ bool cEntity::DoTakeDamage(TakeDamageInfo & a_TDI)
 		{
 			if ((a_TDI.Attacker != nullptr) && a_TDI.Attacker->IsPlayer() && (a_TDI.Attacker != this))
 			{
-				AdvancementManager->TriggerPlayerHurtEntity(*static_cast<cPlayer *>(a_TDI.Attacker), *this);
+				AdvancementManager->TriggerPlayerHurtEntity(*static_cast<cPlayer *>(a_TDI.Attacker), *this, a_TDI);
 			}
 			if (IsPlayer())
 			{
-				AdvancementManager->TriggerEntityHurtPlayer(*static_cast<cPlayer *>(this), a_TDI.Attacker);
+				AdvancementManager->TriggerEntityHurtPlayer(*static_cast<cPlayer *>(this), a_TDI.Attacker, a_TDI);
 			}
 		}
 	}

@@ -1,0 +1,46 @@
+{
+  "parent": "minecraft:nether/brew_potion",
+  "display": {
+    "title": {
+      "translate": "advancements.nether.all_potions.title"
+    },
+    "description": {
+      "translate": "advancements.nether.all_potions.description"
+    },
+    "icon": {
+      "item": 335,
+      "data": 0
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "x": 4.0,
+    "y": 0.5
+  },
+  "criteria": {
+    "all_effects": {
+      "trigger": "minecraft:effects_changed",
+      "conditions": {
+        "effects": {
+          "minecraft:fire_resistance": {},
+          "minecraft:invisibility": {},
+          "minecraft:jump_boost": {},
+          "minecraft:night_vision": {},
+          "minecraft:poison": {},
+          "minecraft:regeneration": {},
+          "minecraft:slowness": {},
+          "minecraft:speed": {},
+          "minecraft:strength": {},
+          "minecraft:water_breathing": {},
+          "minecraft:weakness": {}
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "all_effects"
+    ]
+  ]
+}

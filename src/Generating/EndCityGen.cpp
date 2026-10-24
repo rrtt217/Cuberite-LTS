@@ -1393,6 +1393,25 @@ protected:
 	/** All the pieces of this city. */
 	std::vector<sPlacedPiece> m_Pieces;
 
+
+	/** Returns true if the specified block position is inside one of the city's pieces. */
+	virtual bool IsInside(const Vector3i & a_Position) const override
+	{
+		for (const auto & Piece : m_Pieces)
+		{
+			const Vector3i Size = Piece.m_Prefab->GetSize();
+			if (
+				(a_Position.x >= Piece.m_Pos.x) && (a_Position.x < Piece.m_Pos.x + Size.x) &&
+				(a_Position.y >= Piece.m_Pos.y) && (a_Position.y < Piece.m_Pos.y + Size.y) &&
+				(a_Position.z >= Piece.m_Pos.z) && (a_Position.z < Piece.m_Pos.z + Size.z)
+			)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** The boxes cleared after drawing, to connect the pieces. */
 	std::vector<sCarve> m_Carves;
 
@@ -1875,4 +1894,60 @@ cGridStructGen::cStructurePtr cEndCityGen::CreateStructure(int a_GridX, int a_Gr
 		return cStructurePtr();
 	}
 	return std::make_shared<cEndCity>(m_Seed, a_GridX, a_GridZ, Origin.x, Origin.z, m_HeightGen);
+}
+
+
+
+
+
+bool cEndCityGen::GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target)
+{
+	if (a_Structure != "EndCity")
+	{
+		return false;
+	}
+
+	// The vanilla origin is computed by GetCellOrigin() (0..8 chunks after the cell's grid point), which
+	// is also what CreateStructure() uses; the base class's jitter must not be used here:
+	const int GridX = FAST_FLOOR_DIV(a_Position.x, END_CITY_GRID_SIZE) * END_CITY_GRID_SIZE;
+	const int GridZ = FAST_FLOOR_DIV(a_Position.z, END_CITY_GRID_SIZE) * END_CITY_GRID_SIZE;
+	const Vector3i Origin = GetCellOrigin(m_Seed, GridX, GridZ);
+	const double Dist = Vector3d(Origin.x, 0, Origin.z).Length();
+	if (Dist <= END_CITY_MIN_DISTANCE)
+	{
+		return false;
+	}
+
+	// The base of the city sits on the highest point of its footprint (see the end city spec, section 2.2):
+	int MinH = cChunkDef::Height;
+	int MaxH = 0;
+	for (int dz = -(END_CITY_FOOTPRINT / 2); dz <= (END_CITY_FOOTPRINT / 2); dz++)
+	{
+		for (int dx = -(END_CITY_FOOTPRINT / 2); dx <= (END_CITY_FOOTPRINT / 2); dx++)
+		{
+			const int H = m_HeightGen.GetHeightAt(Origin.x + dx, Origin.z + dz);
+			MinH = std::min(MinH, H);
+			MaxH = std::max(MaxH, H);
+		}
+	}
+	LOGINFO("endnearest footprint maxh=%d minh=%d landmin=%d maxdiff=%d", MaxH, MinH, END_CITY_MIN_LAND_Y, END_CITY_MAX_HEIGHT_DIFFERENCE);
+	if ((MaxH < END_CITY_MIN_LAND_Y) || ((MaxH - MinH) > END_CITY_MAX_HEIGHT_DIFFERENCE))
+	{
+		return false;
+	}
+	a_Target = Vector3i(Origin.x, MaxH, Origin.z);
+	return true;
+}
+
+
+
+
+
+bool cEndCityGen::IsInsideStructure(const AString & a_Structure, const Vector3i & a_Position)
+{
+	if (a_Structure != "EndCity")
+	{
+		return false;
+	}
+	return Super::IsInsideStructure(a_Position);
 }

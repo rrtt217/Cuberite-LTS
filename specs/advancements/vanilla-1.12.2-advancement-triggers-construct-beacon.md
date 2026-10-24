@@ -15,7 +15,7 @@
 - 调用点：`cBeaconEntity::UsedBy()`（玩家右键使用信标）：
   - 先调用 `UpdateBeacon()` 重新计算金字塔层级（防止结构变化后层级还是旧值）；
   - 再调用 `TriggerConstructBeacon(*a_Player, GetBeaconLevel())`。
-- demo：`Server/advancements/cuberite/m5/construct_beacon.json`（level.min=1）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

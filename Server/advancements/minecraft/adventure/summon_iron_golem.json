@@ -1,0 +1,36 @@
+{
+  "parent": "minecraft:adventure/trade",
+  "display": {
+    "title": {
+      "translate": "advancements.adventure.summon_iron_golem.title"
+    },
+    "description": {
+      "translate": "advancements.adventure.summon_iron_golem.description"
+    },
+    "icon": {
+      "item": 86,
+      "data": 0
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "x": 2.0,
+    "y": 3.0
+  },
+  "criteria": {
+    "summoned_golem": {
+      "trigger": "minecraft:summoned_entity",
+      "conditions": {
+        "entity": {
+          "type": "minecraft:iron_golem"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "summoned_golem"
+    ]
+  ]
+}

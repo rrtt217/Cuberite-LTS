@@ -44,7 +44,9 @@ public:
 
 	cProtocol(cClientHandle * a_Client) :
 		m_Client(a_Client),
-		m_OutPacketBuffer(64 KiB),
+		// The 1.12.2 advancement join packet can be ~120 KiB (the full 488-entry tree);
+		// the protocol's max packet size is 2 MiB, so use that as the output buffer capacity:
+		m_OutPacketBuffer(2 MiB),
 		m_OutPacketLenBuffer(20)  // 20 bytes is more than enough for one VarInt
 	{
 	}

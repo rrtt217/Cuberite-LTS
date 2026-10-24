@@ -1,0 +1,34 @@
+{
+  "parent": "minecraft:nether/root",
+  "display": {
+    "title": {
+      "translate": "advancements.nether.find_fortress.title"
+    },
+    "description": {
+      "translate": "advancements.nether.find_fortress.description"
+    },
+    "icon": {
+      "item": 112,
+      "data": 0
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "x": 1.0,
+    "y": 1.0
+  },
+  "criteria": {
+    "fortress": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "feature": "Fortress"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "fortress"
+    ]
+  ]
+}

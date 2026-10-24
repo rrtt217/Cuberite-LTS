@@ -1,0 +1,35 @@
+{
+  "display": {
+    "title": {
+      "translate": "advancements.end.root.title"
+    },
+    "description": {
+      "translate": "advancements.end.root.description"
+    },
+    "icon": {
+      "item": 121,
+      "data": 0
+    },
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false,
+    "background": "minecraft:textures/gui/advancements/backgrounds/end.png",
+    "x": 0.0,
+    "y": 1.5
+  },
+  "criteria": {
+    "entered_end": {
+      "trigger": "minecraft:changed_dimension",
+      "conditions": {
+        "from": "overworld",
+        "to": "the_end"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "entered_end"
+    ]
+  ]
+}

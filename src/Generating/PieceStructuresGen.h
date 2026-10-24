@@ -39,6 +39,7 @@ public:
 	// cFinishGen overrides:
 	virtual void GenFinish(cChunkDesc & a_ChunkDesc) override;
 	virtual bool GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target) override;
+	virtual bool IsInsideStructure(const AString & a_Structure, const Vector3i & a_Position) override;
 
 protected:
 	/** The generator doing the work for a single prefab set.

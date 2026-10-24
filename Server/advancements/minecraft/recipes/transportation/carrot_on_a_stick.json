@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "carrot_on_a_stick"
+      }
+    },
+    "has_carrot": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": 391
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_carrot"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:carrot_on_a_stick"
+    ]
+  }
+}

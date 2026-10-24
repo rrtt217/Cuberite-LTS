@@ -218,3 +218,19 @@ bool cPieceStructuresGen::GetNearestStructureTarget(const AString & a_Structure,
 	}
 	return false;
 }
+
+
+
+
+
+bool cPieceStructuresGen::IsInsideStructure(const AString & a_Structure, const Vector3i & a_Position)
+{
+	for (auto & Gen : m_Gens)
+	{
+		if (Gen->GetName() == a_Structure)
+		{
+			return Gen->IsInsideStructure(a_Position);
+		}
+	}
+	return false;
+}

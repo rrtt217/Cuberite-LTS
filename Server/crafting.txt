@@ -66,6 +66,7 @@ crafting_table: Workbench        = Planks^-1, 1:1, 1:2, 2:1, 2:2
 #
 andesite: Andesite, 2             = Diorite, * | Cobblestone, *
 bone_block: BoneBlock               = BoneMeal, 1:1, 1:2, 1:3, 2:1, 2:2, 2:3, 3:1, 3:2, 3:3
+bone_meal_from_bone: BoneMeal, 3 = Bone
 bookshelf: BookShelf               = Planks^-1, 1:1, 2:1, 3:1, 1:3, 2:3, 3:3 | Book, 1:2, 2:2, 3:2
 bricks: BrickBlock              = Brick,     1:1, 1:2, 2:1, 2:2
 chiseled_quartz_block: ChiseledQuartzBlock     = QuartzSlab, 1:1, 1:2
@@ -332,9 +333,9 @@ stone_button: StoneButton      = Stone,     1:1
 stone_pressure_plate: StonePlate       = Stone,     1:1, 2:1
 oak_trapdoor: TrapDoor, 2      = Planks^-1, 1:1, 2:1, 3:1, 1:2, 2:2, 3:2
 tripwire_hook: TripwireHook, 2  = Planks^-1, 2:3 | stick, 2:2 | IronIngot, 2:1
-WoodenButton     = Planks^-1, 1:1
-oak_button: WoodenDoor, 3    = OakPlanks,     1:1, 1:2, 1:3, 2:1, 2:2, 2:3
-WoodPlate        = Planks^-1, 1:1, 2:1
+wooden_button: WoodenButton     = Planks^-1, 1:1
+wooden_door: WoodenDoor, 3    = OakPlanks,     1:1, 1:2, 1:3, 2:1, 2:2, 2:3
+wooden_pressure_plate: WoodPlate        = Planks^-1, 1:1, 2:1
 
 
 

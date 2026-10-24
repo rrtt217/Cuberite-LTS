@@ -156,6 +156,9 @@ public:
 	/** Sets the internal hitbox to the specified value. */
 	void SetHitBox(const cCuboid & a_HitBox) { m_HitBox = a_HitBox; }
 
+	/** Returns the size of the prefab. */
+	virtual Vector3i GetSize(void) const override;
+
 	/** Calls a_Callback for the block entity at the specified prefab-relative coords.
 	The coords always refer to the unrotated image, so this must be called before SetAllowedRotations(),
 	while the rotated images don't exist yet.
@@ -223,7 +226,6 @@ protected:
 
 	// cPiece overrides:
 	virtual cConnectors GetConnectors(void) const override;
-	virtual Vector3i GetSize(void) const override;
 	virtual cCuboid GetHitBox(void) const override;
 	virtual bool CanRotateCCW(int a_NumRotations) const override;
 

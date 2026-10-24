@@ -1,0 +1,40 @@
+{
+  "parent": "minecraft:adventure/shoot_arrow",
+  "display": {
+    "title": {
+      "translate": "advancements.adventure.sniper_duel.title"
+    },
+    "description": {
+      "translate": "advancements.adventure.sniper_duel.description"
+    },
+    "icon": {
+      "item": 262,
+      "data": 0
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "x": 3.0,
+    "y": 0.0
+  },
+  "criteria": {
+    "killed_skeleton": {
+      "trigger": "minecraft:player_killed_entity",
+      "conditions": {
+        "entity": {
+          "type": "minecraft:skeleton",
+          "distance": {
+            "min": 50
+          }
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "killed_skeleton"
+    ]
+  ],
+  "legacy_achievement": "AchSnipeSkeleton"
+}
