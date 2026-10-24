@@ -198,3 +198,9 @@
 - 实测：cache-only 模式下 144,37,-189 与 344,37,-189 都返回 false —— stronghold 结构已不在缓存（被淘汰）；create 路径返回 4 个非 stronghold 候选。
 - 结论：问题在结构缓存：触发时刻目标结构可能已被 m_MaxCacheSize 淘汰，而重新 CreateStructure 在触发线程得到不一致的 piece 高度。
 - 下一步：让 IsInsideStructure 在 cache 命中时用缓存结构，未命中时不用 CreateStructure，而是用 GetNearestStructureTarget + 结构最大包围盒（m_MaxStructureSizeX/Z）做保守判定，或促使目标 chunk 先生成再查询。
+
+## location feature fallback（轮 33）
+
+- IsInsideStructure 加保守包围盒 fallback：缓存未命中时用 GetNearestStructureTarget + m_MaxStructureSizeX/Z 判定。
+- 实测：144,37,-189 和 344,37,-189 都返回 true（fallback 太宽，m_MaxStructureSize 覆盖了 344）；criterion 仍 false。
+- 关键偏移：IsInsideStructure 内 GetNearestStructureTarget 返回 220,-205（不是 stronghold 的 144,-189），与 Lua 直接 GetNearestStructureTarget 的结果不一致；下一步先查这个偏移（可能是不同 cGen/参数）。

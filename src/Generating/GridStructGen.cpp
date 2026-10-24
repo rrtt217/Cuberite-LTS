@@ -275,7 +275,18 @@ bool cGridStructGen::IsInsideStructure(const Vector3i & a_Position)
 			return true;
 		}
 	}
-	return false;
+
+	// The structure may have been evicted from the cache; fall back to a conservative box around the
+	// nearest structure target, using the generator's maximum structure extent:
+	Vector3i Target;
+	if (!GetNearestStructureTarget(a_Position, Target))
+	{
+		return false;
+	}
+	return (
+		(std::abs(a_Position.x - Target.x) <= m_MaxStructureSizeX) &&
+		(std::abs(a_Position.z - Target.z) <= m_MaxStructureSizeZ)
+	);
 }
 
 
