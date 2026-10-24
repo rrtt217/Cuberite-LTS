@@ -173,3 +173,9 @@
 - cPrefabStructure::IsInside 对 stronghold 的 133 个 piece 在位置 144,37,-189 命中 box 144 36 -189 .. 156 43 -176，in=1；Lua 路径与 manager 路径一致。
 - 轮 26 的 false 来自当时 GetStructuresForChunk 返回的候选结构集合（4 个非 stronghold 结构），不是 hitbox 问题；本轮同一位置已拿到 stronghold 的 133-piece 结构。
 - 下一步：teleport 后确认 in_stronghold criterion 是否授予（本轮未测）。
+
+## location feature 调试（轮 28）
+
+- teleport 到 144,37,-189 后 in_stronghold 仍为 false（revoke 后等待 1.5s）。
+- 轮 27 的 prefab 日志已证明 cPrefabStructure::IsInside 在该位置能命中 stronghold 的 133-piece 结构（box 144 36 -189 .. 156 43 -176）；因此问题在 TriggerLocation 调用时 IsInsideStructure 拿到的结构集合不稳定：GetStructuresForChunk 有时返回 4 个不含 stronghold 结构的候选。
+- 下一步：IsInsideStructure 改为先 GetNearestStructureTarget 定位目标，再取目标所在 grid 的结构做 IsInside，不再依赖 chunk 候选集合；同时检查 GetStructuresForChunk 的缓存/淘汰行为。
