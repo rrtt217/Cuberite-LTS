@@ -7,6 +7,7 @@
 #include "../BlockType.h"
 #include "../CraftingRecipes.h"
 #include "../Root.h"
+#include "../Entities/EntityEffect.h"
 #include "../Entities/Player.h"
 #include "../Inventory.h"
 #include "../JsonUtils.h"
@@ -322,6 +323,152 @@ namespace
 
 
 
+	cEntityEffect::eType EffectNameToType(const AString & a_Name)
+	{
+		AString Name = a_Name;
+		if (Name.compare(0, 10, "minecraft:") == 0)
+		{
+			Name.erase(0, 10);
+		}
+		static const struct
+		{
+			const char * m_Name;
+			cEntityEffect::eType m_Type;
+		} Effects[] =
+		{
+			{"speed", cEntityEffect::effSpeed},
+			{"slowness", cEntityEffect::effSlowness},
+			{"haste", cEntityEffect::effHaste},
+			{"mining_fatigue", cEntityEffect::effMiningFatigue},
+			{"strength", cEntityEffect::effStrength},
+			{"instant_health", cEntityEffect::effInstantHealth},
+			{"instant_damage", cEntityEffect::effInstantDamage},
+			{"jump_boost", cEntityEffect::effJumpBoost},
+			{"nausea", cEntityEffect::effNausea},
+			{"regeneration", cEntityEffect::effRegeneration},
+			{"resistance", cEntityEffect::effResistance},
+			{"fire_resistance", cEntityEffect::effFireResistance},
+			{"water_breathing", cEntityEffect::effWaterBreathing},
+			{"invisibility", cEntityEffect::effInvisibility},
+			{"blindness", cEntityEffect::effBlindness},
+			{"night_vision", cEntityEffect::effNightVision},
+			{"hunger", cEntityEffect::effHunger},
+			{"weakness", cEntityEffect::effWeakness},
+			{"poison", cEntityEffect::effPoison},
+			{"wither", cEntityEffect::effWither},
+			{"health_boost", cEntityEffect::effHealthBoost},
+			{"absorption", cEntityEffect::effAbsorption},
+			{"saturation", cEntityEffect::effSaturation},
+		};
+		for (const auto & Effect : Effects)
+		{
+			if (Name == Effect.m_Name)
+			{
+				return Effect.m_Type;
+			}
+		}
+		return cEntityEffect::effNoEffect;
+	}
+
+
+
+
+
+	bool MatchEffectPredicate(const Json::Value & a_Predicate, const cEntityEffect & a_Effect)
+	{
+		if (!a_Predicate.isObject())
+		{
+			return true;
+		}
+		if (a_Predicate.isMember("amplifier") && !MatchRange(a_Predicate["amplifier"], a_Effect.GetIntensity()))
+		{
+			return false;
+		}
+		if (a_Predicate.isMember("duration") && !MatchRange(a_Predicate["duration"], a_Effect.GetDuration()))
+		{
+			return false;
+		}
+		return true;
+	}
+
+
+
+
+
+	bool MatchEffectsConditions(const Json::Value & a_Conditions, const cPlayer & a_Player)
+	{
+		if (!a_Conditions.isObject() || !a_Conditions.isMember("effects") || !a_Conditions["effects"].isObject())
+		{
+			return true;
+		}
+		for (auto it = a_Conditions["effects"].begin(); it != a_Conditions["effects"].end(); ++it)
+		{
+			const auto Type = EffectNameToType(it.key().asString());
+			if (Type == cEntityEffect::effNoEffect)
+			{
+				return false;
+			}
+			const auto * Effect = a_Player.GetEntityEffect(Type);
+			if ((Effect == nullptr) || !MatchEffectPredicate(*it, *Effect))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+
+
+
+
+	bool MatchEffectsConditionsSupport(const Json::Value & a_Conditions, AString & a_Reason)
+	{
+		if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+		{
+			return true;
+		}
+		for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+		{
+			if (it.key().asString() != "effects")
+			{
+				a_Reason = "unsupported condition \"" + it.key().asString() + "\"";
+				return false;
+			}
+		}
+		if (!a_Conditions["effects"].isObject())
+		{
+			a_Reason = "effects must be an object";
+			return false;
+		}
+		for (auto it = a_Conditions["effects"].begin(); it != a_Conditions["effects"].end(); ++it)
+		{
+			if (EffectNameToType(it.key().asString()) == cEntityEffect::effNoEffect)
+			{
+				a_Reason = "unsupported effect \"" + it.key().asString() + "\"";
+				return false;
+			}
+			if (!it->isObject())
+			{
+				a_Reason = "effect predicate must be an object";
+				return false;
+			}
+			for (auto predIt = it->begin(); predIt != it->end(); ++predIt)
+			{
+				const AString Key = predIt.key().asString();
+				if ((Key != "amplifier") && (Key != "duration"))
+				{
+					a_Reason = "unsupported effect predicate \"" + Key + "\"";
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+
+
+
+
 	bool AreTriggerConditionsSupported(const AString & a_Trigger, const Json::Value & a_Conditions, AString & a_Reason)
 	{
 		if (a_Trigger == "minecraft:inventory_changed")
@@ -589,12 +736,7 @@ namespace
 		}
 		if (a_Trigger == "minecraft:effects_changed")
 		{
-			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
-			{
-				return true;
-			}
-			a_Reason = "effects predicate not implemented";
-			return false;
+			return MatchEffectsConditionsSupport(a_Conditions, a_Reason);
 		}
 		if (a_Trigger == "minecraft:recipe_unlocked")
 		{
@@ -1865,7 +2007,7 @@ void cAdvancementManager::TriggerEffectsChanged(cPlayer & a_Player)
 		{
 			continue;
 		}
-		if (!Entry.Conditions.isObject() || (Entry.Conditions.size() == 0))
+		if (MatchEffectsConditions(Entry.Conditions, a_Player))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}

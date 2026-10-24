@@ -20,7 +20,31 @@
   },
   "criteria": {
     "main": {
-      "trigger": "minecraft:impossible"
+      "trigger": "minecraft:effects_changed",
+      "conditions": {
+        "effects": {
+          "minecraft:absorption": {},
+          "minecraft:fire_resistance": {},
+          "minecraft:glowing": {},
+          "minecraft:haste": {},
+          "minecraft:hunger": {},
+          "minecraft:invisibility": {},
+          "minecraft:jump_boost": {},
+          "minecraft:levitation": {},
+          "minecraft:mining_fatigue": {},
+          "minecraft:nausea": {},
+          "minecraft:night_vision": {},
+          "minecraft:poison": {},
+          "minecraft:regeneration": {},
+          "minecraft:resistance": {},
+          "minecraft:slowness": {},
+          "minecraft:speed": {},
+          "minecraft:strength": {},
+          "minecraft:water_breathing": {},
+          "minecraft:weakness": {},
+          "minecraft:wither": {}
+        }
+      }
     }
   },
   "requirements": [

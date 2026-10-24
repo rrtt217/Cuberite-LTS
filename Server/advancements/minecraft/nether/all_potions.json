@@ -20,7 +20,22 @@
   },
   "criteria": {
     "main": {
-      "trigger": "minecraft:impossible"
+      "trigger": "minecraft:effects_changed",
+      "conditions": {
+        "effects": {
+          "minecraft:fire_resistance": {},
+          "minecraft:invisibility": {},
+          "minecraft:jump_boost": {},
+          "minecraft:night_vision": {},
+          "minecraft:poison": {},
+          "minecraft:regeneration": {},
+          "minecraft:slowness": {},
+          "minecraft:speed": {},
+          "minecraft:strength": {},
+          "minecraft:water_breathing": {},
+          "minecraft:weakness": {}
+        }
+      }
     }
   },
   "requirements": [

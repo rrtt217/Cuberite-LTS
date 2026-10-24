@@ -70,3 +70,11 @@
 - nether/uneasy_alliance：改为 player_killed_entity + player.location.dimension=overworld；代码在实体谓词里新增 location.dimension，并在 TriggerPlayerKilledEntity 里匹配 killer 的 player 谓词；实测 overworld 击杀 ghast → HasAdvancement(nether/uneasy_alliance)=true（同时 return_to_sender 也 true）。
 - 仍为占位：find_fortress（feature 谓词）、all_potions/all_effects（effects 谓词）、enter_end_gateway/find_end_city（结构/维度条件）、levitate（服务端无漂浮效果）。deflect_arrow 与 sniper_duel 仍是近似条件。
 - 剩余：35 条精确抓包坐标/flags、feature/effects 谓词、rewards、客户端实机、门禁、合并。
+
+## effects 谓词（本轮）
+
+- effects_changed 现在支持 conditions.effects：效果 ID -> 空 predicate 或 amplifier/duration 范围；EffectNameToType 把 1.12.2 效果名映射到服务端 cEntityEffect::eType；MatchEffectsConditions 要求玩家同时拥有全部列出的效果。
+- nether/all_potions 改为 effects_changed + 11 个 potion 效果（fire_resistance、invisibility、jump_boost、night_vision、poison、regeneration、slowness、speed、strength、water_breathing、weakness）。
+- 实测：console 依次 effect TestBot <id> 30 0 施加 11 个效果 -> HasAdvancement(minecraft:nether/all_potions)=true。
+- nether/all_effects 用 20 个效果的完整条件；服务端 eType 只有 1..23，缺 glowing/levitation -> 加载期跳过该 criterion，advancement 不可完成（属状态效果子系统的独立缺口）。
+- 剩余：feature 谓词（find_fortress/enter_end_gateway/find_end_city）、glowing/levitation 效果、rewards、35 条精确坐标/flags、客户端实机、门禁、合并。
