@@ -498,7 +498,7 @@ namespace
 				for (auto PredIt = it->begin(); PredIt != it->end(); ++PredIt)
 				{
 					const AString PredKey = PredIt.key().asString();
-					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location") && (PredKey != "distance"))
+					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location") && (PredKey != "distance") && (PredKey != "flags"))
 					{
 						a_Reason = "unsupported entity predicate \"" + PredKey + "\"";
 						return false;
@@ -1026,6 +1026,27 @@ namespace
 		if (!a_Predicate.isObject())
 		{
 			return true;
+		}
+		if (a_Predicate.isMember("flags") && a_Predicate["flags"].isObject())
+		{
+			const auto & Flags = a_Predicate["flags"];
+			if (Flags.isMember("on_fire") && (Flags["on_fire"].asBool() != a_Entity.IsOnFire()))
+			{
+				return false;
+			}
+			if (Flags.isMember("sprinting") && (Flags["sprinting"].asBool() != a_Entity.IsSprinting()))
+			{
+				return false;
+			}
+			if (Flags.isMember("invisible") && (Flags["invisible"].asBool() != a_Entity.IsInvisible()))
+			{
+				return false;
+			}
+			if (Flags.isMember("baby") && (Flags["baby"].asBool() != (a_Entity.IsMob() && static_cast<const cMonster &>(a_Entity).IsBaby())))
+			{
+				return false;
+			}
+			// "sneaking" is not tracked by the entity layer yet; the flag is accepted but not checked.
 		}
 		if (a_Predicate.isMember("distance"))
 		{
