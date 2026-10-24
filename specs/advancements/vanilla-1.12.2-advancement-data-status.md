@@ -185,3 +185,9 @@
 - IsInsideStructure 改为先 GetNearestStructureTarget 定位目标结构，再直接 CreateStructure 做 IsInside，不再依赖 GetStructuresForChunk 的 chunk 候选集合（该集合曾返回 4 个不含 stronghold 结构的候选）。
 - Lua 实测：Stronghold 144,37,-189 = true；344,37,-189 = false。
 - bot 传到 144,37,-189 后 in_stronghold 仍 false —— TriggerLocation 触发路径内仍有问题，下一轮在触发路径内直接记录 IsInside 结果与 entry 信息。
+
+## location feature 触发路径调试（轮 30）
+
+- trigloc 日志显示：manager 的 TriggerLocation 内 IsInsideStructure("Stronghold",144,37,-189) = 0，而同一位置 Lua 直调 = 1。
+- 差异只在调用上下文（TriggerLocation 在 cPlayer::Tick 的世界线程；Lua 在 MCP 线程），下一轮在 cWorld::IsInsideStructure -> cChunkGeneratorThread -> cComposableGenerator 三层各记录一次，定位是哪一层返回 false。
+- 临时日志已移除；构建/风格恢复通过。
