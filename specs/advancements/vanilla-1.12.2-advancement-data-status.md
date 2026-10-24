@@ -95,3 +95,10 @@
 - 船的 entered_water -> enter_block water；boat 配方名映射到本服 oak_boat。
 - 实测：拾取 9 个铁锭 -> has_at_least_9_iron_ingot=true；minecraft:recipes/building_blocks/iron_block 完成（其 requirements 允许该条件单独完成）。
 - 剩余：has_the_recipe 的配方名映射（部分 vanilla 配方不在本服 crafting.txt，条件永不触发）；材料 data/count 条件是按 items.ini 与 criteria 名推断，不是逐条原版 JSON 条件。
+
+## recipes 配方名覆盖分析（本轮）
+
+- 433 条 recipes 中有 **101 条**的 advancement 配方名不在本服 crafting.txt（例如染色 hardened clay、各色床、花朵染料、部分方块/工具配方）。
+- 其中 slab/boat/fence/fence_gate/sign/trapdoor 通过 sname 映射到本服名称；其余这些 advancement 的 has_the_recipe 条件使用原版配方名，本服没有对应配方，**条件永不触发**。
+- 这属于本服配方数据缺口（crafting.txt 的配方集比 vanilla 少/命名不同），不是 advancement 数据包本身的问题：advancement 的 ID/criteria/requirements 与原版包逐条一致。
+- recipes 材料条件已在上轮映射到本服 item type/data；iron_block 由 9 个铁锭的条件完成已实测。
