@@ -43,6 +43,10 @@ public:
 	(a_GridX, a_GridZ). Exposed so that the 20-chunk grid rule can be unit-tested. */
 	static Vector3i GetCellOrigin(int a_Seed, int a_GridX, int a_GridZ);
 
+	// cFinishGen override:
+	virtual bool GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target) override;
+	virtual bool IsInsideStructure(const AString & a_Structure, const Vector3i & a_Position) override;
+
 protected:
 
 	class cEndCity;

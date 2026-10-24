@@ -16,7 +16,7 @@
 - trigger 白名单加入 `minecraft:location`；加载期只接受 `dimension` 与 `position`（position 内只接受 x/y/z），其他键 warning 并跳过（fail-closed）。
 - 调用点：`cPlayer::Tick` 在 `TriggerTick` 之后调用 `TriggerLocation(*this)`；用玩家当前维度 + 脚下方块坐标（floor）匹配。
 - 条件匹配：维度名复用 `DimensionName`（overworld/the_nether/the_end），`position` 各轴用 `MatchRange`（整数或 min/max）。
-- demo：`Server/advancements/cuberite/m5/location.json`（dimension=overworld）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

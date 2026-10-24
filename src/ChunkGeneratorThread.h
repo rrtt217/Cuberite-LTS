@@ -105,6 +105,7 @@ public:
 	Calling this is read-only (no chunks are generated, no structures are created), so it is safe to call it
 	from the tick thread; the generator's configuration must not be reloaded while it runs. */
 	bool GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target);
+	bool IsInsideStructure(const AString & a_Structure, const Vector3i & a_Position);
 
 
 private:

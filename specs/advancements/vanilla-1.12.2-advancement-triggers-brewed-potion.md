@@ -16,7 +16,7 @@
   - 在 `DistributeStackToAreas()` 前后比较 `a_ItemStack.m_ItemCount`；
   - 只有 `a_ShouldApply` 且数量确实减少时才触发；
   - 用取出前的 `cItem` 副本调用 `TriggerBrewedPotion(a_Player, Taken)`。
-- demo：`Server/advancements/cuberite/m5/brewed_potion.json`（无条件）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

@@ -17,7 +17,7 @@
   - 新建/替换效果、`Effect->OnActivate()` 之后。
   - `Ignore`（更弱且更短）路径不触发；只有 `IsPlayer()` 时触发。
 - 条件：本簇先只支持**无条件** criterion；带 `effects` 谓词的 criterion 在加载期 warning 并跳过（fail-closed），避免把任意效果变化误判为匹配。
-- demo：`Server/advancements/cuberite/m5/effects_changed.json`（无条件）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

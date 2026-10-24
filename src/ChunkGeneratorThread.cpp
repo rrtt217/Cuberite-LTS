@@ -160,6 +160,16 @@ bool cChunkGeneratorThread::GetNearestStructureTarget(const AString & a_Structur
 
 
 
+bool cChunkGeneratorThread::IsInsideStructure(const AString & a_Structure, const Vector3i & a_Position)
+{
+	ASSERT(m_Generator != nullptr);
+	return m_Generator->IsInsideStructure(a_Structure, a_Position);
+}
+
+
+
+
+
 void cChunkGeneratorThread::Execute(void)
 {
 	// To be able to display performance information, the generator counts the chunks generated.

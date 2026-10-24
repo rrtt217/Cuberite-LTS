@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "chest"
+      }
+    },
+    "has_lots_of_items": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": 5,
+            "count": {
+              "min": 8
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_lots_of_items"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:chest"
+    ]
+  }
+}

@@ -13,7 +13,7 @@
 
 - trigger 白名单加入 `minecraft:tame_animal`；加载期只接受 `entity`，其他键 warning 并跳过；匹配复用 `MatchEntityPredicate`（type/player）。
 - 调用点：`cWolf::OnRightClicked()` 的驯服成功分支——`SetIsTame(true)` / `SetOwner()` / `WolfTamingSucceeds` 动画之后 → `TriggerTameAnimal(a_Player, *this)`。
-- demo：`Server/advancements/cuberite/m5/tame_animal.json`（entity.type=minecraft:wolf）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 - 只有成功驯服才触发；失败的骨头尝试不触发。
 
 ## 3. 验证

@@ -12,7 +12,7 @@
 - trigger 白名单加入 `minecraft:tick`；加载期只接受空条件；带条件的 criterion 会 warning 并跳过（当前 wiki 的 tick 没有条件，保留这个门以防未来数据）。
 - 调用点：`cPlayer::Tick()` 在 `Super::Tick()` 之后（已经排除未进入游戏/冻结/维度切换中的情况）→ `TriggerTick(*this)`。
 - 条件匹配：无条件 criterion 每 tick 检查一次，未达成则授予；达成后 `HasAdvancementCriterion()` 提前跳过，索引为空时只是一次 `equal_range`。
-- demo：`Server/advancements/cuberite/m5/tick.json`（无条件）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

@@ -17,7 +17,7 @@
   - 记录旧世界维度（`OldWorld->GetDimension()`）和新世界维度；
   - 仅 `IsPlayer()` 且维度确实变化时调用 `TriggerChangedDimension(*this, Old, New)`。
 - 条件匹配：维度名映射（`dimOverworld` → `overworld`，`dimNether` → `the_nether`，`dimEnd` → `the_end`），条件里的 `minecraft:` 前缀会被去掉。
-- demo：`Server/advancements/cuberite/m5/changed_dimension.json`（from=overworld，to=the_nether）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:nether/obtain_blaze_rod",
+  "display": {
+    "title": {
+      "translate": "advancements.nether.brew_potion.title"
+    },
+    "description": {
+      "translate": "advancements.nether.brew_potion.description"
+    },
+    "icon": {
+      "item": 373,
+      "data": 0
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "x": 3.0,
+    "y": 0.5
+  },
+  "criteria": {
+    "potion": {
+      "trigger": "minecraft:brewed_potion"
+    }
+  },
+  "requirements": [
+    [
+      "potion"
+    ]
+  ],
+  "legacy_achievement": "AchPotion"
+}

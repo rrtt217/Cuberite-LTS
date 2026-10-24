@@ -16,7 +16,7 @@
 - trigger 白名单加入 `minecraft:bred_animals`；加载期只接受 `child` / `parent` / `partner`，每个都是 entity predicate（type/player），其他键 warning 并跳过。
 - 调用点：`cMonster::LoveTick()` 的繁殖完成分支——生成幼崽、继承、经验球之后，在 `DoWithPlayerByUUID(m_Feeder, ...)` 的 lambda 里（与 `AnimalsBred` 统计同一处）调用 `TriggerBredAnimals(a_Player, *this, *m_LovePartner, Baby)`。
 - 实体谓词匹配复用 `MatchEntityPredicateValue`（type/player）；`child` 条件在幼崽为空时视为不匹配。
-- demo：`Server/advancements/cuberite/m5/bred_animals.json`（parent/partner 都是 minecraft:cow）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

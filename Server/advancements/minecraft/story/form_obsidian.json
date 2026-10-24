@@ -1,0 +1,38 @@
+{
+  "parent": "minecraft:story/lava_bucket",
+  "display": {
+    "title": {
+      "translate": "advancements.story.form_obsidian.title"
+    },
+    "description": {
+      "translate": "advancements.story.form_obsidian.description"
+    },
+    "icon": {
+      "item": 49,
+      "data": 0
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "x": 5.0,
+    "y": 1.0
+  },
+  "criteria": {
+    "obsidian": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": "minecraft:obsidian"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "obsidian"
+    ]
+  ]
+}

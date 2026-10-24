@@ -267,7 +267,21 @@ public:
 		// Spawn the wither:
 		int BlockX = a_PlacedHeadPos.x + a_OffsetX;
 		int BlockZ = a_PlacedHeadPos.z + a_OffsetZ;
-		a_World.SpawnMob(static_cast<double>(BlockX) + 0.5, a_PlacedHeadPos.y - 2, static_cast<double>(BlockZ) + 0.5, mtWither, false);
+		const UInt32 WitherID = a_World.SpawnMob(static_cast<double>(BlockX) + 0.5, a_PlacedHeadPos.y - 2, static_cast<double>(BlockZ) + 0.5, mtWither, false);
+		if (WitherID != cEntity::INVALID_ID)
+		{
+			// The player built the wither, so this counts as summoning it (everyone within 50 blocks):
+			a_World.DoWithEntityByID(WitherID, [](cEntity & a_Entity)
+				{
+					auto * Manager = cRoot::Get()->GetAdvancementManager();
+					if (Manager != nullptr)
+					{
+						Manager->TriggerSummonedEntity(a_Entity);
+					}
+					return true;
+				}
+			);
+		}
 		AwardSpawnWitherAchievement(a_World, {BlockX, a_PlacedHeadPos.y - 2, BlockZ});
 		return true;
 	}

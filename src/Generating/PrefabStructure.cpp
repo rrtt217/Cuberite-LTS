@@ -59,3 +59,19 @@ void cPrefabStructure::PlacePieceOnGround(cPlacedPiece & a_Piece)
 	int TerrainHeight = cChunkDef::GetHeight(HeightMap, BlockX, BlockZ);
 	a_Piece.MoveToGroundBy(TerrainHeight - FirstConnector.m_Pos.y + 1);
 }
+
+
+
+
+
+bool cPrefabStructure::IsInside(const Vector3i & a_Position) const
+{
+	for (const auto & Piece : m_Pieces)
+	{
+		if (Piece->GetHitBox().IsInside(a_Position))
+		{
+			return true;
+		}
+	}
+	return false;
+}

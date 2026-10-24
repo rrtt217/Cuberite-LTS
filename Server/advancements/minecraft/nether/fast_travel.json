@@ -1,0 +1,38 @@
+{
+  "parent": "minecraft:nether/root",
+  "display": {
+    "title": {
+      "translate": "advancements.nether.fast_travel.title"
+    },
+    "description": {
+      "translate": "advancements.nether.fast_travel.description"
+    },
+    "icon": {
+      "item": 395,
+      "data": 0
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "x": 1.0,
+    "y": 0.0
+  },
+  "criteria": {
+    "travelled": {
+      "trigger": "minecraft:nether_travel",
+      "conditions": {
+        "distance": {
+          "horizontal": {
+            "min": 7000
+          }
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "travelled"
+    ]
+  ]
+}

@@ -12,7 +12,7 @@
 - trigger 白名单加入 `minecraft:slept_in_bed`；加载期只接受空条件；带条件的 criterion warning 并跳过。
 - 调用点：`cBlockBedHandler::OnUse()` 在 `SetIsInBed(true)` 成功、占用床并被统计 `SleepInBed` 之后 → `TriggerSleptInBed(a_Player)`。
 - 睡眠的前置检查（主世界、夜晚/雷暴、床未被占用、附近无敌对生物）仍由既有 `OnUse` 负责；只有真正进入床才触发。
-- demo：`Server/advancements/cuberite/m5/slept_in_bed.json`（无条件）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

@@ -30,6 +30,9 @@ public:
 		cTerrainHeightGen & a_HeightGen
 	);
 
+	/** Returns true if the specified block position is inside one of the placed pieces. */
+	virtual bool IsInside(const Vector3i & a_Position) const override;
+
 protected:
 	/** The pieces placed by the generator. */
 	cPlacedPieces m_Pieces;

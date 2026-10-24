@@ -3,9 +3,11 @@
 #include "Globals.h"
 #include "AdvancementManager.h"
 
+#include "../BiomeDef.h"
 #include "../BlockType.h"
 #include "../CraftingRecipes.h"
 #include "../Root.h"
+#include "../Entities/EntityEffect.h"
 #include "../Entities/Player.h"
 #include "../Inventory.h"
 #include "../JsonUtils.h"
@@ -321,6 +323,152 @@ namespace
 
 
 
+	cEntityEffect::eType EffectNameToType(const AString & a_Name)
+	{
+		AString Name = a_Name;
+		if (Name.compare(0, 10, "minecraft:") == 0)
+		{
+			Name.erase(0, 10);
+		}
+		static const struct
+		{
+			const char * m_Name;
+			cEntityEffect::eType m_Type;
+		} Effects[] =
+		{
+			{"speed", cEntityEffect::effSpeed},
+			{"slowness", cEntityEffect::effSlowness},
+			{"haste", cEntityEffect::effHaste},
+			{"mining_fatigue", cEntityEffect::effMiningFatigue},
+			{"strength", cEntityEffect::effStrength},
+			{"instant_health", cEntityEffect::effInstantHealth},
+			{"instant_damage", cEntityEffect::effInstantDamage},
+			{"jump_boost", cEntityEffect::effJumpBoost},
+			{"nausea", cEntityEffect::effNausea},
+			{"regeneration", cEntityEffect::effRegeneration},
+			{"resistance", cEntityEffect::effResistance},
+			{"fire_resistance", cEntityEffect::effFireResistance},
+			{"water_breathing", cEntityEffect::effWaterBreathing},
+			{"invisibility", cEntityEffect::effInvisibility},
+			{"blindness", cEntityEffect::effBlindness},
+			{"night_vision", cEntityEffect::effNightVision},
+			{"hunger", cEntityEffect::effHunger},
+			{"weakness", cEntityEffect::effWeakness},
+			{"poison", cEntityEffect::effPoison},
+			{"wither", cEntityEffect::effWither},
+			{"health_boost", cEntityEffect::effHealthBoost},
+			{"absorption", cEntityEffect::effAbsorption},
+			{"saturation", cEntityEffect::effSaturation},
+		};
+		for (const auto & Effect : Effects)
+		{
+			if (Name == Effect.m_Name)
+			{
+				return Effect.m_Type;
+			}
+		}
+		return cEntityEffect::effNoEffect;
+	}
+
+
+
+
+
+	bool MatchEffectPredicate(const Json::Value & a_Predicate, const cEntityEffect & a_Effect)
+	{
+		if (!a_Predicate.isObject())
+		{
+			return true;
+		}
+		if (a_Predicate.isMember("amplifier") && !MatchRange(a_Predicate["amplifier"], a_Effect.GetIntensity()))
+		{
+			return false;
+		}
+		if (a_Predicate.isMember("duration") && !MatchRange(a_Predicate["duration"], a_Effect.GetDuration()))
+		{
+			return false;
+		}
+		return true;
+	}
+
+
+
+
+
+	bool MatchEffectsConditions(const Json::Value & a_Conditions, const cPlayer & a_Player)
+	{
+		if (!a_Conditions.isObject() || !a_Conditions.isMember("effects") || !a_Conditions["effects"].isObject())
+		{
+			return true;
+		}
+		for (auto it = a_Conditions["effects"].begin(); it != a_Conditions["effects"].end(); ++it)
+		{
+			const auto Type = EffectNameToType(it.key().asString());
+			if (Type == cEntityEffect::effNoEffect)
+			{
+				return false;
+			}
+			const auto * Effect = a_Player.GetEntityEffect(Type);
+			if ((Effect == nullptr) || !MatchEffectPredicate(*it, *Effect))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+
+
+
+
+	bool MatchEffectsConditionsSupport(const Json::Value & a_Conditions, AString & a_Reason)
+	{
+		if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+		{
+			return true;
+		}
+		for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+		{
+			if (it.key().asString() != "effects")
+			{
+				a_Reason = "unsupported condition \"" + it.key().asString() + "\"";
+				return false;
+			}
+		}
+		if (!a_Conditions["effects"].isObject())
+		{
+			a_Reason = "effects must be an object";
+			return false;
+		}
+		for (auto it = a_Conditions["effects"].begin(); it != a_Conditions["effects"].end(); ++it)
+		{
+			if (EffectNameToType(it.key().asString()) == cEntityEffect::effNoEffect)
+			{
+				a_Reason = "unsupported effect \"" + it.key().asString() + "\"";
+				return false;
+			}
+			if (!it->isObject())
+			{
+				a_Reason = "effect predicate must be an object";
+				return false;
+			}
+			for (auto predIt = it->begin(); predIt != it->end(); ++predIt)
+			{
+				const AString Key = predIt.key().asString();
+				if ((Key != "amplifier") && (Key != "duration"))
+				{
+					a_Reason = "unsupported effect predicate \"" + Key + "\"";
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+
+
+
+
 	bool AreTriggerConditionsSupported(const AString & a_Trigger, const Json::Value & a_Conditions, AString & a_Reason)
 	{
 		if (a_Trigger == "minecraft:inventory_changed")
@@ -337,21 +485,34 @@ namespace
 			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
 			{
 				const AString Key = it.key().asString();
-				if (Key != "entity")
+				if ((Key != "entity") && (Key != "player"))
 				{
 					a_Reason = "unsupported condition \"" + Key + "\"";
 					return false;
 				}
-			}
-			if (a_Conditions.isMember("entity") && a_Conditions["entity"].isObject())
-			{
-				for (auto it = a_Conditions["entity"].begin(); it != a_Conditions["entity"].end(); ++it)
+				if (!it->isObject())
 				{
-					const AString Key = it.key().asString();
-					if ((Key != "type") && (Key != "player"))
+					a_Reason = "unsupported predicate \"" + Key + "\"";
+					return false;
+				}
+				for (auto PredIt = it->begin(); PredIt != it->end(); ++PredIt)
+				{
+					const AString PredKey = PredIt.key().asString();
+					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location") && (PredKey != "distance") && (PredKey != "flags") && (PredKey != "effects") && (PredKey != "equipment") && (PredKey != "advancements") && (PredKey != "scores") && (PredKey != "team") && (PredKey != "targeted_entity"))
 					{
-						a_Reason = "unsupported entity predicate \"" + Key + "\"";
+						a_Reason = "unsupported entity predicate \"" + PredKey + "\"";
 						return false;
+					}
+					if ((PredKey == "location") && PredIt->isObject())
+					{
+						for (auto LocIt = PredIt->begin(); LocIt != PredIt->end(); ++LocIt)
+						{
+							if (LocIt.key().asString() != "dimension")
+							{
+								a_Reason = "unsupported location predicate \"" + LocIt.key().asString() + "\"";
+								return false;
+							}
+						}
 					}
 				}
 			}
@@ -394,7 +555,7 @@ namespace
 			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
 			{
 				const AString Key = it.key().asString();
-				if ((Key != "dimension") && (Key != "position"))
+				if ((Key != "dimension") && (Key != "position") && (Key != "biome") && (Key != "feature"))
 				{
 					a_Reason = "unsupported location condition \"" + Key + "\"";
 					return false;
@@ -575,12 +736,7 @@ namespace
 		}
 		if (a_Trigger == "minecraft:effects_changed")
 		{
-			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
-			{
-				return true;
-			}
-			a_Reason = "effects predicate not implemented";
-			return false;
+			return MatchEffectsConditionsSupport(a_Conditions, a_Reason);
 		}
 		if (a_Trigger == "minecraft:recipe_unlocked")
 		{
@@ -748,7 +904,7 @@ namespace
 
 
 
-	bool MatchEntityPredicate(const Json::Value & a_Conditions, const cEntity & a_Entity);
+	bool MatchEntityPredicate(const Json::Value & a_Conditions, const cEntity & a_Entity, const cEntity & a_Origin);
 
 
 
@@ -776,7 +932,13 @@ namespace
 		}
 		const AString Expected = NormalizeBlockName(a_Value.asString());
 		const AString Actual = NormalizeBlockName(ItemToString(cItem(a_BlockType)));
-		return (Expected == Actual);
+		if (Expected == Actual)
+		{
+			return true;
+		}
+		// items.ini names the water blocks "water" (8) and "stationarywater" (9), while the 1.12.2
+		// block predicates use "minecraft:water" for both the flowing and the still variant:
+		return (Expected == "water") && ((a_BlockType == E_BLOCK_WATER) || (a_BlockType == E_BLOCK_STATIONARY_WATER));
 	}
 
 
@@ -833,39 +995,256 @@ namespace
 
 
 
-	bool MatchDamageSource(const Json::Value & a_Conditions, const cEntity * a_Attacker)
+	bool MatchDamageSource(const Json::Value & a_Damage, const cEntity * a_Attacker, const TakeDamageInfo * a_TDI)
 	{
-		if (!a_Conditions.isObject() || !a_Conditions.isMember("damage"))
+		if (!a_Damage.isObject())
 		{
 			return true;
 		}
-		const auto & Damage = a_Conditions["damage"];
-		if (!Damage.isObject() || !Damage.isMember("source_entity"))
+		if (a_Damage.isMember("source_entity"))
 		{
-			return true;
+			if (a_Attacker == nullptr)
+			{
+				return false;
+			}
+			if (!MatchEntityPredicate(a_Damage["source_entity"], *a_Attacker, *a_Attacker))
+			{
+				return false;
+			}
 		}
-		if (a_Attacker == nullptr)
+		if (a_Damage.isMember("taken"))
 		{
-			return false;
+			const int Taken = (a_TDI == nullptr) ? 0 : static_cast<int>(a_TDI->FinalDamage);
+			if (!MatchRange(a_Damage["taken"], Taken))
+			{
+				return false;
+			}
 		}
-		return MatchEntityPredicate(Damage["source_entity"], *a_Attacker);
+		return true;
 	}
 
 
 
 
 
-	bool MatchEntityPredicateValue(const Json::Value & a_Predicate, const cEntity & a_Entity)
+	bool MatchEntityPredicateValue(const Json::Value & a_Predicate, const cEntity & a_Entity, const cEntity & a_Origin)
 	{
 		if (!a_Predicate.isObject())
 		{
 			return true;
 		}
-		if (a_Predicate.isMember("type") && (a_Predicate["type"].asString() != EntityTypeName(a_Entity)))
+		if (a_Predicate.isMember("targeted_entity"))
+		{
+			if (!a_Entity.IsMob())
+			{
+				return false;
+			}
+			// cMonster::GetTarget() is non-const, so cast away constness for this read-only test:
+			const auto * Target = const_cast<cMonster &>(static_cast<const cMonster &>(a_Entity)).GetTarget();
+			if ((Target == nullptr) || !MatchEntityPredicateValue(a_Predicate["targeted_entity"], *Target, a_Origin))
+			{
+				return false;
+			}
+		}
+		if (a_Predicate.isMember("scores") && a_Predicate["scores"].isObject())
+		{
+			if (!a_Entity.IsPlayer())
+			{
+				return false;
+			}
+			const auto & Player = static_cast<const cPlayer &>(a_Entity);
+			auto * World = Player.GetWorld();
+			if (World == nullptr)
+			{
+				return false;
+			}
+			for (auto it = a_Predicate["scores"].begin(); it != a_Predicate["scores"].end(); ++it)
+			{
+				auto * Objective = World->GetScoreBoard().GetObjective(it.key().asString());
+				const cObjective::Score Actual = (Objective == nullptr) ? 0 : Objective->GetScore(Player.GetName());
+				if (!MatchRange(*it, static_cast<int>(Actual)))
+				{
+					return false;
+				}
+			}
+		}
+		if (a_Predicate.isMember("team"))
+		{
+			if (!a_Entity.IsPlayer())
+			{
+				return false;
+			}
+			const auto & Player = static_cast<const cPlayer &>(a_Entity);
+			const auto * Team = Player.GetTeam();
+			const AString TeamName = (Team == nullptr) ? AString() : Team->GetName();
+			if (TeamName != a_Predicate["team"].asString())
+			{
+				return false;
+			}
+		}
+		if (a_Predicate.isMember("advancements") && a_Predicate["advancements"].isObject())
+		{
+			if (!a_Entity.IsPlayer())
+			{
+				return false;
+			}
+			const auto & Player = static_cast<const cPlayer &>(a_Entity);
+			for (auto it = a_Predicate["advancements"].begin(); it != a_Predicate["advancements"].end(); ++it)
+			{
+				if (it->asBool() != Player.HasAdvancement(it.key().asString()))
+				{
+					return false;
+				}
+			}
+		}
+		if (a_Predicate.isMember("equipment") && a_Predicate["equipment"].isObject())
+		{
+			if (!a_Entity.IsPlayer())
+			{
+				return false;
+			}
+			const auto & Player = static_cast<const cPlayer &>(a_Entity);
+			const auto & Equipment = a_Predicate["equipment"];
+			const auto & Inventory = Player.GetInventory();
+			if (Equipment.isMember("mainhand") && !MatchItemPredicate(Equipment["mainhand"], Player.GetEquippedItem()))
+			{
+				return false;
+			}
+			if (Equipment.isMember("offhand") && !MatchItemPredicate(Equipment["offhand"], Inventory.GetShieldSlot()))
+			{
+				return false;
+			}
+			// Armor slot order: 0 = head, 1 = chest, 2 = legs, 3 = feet (cSlotAreaArmor)
+			if (Equipment.isMember("head") && !MatchItemPredicate(Equipment["head"], Inventory.GetArmorSlot(0)))
+			{
+				return false;
+			}
+			if (Equipment.isMember("chest") && !MatchItemPredicate(Equipment["chest"], Inventory.GetArmorSlot(1)))
+			{
+				return false;
+			}
+			if (Equipment.isMember("legs") && !MatchItemPredicate(Equipment["legs"], Inventory.GetArmorSlot(2)))
+			{
+				return false;
+			}
+			if (Equipment.isMember("feet") && !MatchItemPredicate(Equipment["feet"], Inventory.GetArmorSlot(3)))
+			{
+				return false;
+			}
+		}
+		if (a_Predicate.isMember("effects") && a_Predicate["effects"].isObject())
+		{
+			if (!a_Entity.IsPlayer() && !a_Entity.IsMob())
+			{
+				return false;
+			}
+			const auto & Pawn = static_cast<const cPawn &>(a_Entity);
+			for (auto it = a_Predicate["effects"].begin(); it != a_Predicate["effects"].end(); ++it)
+			{
+				const auto Type = EffectNameToType(it.key().asString());
+				if (Type == cEntityEffect::effNoEffect)
+				{
+					return false;
+				}
+				const auto * Effect = Pawn.GetEntityEffect(Type);
+				if ((Effect == nullptr) || !MatchEffectPredicate(*it, *Effect))
+				{
+					return false;
+				}
+			}
+		}
+		if (a_Predicate.isMember("flags") && a_Predicate["flags"].isObject())
+		{
+			const auto & Flags = a_Predicate["flags"];
+			if (Flags.isMember("on_fire") && (Flags["on_fire"].asBool() != a_Entity.IsOnFire()))
+			{
+				return false;
+			}
+			if (Flags.isMember("sprinting") && (Flags["sprinting"].asBool() != a_Entity.IsSprinting()))
+			{
+				return false;
+			}
+			if (Flags.isMember("invisible") && (Flags["invisible"].asBool() != a_Entity.IsInvisible()))
+			{
+				return false;
+			}
+			if (Flags.isMember("baby") && (Flags["baby"].asBool() != (a_Entity.IsMob() && static_cast<const cMonster &>(a_Entity).IsBaby())))
+			{
+				return false;
+			}
+			// "sneaking" is not tracked by the entity layer yet; the flag is accepted but not checked.
+		}
+		if (a_Predicate.isMember("distance"))
+		{
+			const double Distance = (a_Entity.GetPosition() - a_Origin.GetPosition()).Length();
+			if (!MatchRange(a_Predicate["distance"], static_cast<int>(Distance)))
+			{
+				return false;
+			}
+		}
+		if (a_Predicate.isMember("type"))
+		{
+			AString Expected = a_Predicate["type"].asString();
+			if (Expected.compare(0, 10, "minecraft:") == 0)
+			{
+				Expected.erase(0, 10);
+			}
+			AString Actual = EntityTypeName(a_Entity);
+			if (Actual.compare(0, 10, "minecraft:") == 0)
+			{
+				Actual.erase(0, 10);
+			}
+			if (Expected != Actual)
+			{
+				return false;
+			}
+		}
+		if (a_Predicate.isMember("player") && (a_Predicate["player"].asBool() != a_Entity.IsPlayer()))
 		{
 			return false;
 		}
-		if (a_Predicate.isMember("player") && (a_Predicate["player"].asBool() != a_Entity.IsPlayer()))
+		if (a_Predicate.isMember("location") && a_Predicate["location"].isObject())
+		{
+			const auto & Location = a_Predicate["location"];
+			if (Location.isMember("dimension"))
+			{
+				const auto * World = a_Entity.GetWorld();
+				if (World == nullptr)
+				{
+					return false;
+				}
+				const auto Dimension = World->GetDimension();
+				const AString Actual = (Dimension == dimNether) ? "the_nether" : ((Dimension == dimEnd) ? "the_end" : "overworld");
+				AString Expected = Location["dimension"].asString();
+				if (Expected.compare(0, 10, "minecraft:") == 0)
+				{
+					Expected.erase(0, 10);
+				}
+				if (Expected != Actual)
+				{
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+
+
+
+
+	bool MatchKillingBlow(const Json::Value & a_Conditions, eDamageType a_DamageType)
+	{
+		if (!a_Conditions.isObject() || !a_Conditions.isMember("killing_blow"))
+		{
+			return true;
+		}
+		const auto & Blow = a_Conditions["killing_blow"];
+		if (!Blow.isObject())
+		{
+			return true;
+		}
+		if (Blow.isMember("is_projectile") && (Blow["is_projectile"].asBool() != (a_DamageType == dtRangedAttack)))
 		{
 			return false;
 		}
@@ -876,13 +1255,98 @@ namespace
 
 
 
-	bool MatchEntityPredicate(const Json::Value & a_Conditions, const cEntity & a_Entity)
+	bool MatchEntityPredicate(const Json::Value & a_Conditions, const cEntity & a_Entity, const cEntity & a_Origin)
 	{
 		if (!a_Conditions.isObject() || !a_Conditions.isMember("entity"))
 		{
 			return true;
 		}
-		return MatchEntityPredicateValue(a_Conditions["entity"], a_Entity);
+		return MatchEntityPredicateValue(a_Conditions["entity"], a_Entity, a_Origin);
+	}
+
+
+
+
+
+	AString BiomeToAdvancementID(EMCSBiome a_Biome)
+	{
+		switch (a_Biome)
+		{
+			case biOcean:              return "ocean";
+			case biPlains:             return "plains";
+			case biDesert:             return "desert";
+			case biExtremeHills:       return "extreme_hills";
+			case biForest:             return "forest";
+			case biTaiga:              return "taiga";
+			case biSwampland:          return "swampland";
+			case biRiver:              return "river";
+			case biFrozenOcean:        return "frozen_ocean";
+			case biFrozenRiver:        return "frozen_river";
+			case biIcePlains:          return "ice_flats";
+			case biIceMountains:       return "ice_mountains";
+			case biMushroomIsland:     return "mushroom_island";
+			case biMushroomShore:      return "mushroom_island_shore";
+			case biBeach:              return "beaches";
+			case biDesertHills:        return "desert_hills";
+			case biForestHills:        return "forest_hills";
+			case biTaigaHills:         return "taiga_hills";
+			case biExtremeHillsEdge:   return "extreme_hills_edge";
+			case biJungle:             return "jungle";
+			case biJungleHills:        return "jungle_hills";
+			case biJungleEdge:         return "jungle_edge";
+			case biDeepOcean:          return "deep_ocean";
+			case biStoneBeach:         return "stone_beach";
+			case biColdBeach:          return "cold_beach";
+			case biBirchForest:        return "birch_forest";
+			case biBirchForestHills:   return "birch_forest_hills";
+			case biRoofedForest:       return "roofed_forest";
+			case biColdTaiga:          return "taiga_cold";
+			case biColdTaigaHills:     return "taiga_cold_hills";
+			case biMegaTaiga:          return "redwood_taiga";
+			case biMegaTaigaHills:     return "redwood_taiga_hills";
+			case biExtremeHillsPlus:   return "extreme_hills_with_trees";
+			case biSavanna:            return "savanna";
+			case biSavannaPlateau:     return "savanna_rock";
+			case biMesa:               return "mesa";
+			case biMesaPlateauF:       return "mesa_rock";
+			case biMesaPlateau:        return "mesa_clear_rock";
+			case biSunflowerPlains:    return "plains";
+			case biDesertM:            return "desert";
+			case biExtremeHillsM:      return "extreme_hills";
+			case biFlowerForest:       return "forest";
+			case biTaigaM:             return "taiga";
+			case biSwamplandM:         return "swampland";
+			case biIcePlainsSpikes:    return "ice_flats";
+			case biJungleM:            return "jungle";
+			case biJungleEdgeM:        return "jungle_edge";
+			case biBirchForestM:       return "birch_forest";
+			case biBirchForestHillsM:  return "birch_forest_hills";
+			case biRoofedForestM:      return "roofed_forest";
+			case biColdTaigaM:         return "taiga_cold";
+			case biMegaSpruceTaiga:    return "redwood_taiga";
+			case biMegaSpruceTaigaHills: return "redwood_taiga_hills";
+			case biExtremeHillsPlusM:  return "extreme_hills_with_trees";
+			case biSavannaM:           return "savanna";
+			case biSavannaPlateauM:    return "savanna_rock";
+			case biMesaBryce:          return "mesa_rock";
+			case biMesaPlateauFM:      return "mesa_rock";
+			case biMesaPlateauM:       return "mesa_clear_rock";
+			default:                   return "";
+		}
+	}
+
+
+
+
+
+	AString NormalizeBiomeName(const AString & a_Name)
+	{
+		AString Name = a_Name;
+		if (Name.compare(0, 10, "minecraft:") == 0)
+		{
+			Name.erase(0, 10);
+		}
+		return Name;
 	}
 
 
@@ -950,6 +1414,7 @@ void cAdvancementManager::LoadFromFolder(const AString & a_Folder)
 		}
 		m_Triggers.emplace(Trigger, Entry);
 	}
+	BuildInventoryIndex();
 
 	LOGINFO("Loaded %zu advancement(s) from \"%s\"", m_Advancements.size(), a_Folder.c_str());
 }
@@ -1450,24 +1915,29 @@ cAdvancementUpdate cAdvancementManager::BuildUpdate(
 
 
 
-void cAdvancementManager::TriggerInventoryChanged(cPlayer & a_Player)
+void cAdvancementManager::TriggerInventoryChanged(cPlayer & a_Player, short a_ChangedItemType)
 {
-	const auto Range = m_Triggers.equal_range("minecraft:inventory_changed");
-	if (Range.first == Range.second)
+	std::vector<const cTriggerEntry *> Candidates;
+	const auto It = m_InventoryItemIndex.find(a_ChangedItemType);
+	if (It != m_InventoryItemIndex.end())
 	{
-		return;
+		Candidates.insert(Candidates.end(), It->second.begin(), It->second.end());
 	}
+	Candidates.insert(Candidates.end(), m_InventorySlotEntries.begin(), m_InventorySlotEntries.end());
+	Candidates.insert(Candidates.end(), m_InventoryUnconditional.begin(), m_InventoryUnconditional.end());
+	std::sort(Candidates.begin(), Candidates.end());
+	Candidates.erase(std::unique(Candidates.begin(), Candidates.end()), Candidates.end());
+
 	const auto & Inventory = a_Player.GetInventory();
-	for (auto It = Range.first; It != Range.second; ++It)
+	for (const auto * Entry : Candidates)
 	{
-		const auto & Entry = It->second;
-		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		if (a_Player.HasAdvancementCriterion(Entry->AdvancementID, Entry->Criterion))
 		{
 			continue;
 		}
-		if (MatchInventoryChanged(Entry.Conditions, Inventory))
+		if (MatchInventoryChanged(Entry->Conditions, Inventory))
 		{
-			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+			a_Player.GrantAdvancementCriterion(Entry->AdvancementID, Entry->Criterion);
 		}
 	}
 }
@@ -1476,7 +1946,69 @@ void cAdvancementManager::TriggerInventoryChanged(cPlayer & a_Player)
 
 
 
-void cAdvancementManager::TriggerPlayerKilledEntity(cPlayer & a_Player, const cEntity & a_Victim)
+void cAdvancementManager::BuildInventoryIndex(void)
+{
+	m_InventoryItemIndex.clear();
+	m_InventorySlotEntries.clear();
+	m_InventoryUnconditional.clear();
+	const auto Range = m_Triggers.equal_range("minecraft:inventory_changed");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		const auto & Conditions = Entry.Conditions;
+		bool HasItems = false;
+		bool HasSlots = false;
+		if (Conditions.isObject())
+		{
+			if (Conditions.isMember("items") && Conditions["items"].isArray())
+			{
+				for (const auto & Predicate : Conditions["items"])
+				{
+					if (!Predicate.isObject() || !Predicate.isMember("item"))
+					{
+						continue;
+					}
+					const auto & Item = Predicate["item"];
+					short ItemType = 0;
+					if (Item.isInt())
+					{
+						ItemType = static_cast<short>(Item.asInt());
+					}
+					else if (Item.isString())
+					{
+						cItem Resolved;
+						if (!StringToItem(Item.asString(), Resolved))
+						{
+							continue;
+						}
+						ItemType = Resolved.m_ItemType;
+					}
+					if (ItemType == 0)
+					{
+						continue;
+					}
+					HasItems = true;
+					m_InventoryItemIndex[ItemType].push_back(&Entry);
+				}
+			}
+			HasSlots = Conditions.isMember("slots");
+		}
+		if (HasSlots)
+		{
+			m_InventorySlotEntries.push_back(&Entry);
+		}
+		if (!HasItems && !HasSlots)
+		{
+			m_InventoryUnconditional.push_back(&Entry);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerPlayerKilledEntity(cPlayer & a_Player, const cEntity & a_Victim, eDamageType a_DamageType)
 {
 	const auto Range = m_Triggers.equal_range("minecraft:player_killed_entity");
 	for (auto It = Range.first; It != Range.second; ++It)
@@ -1486,7 +2018,11 @@ void cAdvancementManager::TriggerPlayerKilledEntity(cPlayer & a_Player, const cE
 		{
 			continue;
 		}
-		if (MatchEntityPredicate(Entry.Conditions, a_Victim))
+		if (Entry.Conditions.isMember("player") && (!MatchEntityPredicateValue(Entry.Conditions["player"], a_Player, a_Player)))
+		{
+			continue;
+		}
+		if (MatchEntityPredicate(Entry.Conditions, a_Victim, a_Player) && MatchKillingBlow(Entry.Conditions, a_DamageType))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
@@ -1497,7 +2033,7 @@ void cAdvancementManager::TriggerPlayerKilledEntity(cPlayer & a_Player, const cE
 
 
 
-void cAdvancementManager::TriggerEntityKilledPlayer(cPlayer & a_Player, const cEntity * a_Killer)
+void cAdvancementManager::TriggerEntityKilledPlayer(cPlayer & a_Player, const cEntity * a_Killer, const TakeDamageInfo & a_TDI)
 {
 	if (a_Killer == nullptr)
 	{
@@ -1511,7 +2047,7 @@ void cAdvancementManager::TriggerEntityKilledPlayer(cPlayer & a_Player, const cE
 		{
 			continue;
 		}
-		if (MatchEntityPredicate(Entry.Conditions, *a_Killer))
+		if (MatchEntityPredicate(Entry.Conditions, *a_Killer, a_Player) && MatchKillingBlow(Entry.Conditions, a_TDI.DamageType))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
@@ -1522,7 +2058,7 @@ void cAdvancementManager::TriggerEntityKilledPlayer(cPlayer & a_Player, const cE
 
 
 
-void cAdvancementManager::TriggerPlayerHurtEntity(cPlayer & a_Player, const cEntity & a_Victim)
+void cAdvancementManager::TriggerPlayerHurtEntity(cPlayer & a_Player, const cEntity & a_Victim, const TakeDamageInfo & a_TDI)
 {
 	const auto Range = m_Triggers.equal_range("minecraft:player_hurt_entity");
 	for (auto It = Range.first; It != Range.second; ++It)
@@ -1532,7 +2068,10 @@ void cAdvancementManager::TriggerPlayerHurtEntity(cPlayer & a_Player, const cEnt
 		{
 			continue;
 		}
-		if (MatchEntityPredicate(Entry.Conditions, a_Victim))
+		if (
+			MatchEntityPredicate(Entry.Conditions, a_Victim, a_Player) &&
+			(!Entry.Conditions.isMember("damage") || MatchDamageSource(Entry.Conditions["damage"], &a_Victim, &a_TDI))
+		)
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
@@ -1543,7 +2082,7 @@ void cAdvancementManager::TriggerPlayerHurtEntity(cPlayer & a_Player, const cEnt
 
 
 
-void cAdvancementManager::TriggerEntityHurtPlayer(cPlayer & a_Player, const cEntity * a_Attacker)
+void cAdvancementManager::TriggerEntityHurtPlayer(cPlayer & a_Player, const cEntity * a_Attacker, const TakeDamageInfo & a_TDI)
 {
 	const auto Range = m_Triggers.equal_range("minecraft:entity_hurt_player");
 	for (auto It = Range.first; It != Range.second; ++It)
@@ -1553,7 +2092,7 @@ void cAdvancementManager::TriggerEntityHurtPlayer(cPlayer & a_Player, const cEnt
 		{
 			continue;
 		}
-		if (MatchDamageSource(Entry.Conditions, a_Attacker))
+		if (MatchDamageSource(Entry.Conditions["damage"], a_Attacker, &a_TDI))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
@@ -1739,7 +2278,7 @@ void cAdvancementManager::TriggerEffectsChanged(cPlayer & a_Player)
 		{
 			continue;
 		}
-		if (!Entry.Conditions.isObject() || (Entry.Conditions.size() == 0))
+		if (MatchEffectsConditions(Entry.Conditions, a_Player))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
@@ -1902,20 +2441,64 @@ void cAdvancementManager::TriggerSleptInBed(cPlayer & a_Player)
 
 
 
-void cAdvancementManager::TriggerSummonedEntity(cPlayer & a_Player, const cEntity & a_Entity)
+void cAdvancementManager::TriggerSummonedEntity(const cEntity & a_Entity)
 {
+	// Vanilla: a player-built iron or snow golem triggers for everyone within Chebyshev distance 5 of the
+	// golem; a player-built wither triggers within Chebyshev distance 50. The ender dragon is handled by
+	// its own caller (all players in the End within 192 blocks of the origin):
+	cWorld * World = a_Entity.GetWorld();
+	if (World == nullptr)
+	{
+		return;
+	}
+	int Radius = 5;
+	if (a_Entity.IsMob())
+	{
+		switch (static_cast<const cMonster &>(a_Entity).GetMobType())
+		{
+			case mtWither:    Radius = 50; break;
+			case mtIronGolem:
+			case mtSnowGolem: Radius = 5;  break;
+			default:          Radius = 5;  break;
+		}
+	}
+
 	const auto Range = m_Triggers.equal_range("minecraft:summoned_entity");
+	if (Range.first == Range.second)
+	{
+		return;
+	}
+	const auto Pos = a_Entity.GetPosition();
 	for (auto It = Range.first; It != Range.second; ++It)
 	{
 		const auto & Entry = It->second;
-		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		if (!MatchEntityPredicate(Entry.Conditions, a_Entity, a_Entity))
 		{
 			continue;
 		}
-		if (MatchEntityPredicate(Entry.Conditions, a_Entity))
-		{
-			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
-		}
+		World->ForEachPlayer([&](cPlayer & a_Player)
+			{
+				if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+				{
+					return false;
+				}
+				if (Entry.Conditions.isMember("player") && !MatchEntityPredicateValue(Entry.Conditions["player"], a_Player, a_Player))
+				{
+					return false;
+				}
+				const auto PlayerPos = a_Player.GetPosition();
+				if (
+					(std::abs(PlayerPos.x - Pos.x) > Radius) ||
+					(std::abs(PlayerPos.y - Pos.y) > Radius) ||
+					(std::abs(PlayerPos.z - Pos.z) > Radius)
+				)
+				{
+					return false;
+				}
+				a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+				return false;
+			}
+		);
 	}
 }
 
@@ -1933,7 +2516,7 @@ void cAdvancementManager::TriggerTameAnimal(cPlayer & a_Player, const cEntity & 
 		{
 			continue;
 		}
-		if (MatchEntityPredicate(Entry.Conditions, a_Animal))
+		if (MatchEntityPredicate(Entry.Conditions, a_Animal, a_Player))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
@@ -1957,15 +2540,15 @@ void cAdvancementManager::TriggerBredAnimals(cPlayer & a_Player, const cEntity &
 		bool Matches = true;
 		if (Entry.Conditions.isObject())
 		{
-			if (Entry.Conditions.isMember("parent") && !MatchEntityPredicateValue(Entry.Conditions["parent"], a_Parent))
+			if (Entry.Conditions.isMember("parent") && !MatchEntityPredicateValue(Entry.Conditions["parent"], a_Parent, a_Player))
 			{
 				Matches = false;
 			}
-			if (Entry.Conditions.isMember("partner") && !MatchEntityPredicateValue(Entry.Conditions["partner"], a_Partner))
+			if (Entry.Conditions.isMember("partner") && !MatchEntityPredicateValue(Entry.Conditions["partner"], a_Partner, a_Player))
 			{
 				Matches = false;
 			}
-			if (Entry.Conditions.isMember("child") && ((a_Child == nullptr) || !MatchEntityPredicateValue(Entry.Conditions["child"], *a_Child)))
+			if (Entry.Conditions.isMember("child") && ((a_Child == nullptr) || !MatchEntityPredicateValue(Entry.Conditions["child"], *a_Child, a_Player)))
 			{
 				Matches = false;
 			}
@@ -1994,12 +2577,12 @@ void cAdvancementManager::TriggerCuredZombieVillager(cPlayer & a_Player, const c
 		bool Matches = true;
 		if (Entry.Conditions.isObject())
 		{
-			if (Entry.Conditions.isMember("zombie") && !MatchEntityPredicateValue(Entry.Conditions["zombie"], a_Zombie))
+			if (Entry.Conditions.isMember("zombie") && !MatchEntityPredicateValue(Entry.Conditions["zombie"], a_Zombie, a_Player))
 			{
 				Matches = false;
 			}
 			if (Entry.Conditions.isMember("villager") &&
-				((a_Villager == nullptr) || !MatchEntityPredicateValue(Entry.Conditions["villager"], *a_Villager)))
+				((a_Villager == nullptr) || !MatchEntityPredicateValue(Entry.Conditions["villager"], *a_Villager, a_Player)))
 			{
 				Matches = false;
 			}
@@ -2069,7 +2652,7 @@ void cAdvancementManager::TriggerLocation(cPlayer & a_Player)
 	const int BlockX = static_cast<int>(std::floor(Pos.x));
 	const int BlockY = static_cast<int>(std::floor(Pos.y));
 	const int BlockZ = static_cast<int>(std::floor(Pos.z));
-	const auto * World = a_Player.GetWorld();
+	auto * World = a_Player.GetWorld();
 	const AString Dimension = (World != nullptr) ? DimensionName(World->GetDimension()) : "overworld";
 	for (auto It = Range.first; It != Range.second; ++It)
 	{
@@ -2086,6 +2669,15 @@ void cAdvancementManager::TriggerLocation(cPlayer & a_Player)
 			{
 				Matches = false;
 			}
+			if (Entry.Conditions.isMember("biome"))
+			{
+				const AString ActualBiome = (World != nullptr) ? BiomeToAdvancementID(World->GetBiomeAt(BlockX, BlockZ)) : AString();
+				const AString ExpectedBiome = NormalizeBiomeName(Entry.Conditions["biome"].asString());
+				if (ActualBiome != ExpectedBiome)
+				{
+					Matches = false;
+				}
+			}
 			if (Entry.Conditions.isMember("position") && Entry.Conditions["position"].isObject())
 			{
 				const auto & Position = Entry.Conditions["position"];
@@ -2098,6 +2690,15 @@ void cAdvancementManager::TriggerLocation(cPlayer & a_Player)
 					Matches = false;
 				}
 				if (Position.isMember("z") && !MatchRange(Position["z"], BlockZ))
+				{
+					Matches = false;
+				}
+			}
+			if (Entry.Conditions.isMember("feature"))
+			{
+				const AString Feature = Entry.Conditions["feature"].asString();
+				const bool Inside = (World != nullptr) && World->GetGenerator().IsInsideStructure(Feature, Vector3i(BlockX, BlockY, BlockZ));
+				if (!Inside)
 				{
 					Matches = false;
 				}

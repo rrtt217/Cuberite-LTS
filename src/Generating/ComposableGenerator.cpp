@@ -218,6 +218,22 @@ bool cComposableGenerator::GetNearestStructureTarget(const AString & a_Structure
 
 
 
+bool cComposableGenerator::IsInsideStructure(const AString & a_Structure, const Vector3i & a_Position)
+{
+	for (const auto & Finisher : m_FinishGens)
+	{
+		if (Finisher->IsInsideStructure(a_Structure, a_Position))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+
+
+
+
 void cComposableGenerator::InitializeGeneratorDefaults(cIniFile & a_IniFile, eDimension a_Dimension)
 {
 	switch (a_Dimension)

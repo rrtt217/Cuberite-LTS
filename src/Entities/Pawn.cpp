@@ -367,18 +367,16 @@ void cPawn::ClearEntityEffects()
 
 void cPawn::NoLongerTargetingMe(cMonster * a_Monster)
 {
-	ASSERT(IsTicking());  // Our destroy override is supposed to clear all targets before we're destroyed.
+	// A monster may hold a stale target without a matching registration (for example after
+	// cMonster::UnsafeUnsetTarget() or a world transfer), so a missing entry is not fatal:
 	for (auto i = m_TargetingMe.begin(); i != m_TargetingMe.end(); ++i)
 	{
-		cMonster * Monster = *i;
-		if (Monster == a_Monster)
+		if (*i == a_Monster)
 		{
-			ASSERT(Monster->GetTarget() != this);  // The monster is notifying us it is no longer targeting us, assert if that's a lie
 			m_TargetingMe.erase(i);
 			return;
 		}
 	}
-	ASSERT(false);  // If this happens, something is wrong. Perhaps the monster never called TargetingMe() or called NoLongerTargetingMe() twice.
 }
 
 

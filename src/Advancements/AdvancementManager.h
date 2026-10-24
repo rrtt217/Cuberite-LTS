@@ -9,6 +9,12 @@
 
 #include <json/json.h>
 
+
+
+
+
+struct TakeDamageInfo;
+
 #include <map>
 #include <set>
 #include <utility>
@@ -41,19 +47,19 @@ public:
 	bool IsValid(const AString & a_ID) const;
 
 	/** Runs the minecraft:inventory_changed criteria against the player's current inventory. */
-	void TriggerInventoryChanged(cPlayer & a_Player);
+	void TriggerInventoryChanged(cPlayer & a_Player, short a_ChangedItemType);
 
 	/** Runs the minecraft:player_killed_entity criteria for the killing player. */
-	void TriggerPlayerKilledEntity(cPlayer & a_Player, const cEntity & a_Victim);
+	void TriggerPlayerKilledEntity(cPlayer & a_Player, const cEntity & a_Victim, eDamageType a_DamageType);
 
 	/** Runs the minecraft:entity_killed_player criteria for the dying player. */
-	void TriggerEntityKilledPlayer(cPlayer & a_Player, const cEntity * a_Killer);
+	void TriggerEntityKilledPlayer(cPlayer & a_Player, const cEntity * a_Killer, const TakeDamageInfo & a_TDI);
 
 	/** Runs the minecraft:player_hurt_entity criteria for the attacking player. */
-	void TriggerPlayerHurtEntity(cPlayer & a_Player, const cEntity & a_Victim);
+	void TriggerPlayerHurtEntity(cPlayer & a_Player, const cEntity & a_Victim, const TakeDamageInfo & a_TDI);
 
 	/** Runs the minecraft:entity_hurt_player criteria for the hurt player. */
-	void TriggerEntityHurtPlayer(cPlayer & a_Player, const cEntity * a_Attacker);
+	void TriggerEntityHurtPlayer(cPlayer & a_Player, const cEntity * a_Attacker, const TakeDamageInfo & a_TDI);
 
 	/** Runs the minecraft:item_durability_changed criteria for the player's item. */
 	void TriggerItemDurabilityChanged(cPlayer & a_Player, const cItem & a_ItemBefore, int a_Delta, int a_Durability);
@@ -92,7 +98,7 @@ public:
 	void TriggerSleptInBed(cPlayer & a_Player);
 
 	/** Runs the minecraft:summoned_entity criteria for an entity the player summoned. */
-	void TriggerSummonedEntity(cPlayer & a_Player, const cEntity & a_Entity);
+	void TriggerSummonedEntity(const cEntity & a_Entity);
 
 	/** Runs the minecraft:tame_animal criteria for a tamed animal. */
 	void TriggerTameAnimal(cPlayer & a_Player, const cEntity & a_Animal);
@@ -172,6 +178,18 @@ private:
 
 	/** Trigger entries collected while loading, filtered against m_Advancements after validation. */
 	std::vector<std::pair<AString, cTriggerEntry>> m_PendingTriggers;
+
+	/** inventory_changed entries grouped by the required item type (avoids scanning all entries on each slot change). */
+	std::map<Int16, std::vector<const cTriggerEntry *>> m_InventoryItemIndex;
+
+	/** inventory_changed entries with slot-count conditions (need a full inventory check). */
+	std::vector<const cTriggerEntry *> m_InventorySlotEntries;
+
+	/** inventory_changed entries without item or slot conditions (match on any change). */
+	std::vector<const cTriggerEntry *> m_InventoryUnconditional;
+
+	/** Builds m_InventoryItemIndex / m_InventorySlotEntries / m_InventoryUnconditional from m_Triggers. */
+	void BuildInventoryIndex(void);
 
 	/** Adds one parsed JSON file to the manager. */
 	void AddFile(const AString & a_FileName, const AString & a_RelativePath);

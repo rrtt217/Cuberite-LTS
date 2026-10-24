@@ -1,0 +1,39 @@
+{
+  "parent": "minecraft:nether/find_fortress",
+  "display": {
+    "title": {
+      "translate": "advancements.nether.obtain_blaze_rod.title"
+    },
+    "description": {
+      "translate": "advancements.nether.obtain_blaze_rod.description"
+    },
+    "icon": {
+      "item": 369,
+      "data": 0
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "x": 2.0,
+    "y": 0.5
+  },
+  "criteria": {
+    "blaze_rod": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": "minecraft:blaze_rod"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "blaze_rod"
+    ]
+  ],
+  "legacy_achievement": "AchBlazeRod"
+}

@@ -36,7 +36,7 @@
 
 ## 3. demo 数据
 
-Server/advancements/cuberite/m3/：
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 - `stick.json`：parent cuberite:m1/root，conditions items=[minecraft:stick]；
 - `diamond.json`：items=[minecraft:diamond]；
 - `five_sticks.json`：parent cuberite:m3/stick，items=[minecraft:stick, count.min=5]，frame challenge。
