@@ -204,3 +204,9 @@
 - IsInsideStructure 加保守包围盒 fallback：缓存未命中时用 GetNearestStructureTarget + m_MaxStructureSizeX/Z 判定。
 - 实测：144,37,-189 和 344,37,-189 都返回 true（fallback 太宽，m_MaxStructureSize 覆盖了 344）；criterion 仍 false。
 - 关键偏移：IsInsideStructure 内 GetNearestStructureTarget 返回 220,-205（不是 stronghold 的 144,-189），与 Lua 直接 GetNearestStructureTarget 的结果不一致；下一步先查这个偏移（可能是不同 cGen/参数）。
+
+## end city 调试（轮 41）
+
+- MoveToWorld('world_the_end') 实测 ok=true，world=world_the_end（轮 40 的失败是传送到旧世界的 SetPosition 顺序问题）。
+- end city target 83,0,-68；对 y=0..130 全部 IsInsideStructure('EndCity',83,y,-68)=false → cEndCity::IsInside / pieces 有问题。
+- 下一步：在 cEndCity::IsInside 记录 pieces 数量与每个 piece 的 pos/size，定位为什么目标 x/z 不在任何 piece 盒子内。
