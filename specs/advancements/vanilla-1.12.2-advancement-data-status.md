@@ -167,3 +167,9 @@
 - 网格调试日志：GetStructuresForChunk 返回 4 个候选结构（origin -9,-297 / 83,-68 / 220,-205 / 275,-123），逐个 IsInside=0；但 Lua 对同一位置的调用却是 true。
 - 结论：问题在结构对象的 pieces/hitbox 状态在两次调用间不一致（或候选结构集合不同）；下一轮直接记录 cPrefabStructure 的 piece hitbox 与 cPlacedPiece 坐标。
 - 临时调试日志已移除；构建/风格恢复通过。
+
+## location feature 调试（轮 27 追加）
+
+- cPrefabStructure::IsInside 对 stronghold 的 133 个 piece 在位置 144,37,-189 命中 box 144 36 -189 .. 156 43 -176，in=1；Lua 路径与 manager 路径一致。
+- 轮 26 的 false 来自当时 GetStructuresForChunk 返回的候选结构集合（4 个非 stronghold 结构），不是 hitbox 问题；本轮同一位置已拿到 stronghold 的 133-piece 结构。
+- 下一步：teleport 后确认 in_stronghold criterion 是否授予（本轮未测）。
