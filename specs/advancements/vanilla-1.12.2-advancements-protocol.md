@@ -95,3 +95,9 @@ flags：0x1 有 background、0x2 show_toast、0x4 hidden。announce_to_chat 不�
 - 不发送 Select Advancement Tab；不处理页签包（只丢弃）。
 - 无公告、无命令、无持久化：M1/M2 处理。公告的确切 JSON 形状已由 [同步实测记录](vanilla-1.12.2-advancements-observation.md) 抓到。
 - 原版入服包是"可见集合"而非全树；M0 的测试树只有 2 个节点，无法区分"全树"与"可见集合"的客户端渲染差异。M1 需用三节点（root→child→grandchild，child 未完成）做对照。
+
+## 7. 输出包缓冲区修复（2026）
+
+- 原 cProtocol 的 m_OutPacketBuffer 为 64 KiB；原版 1.12.2 的完整 advancement 入服包（488 条）是 **119277 字节**，超出缓冲区，SendAdvancements 里 WriteVarUTF8String 返回 false，VERIFY 直接终止服务器。
+- 1.12.2 协议的单包容限是 2 MiB，因此把输出缓冲区改为 **2 MiB**。
+- 验证：Loaded 488；bot 入服不再崩溃；advancement test story/smelt_iron、recipes/building_blocks/oak_planks、adventure/root 正常；ctest 49/49。
