@@ -498,7 +498,7 @@ namespace
 				for (auto PredIt = it->begin(); PredIt != it->end(); ++PredIt)
 				{
 					const AString PredKey = PredIt.key().asString();
-					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location") && (PredKey != "distance") && (PredKey != "flags") && (PredKey != "effects") && (PredKey != "equipment"))
+					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location") && (PredKey != "distance") && (PredKey != "flags") && (PredKey != "effects") && (PredKey != "equipment") && (PredKey != "advancements"))
 					{
 						a_Reason = "unsupported entity predicate \"" + PredKey + "\"";
 						return false;
@@ -1026,6 +1026,21 @@ namespace
 		if (!a_Predicate.isObject())
 		{
 			return true;
+		}
+		if (a_Predicate.isMember("advancements") && a_Predicate["advancements"].isObject())
+		{
+			if (!a_Entity.IsPlayer())
+			{
+				return false;
+			}
+			const auto & Player = static_cast<const cPlayer &>(a_Entity);
+			for (auto it = a_Predicate["advancements"].begin(); it != a_Predicate["advancements"].end(); ++it)
+			{
+				if (it->asBool() != Player.HasAdvancement(it.key().asString()))
+				{
+					return false;
+				}
+			}
 		}
 		if (a_Predicate.isMember("equipment") && a_Predicate["equipment"].isObject())
 		{
