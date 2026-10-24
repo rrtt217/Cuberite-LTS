@@ -39,3 +39,12 @@
 - 条件按 wiki 要求文本撰写；复杂/无对应谓词的条目使用 minecraft:impossible 占位（follow_ender_eye、find_fortress、uneasy_alliance、all_potions、all_effects、enter_end_gateway、find_end_city、levitate）；deflect_arrow 用 entity_hurt_player + arrow 近似；obtain_armor/shiny_gear 用四件套 criteria OR。
 - 实测：Loaded 87 advancement(s)；smelt_iron（铁锭）、nether/root + story/enter_the_nether（下界维度）、end/root + story/enter_the_end（末地维度）均完成；mine_stone、adventure/root、adventure/kill_a_mob 上一轮已验证。
 - 剩余：recipes 21、35 条的精确坐标/flags/条件（完整抓包）、biome/effects 等谓词、rewards、旧成就桥、客户端实机、门禁、合并。
+
+## recipes 21 条导入（本轮）
+
+- 数据来自 14177 字节入服包的 21 条 recipes：全部无 display、parent=minecraft:recipes/root；root 的 criterion 是 impossible。
+- criteria 映射：has_the_recipe -> recipe_unlocked（recipe=本仓库 crafting.txt 的配方名）；has_planks/has_log/has_stick/has_bone/has_egg -> inventory_changed；impossible -> impossible。
+- crafting.txt 名称修复（前置依赖，同一分支）：WoodenButton 命名为 wooden_button；原 oak_button（实际产物 WoodenDoor）改为 wooden_door；WoodPlate 命名为 wooden_pressure_plate；新增 bone_meal_from_bone: BoneMeal, 3 = Bone。
+- 配方名映射：oak_wooden_slab->oak_slab、trapdoor->oak_trapdoor、fence->oak_fence、fence_gate->oak_fence_gate、sign->oak_sign；其余与 crafting.txt 同名。
+- 实测：Loaded 108 advancement(s)；bot 在 overworld 捡起一个 log（pickup 生命周期 6000）-> has_log=true、has_the_recipe=true、minecraft:recipes/building_blocks/oak_planks=true。
+- 剩余：35 条的精确坐标/flags/条件（完整抓包）、biome/effects 等谓词、rewards、旧成就桥、客户端实机、门禁、合并。
