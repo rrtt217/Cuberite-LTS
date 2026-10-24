@@ -1,0 +1,39 @@
+{
+  "parent": "minecraft:husbandry/plant_seed",
+  "display": {
+    "title": {
+      "translate": "advancements.husbandry.break_diamond_hoe.title"
+    },
+    "description": {
+      "translate": "advancements.husbandry.break_diamond_hoe.description"
+    },
+    "icon": {
+      "item": 293,
+      "data": 0
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false,
+    "x": 2.0,
+    "y": 2.5
+  },
+  "criteria": {
+    "broke_hoe": {
+      "trigger": "minecraft:item_durability_changed",
+      "conditions": {
+        "item": {
+          "item": "minecraft:diamond_hoe"
+        },
+        "durability": {
+          "max": 0
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "broke_hoe"
+    ]
+  ]
+}

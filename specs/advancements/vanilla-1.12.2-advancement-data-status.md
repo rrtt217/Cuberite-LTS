@@ -1,0 +1,34 @@
+# 1.12.2 原版进度数据导入状态
+
+> 分支 feature/advancements-vanilla-data（叠在 feature/advancements-vanilla-list 之上）。数据来源：M0 入服包解码（20 条有 display 的可见条目）+ wiki 列表（列表/父链/要求文本）。
+
+## 已导入（20/55）
+
+- story 3：root（stone 背景，0,1.25）、mine_stone（1,1.25）、upgrade_tools（2,1.25）。
+- adventure 10：root、kill_a_mob（22 个 mob 条件）、kill_all_mobs（22 个）、sniper_duel、trade、adventuring_time（36 个 biome）、sleep_in_bed、summon_iron_golem、totem_of_undying。
+- husbandry 7：root、breed_an_animal（10 个 mob）、bred_all_animals（10 个）、balanced_diet（35 个食物）、plant_seed（5 个作物）、break_diamond_hoe。
+- display 字段来自抓包：translate key、icon id/data、frame、flags（roots=1、非 roots=2）、背景、精确 x/y；criteria/requirements 来自抓包；conditions 按 wiki 要求文本 + 触发器规格撰写。
+
+## 实测
+
+- 服务端启动 `Loaded 52 advancement(s)`（32 demo + 20 vanilla）；只有 adventuring_time 的 36 个 biome criterion 打 unsupported 警告（预期）。
+- `advancement grant TestBot only minecraft:story/root` / adventure/root / husbandry/root 成功。
+- 给 cobblestone → `minecraft:story/mine_stone` 完成（inventory_changed）。
+- 用 bot 击杀僵尸 → `minecraft:adventure/root`（killed_something）与 `minecraft:adventure/kill_a_mob`（zombie 条件）都完成。
+
+## 已知限制（这些条目已导入但条件/触发不完整）
+
+- `adventure/adventuring_time`：36 个 biome 条件，location 匹配器暂不支持 biome → 全部 criterion 跳过。
+- `adventure/trade`：villager_trade 触发器未实现 → criterion 永不触发。
+- `adventure/summon_iron_golem`：summoned_entity 触发器目前只接 /summon 命令，铁傀儡搭建路径不触发。
+- `adventure/sniper_duel`：只校验 skeleton 类型，没有 50 格/弓箭的 killing_blow 条件。
+- `husbandry/balanced_diet`：item 名称直接用 criterion 名，个别食物名（cooked_cod/raw_cod 等）需与仓库物品名核对。
+- `husbandry/plant_seed`：block 名直接用 criterion 名，作物方块名需与 ItemToString 核对。
+- 所有条目都没有 rewards（抓包不含）。
+
+## 下一步
+
+1. 补齐剩余 35 条（Nether 13、The End 9、story 13、adventure 1、husbandry 1）：优先完整入服抓包（原版服务器 grant everything 后入服）；否则按 wiki 树形图布局 + 逐条撰写。
+2. recipes 21 条（无 display）+ recipe_unlocked 名称映射。
+3. biome/effects/entity 列表等谓词扩展；villager_trade/铁傀儡等触发路径。
+4. rewards 逐条确认；旧成就桥；客户端实机（页签/树/公告）验证。

@@ -1,0 +1,349 @@
+{
+  "parent": "minecraft:adventure/sleep_in_bed",
+  "display": {
+    "title": {
+      "translate": "advancements.adventure.adventuring_time.title"
+    },
+    "description": {
+      "translate": "advancements.adventure.adventuring_time.description"
+    },
+    "icon": {
+      "item": 313,
+      "data": 0
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false,
+    "x": 2.0,
+    "y": 4.0
+  },
+  "criteria": {
+    "ice_flats": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "ice_flats"
+      }
+    },
+    "frozen_river": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "frozen_river"
+      }
+    },
+    "taiga_cold_hills": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "taiga_cold_hills"
+      }
+    },
+    "forest": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "forest"
+      }
+    },
+    "mesa_rock": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "mesa_rock"
+      }
+    },
+    "mushroom_island_shore": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "mushroom_island_shore"
+      }
+    },
+    "swampland": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "swampland"
+      }
+    },
+    "birch_forest": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "birch_forest"
+      }
+    },
+    "deep_ocean": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "deep_ocean"
+      }
+    },
+    "beaches": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "beaches"
+      }
+    },
+    "extreme_hills_with_trees": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "extreme_hills_with_trees"
+      }
+    },
+    "desert_hills": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "desert_hills"
+      }
+    },
+    "mesa": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "mesa"
+      }
+    },
+    "forest_hills": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "forest_hills"
+      }
+    },
+    "savanna": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "savanna"
+      }
+    },
+    "plains": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "plains"
+      }
+    },
+    "jungle_hills": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "jungle_hills"
+      }
+    },
+    "jungle_edge": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "jungle_edge"
+      }
+    },
+    "mesa_clear_rock": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "mesa_clear_rock"
+      }
+    },
+    "savanna_rock": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "savanna_rock"
+      }
+    },
+    "ice_mountains": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "ice_mountains"
+      }
+    },
+    "redwood_taiga": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "redwood_taiga"
+      }
+    },
+    "taiga": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "taiga"
+      }
+    },
+    "redwood_taiga_hills": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "redwood_taiga_hills"
+      }
+    },
+    "taiga_hills": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "taiga_hills"
+      }
+    },
+    "birch_forest_hills": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "birch_forest_hills"
+      }
+    },
+    "mushroom_island": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "mushroom_island"
+      }
+    },
+    "taiga_cold": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "taiga_cold"
+      }
+    },
+    "ocean": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "ocean"
+      }
+    },
+    "extreme_hills": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "extreme_hills"
+      }
+    },
+    "roofed_forest": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "roofed_forest"
+      }
+    },
+    "cold_beach": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "cold_beach"
+      }
+    },
+    "river": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "river"
+      }
+    },
+    "jungle": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "jungle"
+      }
+    },
+    "desert": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "desert"
+      }
+    },
+    "stone_beach": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biome": "stone_beach"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "ice_flats"
+    ],
+    [
+      "frozen_river"
+    ],
+    [
+      "taiga_cold_hills"
+    ],
+    [
+      "forest"
+    ],
+    [
+      "mesa_rock"
+    ],
+    [
+      "mushroom_island_shore"
+    ],
+    [
+      "swampland"
+    ],
+    [
+      "birch_forest"
+    ],
+    [
+      "deep_ocean"
+    ],
+    [
+      "beaches"
+    ],
+    [
+      "extreme_hills_with_trees"
+    ],
+    [
+      "desert_hills"
+    ],
+    [
+      "mesa"
+    ],
+    [
+      "forest_hills"
+    ],
+    [
+      "savanna"
+    ],
+    [
+      "plains"
+    ],
+    [
+      "jungle_hills"
+    ],
+    [
+      "jungle_edge"
+    ],
+    [
+      "mesa_clear_rock"
+    ],
+    [
+      "savanna_rock"
+    ],
+    [
+      "ice_mountains"
+    ],
+    [
+      "redwood_taiga"
+    ],
+    [
+      "taiga"
+    ],
+    [
+      "redwood_taiga_hills"
+    ],
+    [
+      "taiga_hills"
+    ],
+    [
+      "birch_forest_hills"
+    ],
+    [
+      "mushroom_island"
+    ],
+    [
+      "taiga_cold"
+    ],
+    [
+      "ocean"
+    ],
+    [
+      "extreme_hills"
+    ],
+    [
+      "roofed_forest"
+    ],
+    [
+      "cold_beach"
+    ],
+    [
+      "river"
+    ],
+    [
+      "jungle"
+    ],
+    [
+      "desert"
+    ],
+    [
+      "stone_beach"
+    ]
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "parent": "minecraft:adventure/kill_a_mob",
+  "display": {
+    "title": {
+      "translate": "advancements.adventure.totem_of_undying.title"
+    },
+    "description": {
+      "translate": "advancements.adventure.totem_of_undying.description"
+    },
+    "icon": {
+      "item": 449,
+      "data": 0
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false,
+    "x": 2.0,
+    "y": 2.0
+  },
+  "criteria": {
+    "used_totem": {
+      "trigger": "minecraft:used_totem"
+    }
+  },
+  "requirements": [
+    [
+      "used_totem"
+    ]
+  ]
+}
