@@ -2,6 +2,8 @@
 #include "Globals.h"  // NOTE: MSVC stupidness requires this to be the same across all modules
 
 #include "ZombieVillager.h"
+#include "../Advancements/AdvancementManager.h"
+#include "../Root.h"
 #include "../World.h"
 #include "../LineBlockTracer.h"
 #include "../Entities/Player.h"
@@ -57,8 +59,29 @@ void cZombieVillager::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 	if (m_ConversionTime == 0)
 	{
 		m_World->BroadcastSoundEffect("entity.zombie_villager.cure", GetPosition(), 1.0f, 1.0f);
+
+		const UInt32 VillagerID = m_World->SpawnMob(GetPosX(), GetPosY(), GetPosZ(), mtVillager, false);
+		cEntity * Villager = nullptr;
+		m_World->DoWithEntityByID(VillagerID, [&](cEntity & a_Entity)
+		{
+			Villager = &a_Entity;
+			return true;
+		});
+
+		if (!m_CuringPlayerName.empty())
+		{
+			cRoot::Get()->FindAndDoWithPlayer(m_CuringPlayerName, [&](cPlayer & a_Player)
+			{
+				auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+				if (AdvancementManager != nullptr)
+				{
+					AdvancementManager->TriggerCuredZombieVillager(a_Player, *this, Villager);
+				}
+				return true;
+			});
+		}
+
 		Destroy();
-		m_World->SpawnMob(GetPosX(), GetPosY(), GetPosZ(), mtVillager, false);
 	}
 	else if (m_ConversionTime > 0)
 	{
@@ -83,5 +106,6 @@ void cZombieVillager::OnRightClicked(cPlayer & a_Player)
 		}
 
 		m_ConversionTime = 6000;
+		m_CuringPlayerName = a_Player.GetName();
 	}
 }

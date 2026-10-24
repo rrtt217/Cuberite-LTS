@@ -100,6 +100,9 @@ public:
 	/** Runs the minecraft:bred_animals criteria for a completed breeding. */
 	void TriggerBredAnimals(cPlayer & a_Player, const cEntity & a_Parent, const cEntity & a_Partner, const cEntity * a_Child);
 
+	/** Runs the minecraft:cured_zombie_villager criteria for a completed cure. */
+	void TriggerCuredZombieVillager(cPlayer & a_Player, const cEntity & a_Zombie, const cEntity * a_Villager);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 

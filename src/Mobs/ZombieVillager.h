@@ -31,4 +31,7 @@ private:
 	int m_ConversionTime;
 	cVillager::eVillagerType m_Profession;
 
+	/** The player who started the cure, for the cured_zombie_villager trigger. */
+	AString m_CuringPlayerName;
+
 } ;

@@ -309,7 +309,8 @@ namespace
 			(a_Trigger == "minecraft:slept_in_bed") ||
 			(a_Trigger == "minecraft:summoned_entity") ||
 			(a_Trigger == "minecraft:tame_animal") ||
-			(a_Trigger == "minecraft:bred_animals");
+			(a_Trigger == "minecraft:bred_animals") ||
+			(a_Trigger == "minecraft:cured_zombie_villager");
 	}
 
 
@@ -348,6 +349,23 @@ namespace
 						a_Reason = "unsupported entity predicate \"" + Key + "\"";
 						return false;
 					}
+				}
+			}
+			return true;
+		}
+		if (a_Trigger == "minecraft:cured_zombie_villager")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+			{
+				const AString Key = it.key().asString();
+				if ((Key != "villager") && (Key != "zombie"))
+				{
+					a_Reason = "unsupported condition \"" + Key + "\"";
+					return false;
 				}
 			}
 			return true;
@@ -1837,6 +1855,40 @@ void cAdvancementManager::TriggerBredAnimals(cPlayer & a_Player, const cEntity &
 				Matches = false;
 			}
 			if (Entry.Conditions.isMember("child") && ((a_Child == nullptr) || !MatchEntityPredicateValue(Entry.Conditions["child"], *a_Child)))
+			{
+				Matches = false;
+			}
+		}
+		if (Matches)
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerCuredZombieVillager(cPlayer & a_Player, const cEntity & a_Zombie, const cEntity * a_Villager)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:cured_zombie_villager");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		bool Matches = true;
+		if (Entry.Conditions.isObject())
+		{
+			if (Entry.Conditions.isMember("zombie") && !MatchEntityPredicateValue(Entry.Conditions["zombie"], a_Zombie))
+			{
+				Matches = false;
+			}
+			if (Entry.Conditions.isMember("villager") &&
+				((a_Villager == nullptr) || !MatchEntityPredicateValue(Entry.Conditions["villager"], *a_Villager)))
 			{
 				Matches = false;
 			}
