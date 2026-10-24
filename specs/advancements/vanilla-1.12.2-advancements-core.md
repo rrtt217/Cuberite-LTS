@@ -7,7 +7,7 @@
 ## 1. 数据文件与标识
 
 - 目录：Server/advancements/&lt;namespace&gt;/&lt;path&gt;.json（CWD 相对；build/Server 由 CMake 建符号链接）。
-- 标识 = 相对路径去掉 .json，并把第一个 / 换成 :。例如 Server/advancements/cuberite/m1/root.json → cuberite:m1/root。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 - 格式（本仓库自己的子集，字段名贴近 wiki 的 JSON 形状）：
 
     {

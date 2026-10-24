@@ -16,7 +16,7 @@
   - 距离 = `hypot(玩家X - 要塞目标X, 玩家Z - 要塞目标Z)`，四舍五入为整数；
   - 要塞目标来自 `a_World->GetGenerator().GetNearestStructureTarget("Stronghold", ...)`（该路径本来就要用它来定飞行方向）；
   - 命中 `MatchRange(distance)` 后走 M1 的 `GrantAdvancementCriterion`。
-- demo：`Server/advancements/cuberite/m5/use_ender_eye.json`（无条件，任何投掷都触发）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

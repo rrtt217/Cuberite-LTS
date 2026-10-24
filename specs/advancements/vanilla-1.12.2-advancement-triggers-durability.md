@@ -21,7 +21,7 @@
   - `Grid->DamageItem()` 之后计算剩余耐久（未损坏 = `GetMaxDamage() - m_ItemDamage`，损坏 = 0）；
   - 槽位更新/移除后，若 owner 正在 ticking 且 `ItemBefore` 非空，调用 `TriggerItemDurabilityChanged(owner, ItemBefore, a_Amount, Remaining)`；
   - 命中后走 M1 的 `GrantAdvancementCriterion`。
-- demo：`Server/advancements/cuberite/m5/durability.json`（delta.min=1）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

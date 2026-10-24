@@ -31,7 +31,7 @@
 
 ## 3. demo 数据
 
-Server/advancements/cuberite/m4/：
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 - `kill_zombie.json`：player_killed_entity + entity.type=minecraft:zombie；
 - `kill_skeleton.json`：entity.type=minecraft:skeleton；
 - `killed_by_zombie.json`：entity_killed_player + entity.type=minecraft:zombie；

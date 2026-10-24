@@ -11,7 +11,7 @@
 
 ## 2. 交付范围
 
-- 数据：Server/advancements/minecraft 下 76 个 JSON（55 主树 + 21 recipes）；主树含 translate key、图标、帧、背景、flags、坐标；20 条坐标来自抓包，35 条按父链布局撰写。
+- 数据：Server/advancements/minecraft 下 76 个 JSON（55 主树 + 21 recipes；原 cuberite demo 数据已移除）；主树含 translate key、图标、帧、背景、flags、坐标；20 条坐标来自抓包，35 条按父链布局撰写。
 - recipes：无 display、parent=minecraft:recipes/root；has_the_recipe -> recipe_unlocked，材料 -> inventory_changed；配方名映射见 0b61571（oak_slab/oak_trapdoor/oak_fence/oak_fence_gate/oak_sign 及 crafting.txt 修复）。
 - 触发器：28 个 vanilla 触发器实现 25 个；villager_trade（无村民交易功能）与 levitation（无漂浮效果）缺底层功能；impossible 为数据专用。
 - 谓词：inventory/entity/killing/durability/consume/placed/recipe/brewed/beacon/tame/breed/cure/changed_dimension/location(biome, dimension)/effects/player(location)/nether_travel。
@@ -20,7 +20,7 @@
 ## 3. 验证
 
 - 风格 0；构建通过；ctest 49/49（排除 UrlClient-test|Google-test）。
-- 数据加载：Loaded 108 advancement(s)；仅 all_effects 的 minecraft:glowing 报 unsupported（底层效果缺失，预期）。
+- 数据加载：Loaded 76 advancement(s)；仅 all_effects 的 minecraft:glowing 报 unsupported（底层效果缺失，预期）。
 - 实机（自动 bot）：story/mine_stone、story/smelt_iron、story/enter_the_nether、story/enter_the_end、story/follow_ender_eye、adventure/root、adventure/kill_a_mob、adventure/kill_a_mob(ghast 条件)、nether/root、nether/uneasy_alliance、nether/return_to_sender、end/root、hubandry... 见各轮记录；recipes/building_blocks/oak_planks（log pickup -> recipe unlock）；nether/all_potions（11 效果）；旧成就桥 grant story/mine_diamond -> 聊天出现 [Diamonds!] 与 Achievement get!。
 - adventuring_time：bot 的 FlowerForest 映射 forest -> criterion forest = true。
 

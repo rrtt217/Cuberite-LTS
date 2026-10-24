@@ -20,7 +20,7 @@
   - 调用 `TriggerCuredZombieVillager(player, *this, Villager)`；
   - 最后 `Destroy()`。
 - trigger 白名单加入 `minecraft:cured_zombie_villager`；加载期只接受 `villager` / `zombie`，其他键 warning 并跳过；匹配复用 `MatchEntityPredicateValue`。
-- demo：`Server/advancements/cuberite/m5/cured_zombie_villager.json`（无条件）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

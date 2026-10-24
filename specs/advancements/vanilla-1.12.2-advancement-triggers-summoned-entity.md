@@ -15,7 +15,7 @@
   - `SpawnEntity()` 现在返回 `(Success, EntityId)`：mob / minecart / projectile 返回 API 的实体 ID；
   - `HandleSummonCommand` 在成功后用 `World:DoWithEntityByID(EntityId, ...)` 找到实体，并调用 `Player:TriggerSummonedEntity(entity)`（仅当有 summoning player）。
 - C++：`cPlayer::TriggerSummonedEntity(cEntity &)` → `cAdvancementManager::TriggerSummonedEntity()`；加载期只接受 `entity`，其他键 warning 并跳过；匹配复用 `MatchEntityPredicate`（type/player）。
-- demo：`Server/advancements/cuberite/m5/summoned_entity.json`（entity.type=minecraft:zombie）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

@@ -16,7 +16,7 @@
   - 记录成员 `m_LastEnteredBlock`（初值空气）；
   - 方块变化且新方块非空气 → `TriggerEnterBlock(*this, CurrentBlock)`。
 - 条件匹配：复用 `MatchBlockName`（`ItemToString(cItem(BlockType))`，两边去掉 `minecraft:` 前缀）。
-- demo：`Server/advancements/cuberite/m5/enter_block.json`（block=minecraft:water）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

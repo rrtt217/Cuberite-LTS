@@ -17,7 +17,7 @@
   - 复制当前手持物品为 count=1 的 `Item`；
   - `EatItem()` 成功、`OnFoodEaten()` 之后再调用 `TriggerConsumedItem(*this, Item)`；
   - `EatItem()` 失败（不饿/不可吃）时不触发。
-- demo：`Server/advancements/cuberite/m5/eat_apple.json`（item=minecraft:apple）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

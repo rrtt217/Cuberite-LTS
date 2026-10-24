@@ -11,7 +11,7 @@
 
 ## 实测
 
-- 服务端启动 `Loaded 52 advancement(s)`（32 demo + 20 vanilla）；只有 adventuring_time 的 36 个 biome criterion 打 unsupported 警告（预期）。
+- 服务端启动 `Loaded 52 advancement(s)`（20 vanilla）；只有 adventuring_time 的 36 个 biome criterion 打 unsupported 警告（预期）。
 - `advancement grant TestBot only minecraft:story/root` / adventure/root / husbandry/root 成功。
 - 给 cobblestone → `minecraft:story/mine_stone` 完成（inventory_changed）。
 - 用 bot 击杀僵尸 → `minecraft:adventure/root`（killed_something）与 `minecraft:adventure/kill_a_mob`（zombie 条件）都完成。
@@ -46,7 +46,7 @@
 - criteria 映射：has_the_recipe -> recipe_unlocked（recipe=本仓库 crafting.txt 的配方名）；has_planks/has_log/has_stick/has_bone/has_egg -> inventory_changed；impossible -> impossible。
 - crafting.txt 名称修复（前置依赖，同一分支）：WoodenButton 命名为 wooden_button；原 oak_button（实际产物 WoodenDoor）改为 wooden_door；WoodPlate 命名为 wooden_pressure_plate；新增 bone_meal_from_bone: BoneMeal, 3 = Bone。
 - 配方名映射：oak_wooden_slab->oak_slab、trapdoor->oak_trapdoor、fence->oak_fence、fence_gate->oak_fence_gate、sign->oak_sign；其余与 crafting.txt 同名。
-- 实测：Loaded 108 advancement(s)；bot 在 overworld 捡起一个 log（pickup 生命周期 6000）-> has_log=true、has_the_recipe=true、minecraft:recipes/building_blocks/oak_planks=true。
+- 实测：Loaded 76 advancement(s)；bot 在 overworld 捡起一个 log（pickup 生命周期 6000）-> has_log=true、has_the_recipe=true、minecraft:recipes/building_blocks/oak_planks=true。
 - 剩余：35 条的精确坐标/flags/条件（完整抓包）、biome/effects 等谓词、rewards、旧成就桥、客户端实机、门禁、合并。
 
 ## biome location predicate（本轮）

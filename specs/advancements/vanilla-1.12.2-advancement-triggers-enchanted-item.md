@@ -16,7 +16,7 @@
   - Core `enchant.lua` 在 `EnchantItem()` 成功后，对目标玩家调用 `a_Target:TriggerEnchantedItem(a_Target:GetEquippedItem(), 0)`；
   - `levels` 传 0：命令本身不消耗经验等级（原版命令路径的等级消耗语义〔待核〕）。
 - C++：`cPlayer::TriggerEnchantedItem(cItem, Levels)` → `cAdvancementManager::TriggerEnchantedItem()`；加载期只接受 `item` / `levels`，其他键 warning 并跳过；`item` 用 `MatchItemPredicate`，`levels` 用 `MatchRange`。
-- demo：`Server/advancements/cuberite/m5/enchanted_item.json`（item=minecraft:diamond_sword）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

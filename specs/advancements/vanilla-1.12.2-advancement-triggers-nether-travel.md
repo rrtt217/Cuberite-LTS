@@ -20,7 +20,7 @@
   - 主世界 → 下界：`Player.SetNetherEntry(OldPos)`；
   - 下界 → 主世界：取记录的 entry，调用 `TriggerNetherTravel(Player, entry, 新位置)`，然后清除 entry。
 - manager：白名单加入 `minecraft:nether_travel`；只接受 `distance`（内部只允许 absolute/horizontal/x/y/z）；用 `MatchDoubleRange` 匹配。
-- demo：`Server/advancements/cuberite/m5/nether_travel.json`（无条件）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

@@ -20,7 +20,7 @@
   - `block`：方块名用 `ItemToString(cItem(BlockType))`（如 `minecraft:stone`），两边都去掉 `minecraft:` 前缀后比较；
   - `item`：M3 的 `MatchItemPredicate`，对放置时手持物品求值。
 - 调用点：`cPlayer::PlaceBlocks()` 在每个方块 `m_World->PlaceBlock()` 成功之后、插件 "placed" hook 之前调用 `TriggerPlacedBlock(*this, Block.m_BlockType, GetEquippedItem())`；一次多方块放置（如床）按方块逐个触发。
-- demo：`Server/advancements/cuberite/m5/place_stone.json`（block=minecraft:stone）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 

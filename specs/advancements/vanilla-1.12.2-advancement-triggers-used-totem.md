@@ -14,7 +14,7 @@
 - trigger 白名单加入 `minecraft:used_totem`；加载期只接受 `item`，其他键 warning 并跳过（fail-closed）。
 - 调用点：`cPawn::KilledBy()` 的图腾复活分支——`DeductTotem()` 成功、播放 `PawnTotemActivates`、加吸收/再生/抗火并设 `m_Health = 1` 之后，若 `IsPlayer()` 则 `TriggerUsedTotem(*this, cItem(E_ITEM_TOTEM_OF_UNDYING))`。
 - 存活判定/消耗图腾仍由既有 `DeductTotem()` 负责（主手或副手），触发器只观察成功复活。
-- demo：`Server/advancements/cuberite/m5/use_totem.json`（item=minecraft:totem_of_undying）。
+- demo：已移除（原 cuberite 测试数据由 1.12.2 原版数据取代，见 vanilla-1.12.2-advancement-delivery.md）。
 
 ## 3. 验证
 
