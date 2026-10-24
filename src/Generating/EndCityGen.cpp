@@ -1397,17 +1397,14 @@ protected:
 	/** Returns true if the specified block position is inside one of the city's pieces. */
 	virtual bool IsInside(const Vector3i & a_Position) const override
 	{
-		LOGINFO("endcityinside pieces=%d pos=%d,%d,%d", static_cast<int>(m_Pieces.size()), a_Position.x, a_Position.y, a_Position.z);
 		for (const auto & Piece : m_Pieces)
 		{
 			const Vector3i Size = Piece.m_Prefab->GetSize();
-			const bool In = (
+			if (
 				(a_Position.x >= Piece.m_Pos.x) && (a_Position.x < Piece.m_Pos.x + Size.x) &&
 				(a_Position.y >= Piece.m_Pos.y) && (a_Position.y < Piece.m_Pos.y + Size.y) &&
 				(a_Position.z >= Piece.m_Pos.z) && (a_Position.z < Piece.m_Pos.z + Size.z)
-			);
-			LOGINFO("endcityinside piece pos=%d,%d,%d size=%d,%d,%d in=%d", Piece.m_Pos.x, Piece.m_Pos.y, Piece.m_Pos.z, Size.x, Size.y, Size.z, In ? 1 : 0);
-			if (In)
+			)
 			{
 				return true;
 			}
@@ -1915,7 +1912,8 @@ bool cEndCityGen::GetNearestStructureTarget(const AString & a_Structure, Vector3
 	const int GridX = FAST_FLOOR_DIV(a_Position.x, END_CITY_GRID_SIZE) * END_CITY_GRID_SIZE;
 	const int GridZ = FAST_FLOOR_DIV(a_Position.z, END_CITY_GRID_SIZE) * END_CITY_GRID_SIZE;
 	const Vector3i Origin = GetCellOrigin(m_Seed, GridX, GridZ);
-	if (Vector3d(Origin.x, 0, Origin.z).Length() <= END_CITY_MIN_DISTANCE)
+	const double Dist = Vector3d(Origin.x, 0, Origin.z).Length();
+	if (Dist <= END_CITY_MIN_DISTANCE)
 	{
 		return false;
 	}

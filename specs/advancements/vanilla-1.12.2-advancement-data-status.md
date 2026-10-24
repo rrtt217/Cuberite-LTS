@@ -227,3 +227,9 @@
 
 - bot 移回主世界并停在 stronghold 144 后，t+16s 时 IsInsideStructure('Stronghold',144,37,-189)=true，344=false —— 严格模式 + 缓存时序正确，维护者“太松/未生成不该 true”两条都满足。
 - criterion 仍 false：MoveToWorld 是排队生效，立即 GetWorld 还是 world_the_end，触发路径拿到的世界/位置可能还是末地；需要等世界切换完成后再触发。
+
+## 客户端实测确认（轮 51）
+
+- 维护者在客户端确认：bot 与玩家实测都获得了进度 —— 进度系统端到端工作。
+- 测试脚本的 stronghold 触发失败是坐标问题：tp TestBot 144 37 -189 后服务端位置为 144,64,-189（y 被抬到地面），stronghold piece 高度 36..43，因此 IsInsideStructure(...,64,...)=false；不是功能问题。
+- 调试日志已全部清理；构建/风格通过；ctest 全绿。

@@ -2450,7 +2450,8 @@ void cAdvancementManager::TriggerLocation(cPlayer & a_Player)
 			if (Entry.Conditions.isMember("feature"))
 			{
 				const AString Feature = Entry.Conditions["feature"].asString();
-				if ((World == nullptr) || !World->GetGenerator().IsInsideStructure(Feature, Vector3i(BlockX, BlockY, BlockZ)))
+				const bool Inside = (World != nullptr) && World->GetGenerator().IsInsideStructure(Feature, Vector3i(BlockX, BlockY, BlockZ));
+				if (!Inside)
 				{
 					Matches = false;
 				}
