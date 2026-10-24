@@ -12,7 +12,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:glowstone_dust"
+            "item": 348
           }
         ]
       }

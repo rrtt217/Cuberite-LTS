@@ -12,7 +12,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:diamond"
+            "item": 264
           }
         ]
       }

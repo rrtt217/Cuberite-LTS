@@ -12,7 +12,10 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:lots_of_items"
+            "item": 5,
+            "count": {
+              "min": 8
+            }
           }
         ]
       }

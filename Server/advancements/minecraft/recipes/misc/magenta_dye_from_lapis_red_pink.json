@@ -6,7 +6,8 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:pink_dye"
+            "item": 351,
+            "data": 9
           }
         ]
       }
@@ -16,7 +17,8 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:lapis"
+            "item": 351,
+            "data": 4
           }
         ]
       }
@@ -26,7 +28,8 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:red_dye"
+            "item": 351,
+            "data": 1
           }
         ]
       }

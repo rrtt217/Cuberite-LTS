@@ -6,7 +6,8 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:light_gray_wool"
+            "item": 35,
+            "data": 8
           }
         ]
       }

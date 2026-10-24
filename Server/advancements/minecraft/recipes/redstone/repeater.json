@@ -6,7 +6,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:redstone_torch"
+            "item": 76
           }
         ]
       }

@@ -6,7 +6,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:stone_slab"
+            "item": 44
           }
         ]
       }

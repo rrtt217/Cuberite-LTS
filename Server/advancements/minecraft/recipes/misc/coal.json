@@ -12,7 +12,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:coal_block"
+            "item": 173
           }
         ]
       }

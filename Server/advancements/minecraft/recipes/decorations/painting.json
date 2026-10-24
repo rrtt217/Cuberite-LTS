@@ -6,7 +6,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:wool"
+            "item": 35
           }
         ]
       }

@@ -6,7 +6,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:chorus_fruit_popped"
+            "item": 433
           }
         ]
       }

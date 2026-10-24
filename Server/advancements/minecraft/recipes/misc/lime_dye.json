@@ -6,7 +6,8 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:green_dye"
+            "item": 351,
+            "data": 2
           }
         ]
       }
@@ -16,7 +17,8 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:bonemeal"
+            "item": 351,
+            "data": 15
           }
         ]
       }

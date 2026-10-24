@@ -6,7 +6,10 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:at_least_9_gold_nugget"
+            "item": 371,
+            "count": {
+              "min": 9
+            }
           }
         ]
       }

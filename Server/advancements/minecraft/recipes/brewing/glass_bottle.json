@@ -6,7 +6,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:glass"
+            "item": 20
           }
         ]
       }

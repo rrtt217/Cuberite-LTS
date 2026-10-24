@@ -6,7 +6,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:iron_block"
+            "item": 42
           }
         ]
       }

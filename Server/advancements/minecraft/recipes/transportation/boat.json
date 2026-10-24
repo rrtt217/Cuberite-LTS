@@ -2,12 +2,15 @@
   "parent": "minecraft:recipes/root",
   "criteria": {
     "entered_water": {
-      "trigger": "minecraft:impossible"
+      "trigger": "minecraft:enter_block",
+      "conditions": {
+        "block": "minecraft:water"
+      }
     },
     "has_the_recipe": {
       "trigger": "minecraft:recipe_unlocked",
       "conditions": {
-        "recipe": "boat"
+        "recipe": "oak_boat"
       }
     }
   },

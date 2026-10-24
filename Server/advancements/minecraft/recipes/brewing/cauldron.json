@@ -12,7 +12,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:water_bucket"
+            "item": 326
           }
         ]
       }

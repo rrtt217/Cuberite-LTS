@@ -6,7 +6,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:nether_brick"
+            "item": 405
           }
         ]
       }

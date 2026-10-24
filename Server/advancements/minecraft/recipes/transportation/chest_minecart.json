@@ -12,7 +12,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:minecart"
+            "item": 328
           }
         ]
       }

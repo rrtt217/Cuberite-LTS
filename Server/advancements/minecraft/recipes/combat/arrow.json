@@ -6,7 +6,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:feather"
+            "item": 288
           }
         ]
       }
@@ -16,7 +16,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:flint"
+            "item": 318
           }
         ]
       }

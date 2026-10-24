@@ -45,3 +45,8 @@
 - 数据已按原版 119277 字节包整合：488 条（55 主树 + 433 recipes）；display/criteria/requirements 逐条 diff = 0。
 - cProtocol 输出缓冲区 64 KiB -> 2 MiB；否则 488 条入服包（119277 字节）会让 SendAdvancements 崩溃。
 - ctest 49/49；bot 入服与命令测试通过。
+
+## recipes 材料条件（更新）
+
+- 433 条 recipes 的 has_*/at_least_9/lots_of_items 已映射到本服 item type/data；船 entered_water -> enter_block water。
+- 实测 iron_block 由 9 个铁锭的条件完成。

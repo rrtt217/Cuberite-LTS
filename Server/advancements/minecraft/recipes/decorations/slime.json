@@ -6,7 +6,10 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:at_least_9_slime_ball"
+            "item": 341,
+            "count": {
+              "min": 9
+            }
           }
         ]
       }

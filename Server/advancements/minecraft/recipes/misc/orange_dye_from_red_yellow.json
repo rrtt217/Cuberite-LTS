@@ -6,7 +6,8 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:red_dye"
+            "item": 351,
+            "data": 1
           }
         ]
       }
@@ -22,7 +23,8 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:yellow_dye"
+            "item": 351,
+            "data": 11
           }
         ]
       }

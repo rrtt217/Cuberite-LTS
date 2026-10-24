@@ -12,7 +12,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:shulker_shell"
+            "item": 450
           }
         ]
       }

@@ -6,7 +6,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:mossy_cobblestone"
+            "item": 48
           }
         ]
       }

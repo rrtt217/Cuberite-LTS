@@ -12,7 +12,7 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:lapis_block"
+            "item": 22
           }
         ]
       }

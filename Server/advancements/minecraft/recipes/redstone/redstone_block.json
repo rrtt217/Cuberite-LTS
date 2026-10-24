@@ -6,7 +6,10 @@
       "conditions": {
         "items": [
           {
-            "item": "minecraft:at_least_9_redstone"
+            "item": 331,
+            "count": {
+              "min": 9
+            }
           }
         ]
       }

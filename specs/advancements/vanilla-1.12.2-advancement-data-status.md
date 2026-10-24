@@ -87,3 +87,11 @@
 - 修复：cProtocol 输出缓冲区 64 KiB -> 2 MiB（原版 488 条入服包 119277 字节，超缓冲区导致 SendAdvancements 崩溃）。
 - 加载 488；bot 入服不再崩溃；story/smelt_iron、recipes/oak_planks、adventure/root 命令正常；ctest 49/49。
 - 已知：follow_ender_eye 的 location.feature=Stronghold 未实现；all_effects 的 glowing/levitation 未实现；find_fortress/enter_end_gateway/find_end_city/levitate 仍为 impossible 占位；recipes 的部分材料 item 名与本服 items.ini 未逐一核对。
+
+## recipes 材料条件映射（本轮）
+
+- 128 个材料 criteria 名称映射到本服 items.ini：has_<item>、has_at_least_9_<item>（count min 9）、has_lots_of_items（配方材料）、lapis->lapislazuli、chorus_fruit_popped->poppedchorusfruit。
+- 物品条件用数字 item type（MatchItemPredicate 支持 int），items.ini 显式 data 时带 data（如 black_wool -> 35:15）。
+- 船的 entered_water -> enter_block water；boat 配方名映射到本服 oak_boat。
+- 实测：拾取 9 个铁锭 -> has_at_least_9_iron_ingot=true；minecraft:recipes/building_blocks/iron_block 完成（其 requirements 允许该条件单独完成）。
+- 剩余：has_the_recipe 的配方名映射（部分 vanilla 配方不在本服 crafting.txt，条件永不触发）；材料 data/count 条件是按 items.ini 与 criteria 名推断，不是逐条原版 JSON 条件。
