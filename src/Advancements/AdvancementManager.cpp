@@ -498,7 +498,7 @@ namespace
 				for (auto PredIt = it->begin(); PredIt != it->end(); ++PredIt)
 				{
 					const AString PredKey = PredIt.key().asString();
-					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location"))
+					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location") && (PredKey != "distance"))
 					{
 						a_Reason = "unsupported entity predicate \"" + PredKey + "\"";
 						return false;
