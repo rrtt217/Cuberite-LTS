@@ -36,7 +36,7 @@
 ## 35 条补充导入（本轮）
 
 - story 13、nether 13、end 9：translate key（advancements.<path>.title/description）、图标（映射表，含药水/头颅的 data）、帧（wiki bg）、roots 背景（nether/end.png）、flags（根=1/非根=2）、坐标（按父链的 tidy 布局撰写，**非抓包精确值**）。
-- 条件按 wiki 要求文本撰写；复杂/无对应谓词的条目使用 minecraft:impossible 占位（follow_ender_eye、find_fortress、uneasy_alliance、all_potions、all_effects、enter_end_gateway、find_end_city、levitate）；deflect_arrow 用 entity_hurt_player + arrow 近似；obtain_armor/shiny_gear 用四件套 criteria OR。
+- 条件按 wiki 要求文本撰写；复杂/无对应谓词的条目曾使用 minecraft:impossible 占位；deflect_arrow 用 entity_hurt_player + arrow 近似；obtain_armor/shiny_gear 用四件套 criteria OR。
 - 实测：Loaded 87 advancement(s)；smelt_iron（铁锭）、nether/root + story/enter_the_nether（下界维度）、end/root + story/enter_the_end（末地维度）均完成；mine_stone、adventure/root、adventure/kill_a_mob 上一轮已验证。
 - 剩余：recipes 21、35 条的精确坐标/flags/条件（完整抓包）、biome/effects 等谓词、rewards、旧成就桥、客户端实机、门禁、合并。
 
@@ -63,3 +63,10 @@
 - 实测：grant minecraft:story/mine_diamond → 聊天里同时出现 "has made the advancement [Diamonds!]" 与 "[INFO] Achievement get!"（旧成就广播由桥触发）。
 - 旧成就 → advancement 的反向桥未实现（按 M6 字段语义只做 advancement → 旧成就；老代码路径仍走 AwardAchievement 的前置检查）。
 - 剩余：35 条精确抓包坐标/flags、其余谓词、rewards、客户端实机、门禁、合并。
+
+## 占位条件修复（本轮）
+
+- story/follow_ender_eye：改为 minecraft:used_ender_eye；实测 bot 把末影之眼放进 hotbar 后 use → HasAdvancement(minecraft:story/follow_ender_eye)=true。
+- nether/uneasy_alliance：改为 player_killed_entity + player.location.dimension=overworld；代码在实体谓词里新增 location.dimension，并在 TriggerPlayerKilledEntity 里匹配 killer 的 player 谓词；实测 overworld 击杀 ghast → HasAdvancement(nether/uneasy_alliance)=true（同时 return_to_sender 也 true）。
+- 仍为占位：find_fortress（feature 谓词）、all_potions/all_effects（effects 谓词）、enter_end_gateway/find_end_city（结构/维度条件）、levitate（服务端无漂浮效果）。deflect_arrow 与 sniper_duel 仍是近似条件。
+- 剩余：35 条精确抓包坐标/flags、feature/effects 谓词、rewards、客户端实机、门禁、合并。

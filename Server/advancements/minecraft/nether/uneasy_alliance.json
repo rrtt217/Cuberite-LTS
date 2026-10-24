@@ -20,7 +20,17 @@
   },
   "criteria": {
     "main": {
-      "trigger": "minecraft:impossible"
+      "trigger": "minecraft:player_killed_entity",
+      "conditions": {
+        "entity": {
+          "type": "minecraft:ghast"
+        },
+        "player": {
+          "location": {
+            "dimension": "overworld"
+          }
+        }
+      }
     }
   },
   "requirements": [

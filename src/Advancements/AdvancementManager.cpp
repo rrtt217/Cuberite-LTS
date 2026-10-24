@@ -338,21 +338,34 @@ namespace
 			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
 			{
 				const AString Key = it.key().asString();
-				if (Key != "entity")
+				if ((Key != "entity") && (Key != "player"))
 				{
 					a_Reason = "unsupported condition \"" + Key + "\"";
 					return false;
 				}
-			}
-			if (a_Conditions.isMember("entity") && a_Conditions["entity"].isObject())
-			{
-				for (auto it = a_Conditions["entity"].begin(); it != a_Conditions["entity"].end(); ++it)
+				if (!it->isObject())
 				{
-					const AString Key = it.key().asString();
-					if ((Key != "type") && (Key != "player"))
+					a_Reason = "unsupported predicate \"" + Key + "\"";
+					return false;
+				}
+				for (auto PredIt = it->begin(); PredIt != it->end(); ++PredIt)
+				{
+					const AString PredKey = PredIt.key().asString();
+					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location"))
 					{
-						a_Reason = "unsupported entity predicate \"" + Key + "\"";
+						a_Reason = "unsupported entity predicate \"" + PredKey + "\"";
 						return false;
+					}
+					if ((PredKey == "location") && PredIt->isObject())
+					{
+						for (auto LocIt = PredIt->begin(); LocIt != PredIt->end(); ++LocIt)
+						{
+							if (LocIt.key().asString() != "dimension")
+							{
+								a_Reason = "unsupported location predicate \"" + LocIt.key().asString() + "\"";
+								return false;
+							}
+						}
 					}
 				}
 			}
@@ -869,6 +882,29 @@ namespace
 		if (a_Predicate.isMember("player") && (a_Predicate["player"].asBool() != a_Entity.IsPlayer()))
 		{
 			return false;
+		}
+		if (a_Predicate.isMember("location") && a_Predicate["location"].isObject())
+		{
+			const auto & Location = a_Predicate["location"];
+			if (Location.isMember("dimension"))
+			{
+				const auto * World = a_Entity.GetWorld();
+				if (World == nullptr)
+				{
+					return false;
+				}
+				const auto Dimension = World->GetDimension();
+				const AString Actual = (Dimension == dimNether) ? "the_nether" : ((Dimension == dimEnd) ? "the_end" : "overworld");
+				AString Expected = Location["dimension"].asString();
+				if (Expected.compare(0, 10, "minecraft:") == 0)
+				{
+					Expected.erase(0, 10);
+				}
+				if (Expected != Actual)
+				{
+					return false;
+				}
+			}
 		}
 		return true;
 	}
@@ -1569,6 +1605,10 @@ void cAdvancementManager::TriggerPlayerKilledEntity(cPlayer & a_Player, const cE
 	{
 		const auto & Entry = It->second;
 		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		if (Entry.Conditions.isMember("player") && (!MatchEntityPredicateValue(Entry.Conditions["player"], a_Player)))
 		{
 			continue;
 		}
