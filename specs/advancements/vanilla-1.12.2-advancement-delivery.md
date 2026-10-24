@@ -50,3 +50,8 @@
 
 - 433 条 recipes 的 has_*/at_least_9/lots_of_items 已映射到本服 item type/data；船 entered_water -> enter_block water。
 - 实测 iron_block 由 9 个铁锭的条件完成。
+
+## 客户端数据对偶验证（更新）
+
+- ProtoProxy 解码 Cuberite 自己的 488 条入服包：definitions 与 vanilla 包 diff = 0；progress 语义一致（修复 null criterion 加载）。
+- grant everything 经 MCP 触发 deadlock；客户端实机核对请用离线进度注入或 RCON。

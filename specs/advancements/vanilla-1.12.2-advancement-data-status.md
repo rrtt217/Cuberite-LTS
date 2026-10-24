@@ -109,3 +109,11 @@
 - 撤回 red_dye_from_poppy/tulip -> red_dye_from_rose_bush 的错误映射（花朵 data 不同、是不同配方）。
 - 实测：拾取 planks + redstone -> 本服 note_block 配方解锁 -> has_the_recipe=true -> minecraft:recipes/redstone/noteblock 完成。
 - 其余 83 条 recipes 的本服 crafting.txt 无对应配方（染色 hardened clay、各色床、花朵染料、部分方块），属本服配方数据缺口，独立于 advancement 数据。
+
+## 客户端数据对偶验证（本轮）
+
+- 用 bot 以 488 进度入服，经 ProtoProxy 抓 Cuberite 的 Advancements 包（119362 bytes）并解码：
+  - mapping=488；definitions 与 vanilla 包逐条 diff = **0**（title/description/icon/frame/flags/background/x/y/parent/criteria/requirements）。
+  - progress 488 条；发现 7 条材料 criterion 在加载时被当作 date=0（vanilla 是 null）→ 修复 cPlayer::LoadFromDisk 跳过 null；修复后入服包 119306 bytes（少 56 字节）。
+  - 结论：客户端收到与 vanilla 相同的 488 条定义；进度语义一致。
+- 已知服务器问题：advancement grant everything 经 MCP 控制台触发 deadlock 检测（Core/MCPServer Lua 状态），服务器中止；客户端核对可改用离线玩家数据注入（advancements=vanilla progress）或 RCON。

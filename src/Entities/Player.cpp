@@ -2399,6 +2399,11 @@ void cPlayer::LoadFromDisk()
 			std::map<AString, Int64> Criteria;
 			for (auto Criterion = it->begin(); Criterion != it->end(); ++Criterion)
 			{
+				if (Criterion->isNull())
+				{
+					// A null date means the criterion was not achieved; do not mark it as achieved with a zero date:
+					continue;
+				}
 				Criteria[Criterion.key().asString()] = Criterion->asInt64();
 			}
 			m_AdvancementProgress[it.key().asString()] = std::move(Criteria);
