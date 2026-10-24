@@ -310,7 +310,8 @@ namespace
 			(a_Trigger == "minecraft:summoned_entity") ||
 			(a_Trigger == "minecraft:tame_animal") ||
 			(a_Trigger == "minecraft:bred_animals") ||
-			(a_Trigger == "minecraft:cured_zombie_villager");
+			(a_Trigger == "minecraft:cured_zombie_villager") ||
+			(a_Trigger == "minecraft:brewed_potion");
 	}
 
 
@@ -352,6 +353,15 @@ namespace
 				}
 			}
 			return true;
+		}
+		if (a_Trigger == "minecraft:brewed_potion")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			a_Reason = "potion condition not implemented";
+			return false;
 		}
 		if (a_Trigger == "minecraft:cured_zombie_villager")
 		{
@@ -1894,6 +1904,27 @@ void cAdvancementManager::TriggerCuredZombieVillager(cPlayer & a_Player, const c
 			}
 		}
 		if (Matches)
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerBrewedPotion(cPlayer & a_Player, const cItem & a_Item)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:brewed_potion");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		if (!Entry.Conditions.isObject() || (Entry.Conditions.size() == 0))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}

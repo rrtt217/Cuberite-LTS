@@ -6,6 +6,7 @@
 #include "Globals.h"
 #include "BrewingstandWindow.h"
 #include "SlotArea.h"
+#include "../Advancements/AdvancementManager.h"
 #include "../BrewingRecipes.h"
 #include "../Root.h"
 
@@ -36,7 +37,17 @@ void cBrewingstandWindow::DistributeStack(cItem & a_ItemStack, int a_Slot, cPlay
 			// Brewing stand Area
 			AreasInOrder.push_back(m_SlotAreas[2]);  /* Hotbar */
 			AreasInOrder.push_back(m_SlotAreas[1]);  /* Inventory */
+			const cItem Taken = a_ItemStack;
+			const char CountBefore = a_ItemStack.m_ItemCount;
 			Super::DistributeStackToAreas(a_ItemStack, a_Player, AreasInOrder, a_ShouldApply, true);
+			if (a_ShouldApply && (a_ItemStack.m_ItemCount < CountBefore))
+			{
+				auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+				if (AdvancementManager != nullptr)
+				{
+					AdvancementManager->TriggerBrewedPotion(a_Player, Taken);
+				}
+			}
 		}
 		else
 		{

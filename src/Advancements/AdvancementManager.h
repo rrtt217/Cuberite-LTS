@@ -103,6 +103,9 @@ public:
 	/** Runs the minecraft:cured_zombie_villager criteria for a completed cure. */
 	void TriggerCuredZombieVillager(cPlayer & a_Player, const cEntity & a_Zombie, const cEntity * a_Villager);
 
+	/** Runs the minecraft:brewed_potion criteria for an item taken out of a brewing stand. */
+	void TriggerBrewedPotion(cPlayer & a_Player, const cItem & a_Item);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 
