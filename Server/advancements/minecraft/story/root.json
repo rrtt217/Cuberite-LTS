@@ -34,5 +34,6 @@
     [
       "crafting_table"
     ]
-  ]
+  ],
+  "legacy_achievement": "AchBuildWorkBench"
 }

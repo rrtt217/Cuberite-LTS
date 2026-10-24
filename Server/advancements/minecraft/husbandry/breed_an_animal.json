@@ -113,5 +113,6 @@
       "bred_rabbit",
       "bred_llama"
     ]
-  ]
+  ],
+  "legacy_achievement": "AchBreedCow"
 }

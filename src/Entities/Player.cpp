@@ -1397,6 +1397,30 @@ void cPlayer::UpdateCapabilities()
 
 
 
+void cPlayer::AwardLegacyAchievement(const CustomStatistic a_Ach)
+{
+	// The achievement is driven by the advancement system, so the old achievement tree's prerequisites
+	// are not checked here. Only the first award broadcasts and notifies the client.
+	if (m_Stats.Custom[a_Ach]++ != 0)
+	{
+		return;
+	}
+
+	if (m_World->ShouldBroadcastAchievementMessages())
+	{
+		cCompositeChat Msg;
+		Msg.SetMessageType(mtSuccess);
+		Msg.AddTextPart("Achievement get!");
+		m_World->BroadcastChat(Msg);
+	}
+
+	m_ClientHandle->SendStatistics(m_Stats);
+}
+
+
+
+
+
 void cPlayer::AwardAchievement(const CustomStatistic a_Ach)
 {
 	// Check if the prerequisites are met:
@@ -1423,6 +1447,57 @@ void cPlayer::AwardAchievement(const CustomStatistic a_Ach)
 
 	// Achievement Get!
 	m_ClientHandle->SendStatistics(m_Stats);
+}
+
+
+
+
+
+static bool LegacyAchievementFromName(const AString & a_Name, CustomStatistic & a_Ach)
+{
+	static const std::map<AString, CustomStatistic> Map =
+	{
+		{"AchOpenInventory", CustomStatistic::AchOpenInventory},
+		{"AchMineWood", CustomStatistic::AchMineWood},
+		{"AchBuildWorkBench", CustomStatistic::AchBuildWorkBench},
+		{"AchBuildPickaxe", CustomStatistic::AchBuildPickaxe},
+		{"AchBuildFurnace", CustomStatistic::AchBuildFurnace},
+		{"AchAcquireIron", CustomStatistic::AchAcquireIron},
+		{"AchBuildHoe", CustomStatistic::AchBuildHoe},
+		{"AchMakeBread", CustomStatistic::AchMakeBread},
+		{"AchBakeCake", CustomStatistic::AchBakeCake},
+		{"AchBuildBetterPickaxe", CustomStatistic::AchBuildBetterPickaxe},
+		{"AchCookFish", CustomStatistic::AchCookFish},
+		{"AchOnARail", CustomStatistic::AchOnARail},
+		{"AchBuildSword", CustomStatistic::AchBuildSword},
+		{"AchKillEnemy", CustomStatistic::AchKillEnemy},
+		{"AchKillCow", CustomStatistic::AchKillCow},
+		{"AchFlyPig", CustomStatistic::AchFlyPig},
+		{"AchSnipeSkeleton", CustomStatistic::AchSnipeSkeleton},
+		{"AchDiamonds", CustomStatistic::AchDiamonds},
+		{"AchPortal", CustomStatistic::AchPortal},
+		{"AchGhast", CustomStatistic::AchGhast},
+		{"AchBlazeRod", CustomStatistic::AchBlazeRod},
+		{"AchPotion", CustomStatistic::AchPotion},
+		{"AchTheEnd", CustomStatistic::AchTheEnd},
+		{"AchTheEnd2", CustomStatistic::AchTheEnd2},
+		{"AchEnchantments", CustomStatistic::AchEnchantments},
+		{"AchOverkill", CustomStatistic::AchOverkill},
+		{"AchBookcase", CustomStatistic::AchBookcase},
+		{"AchExploreAllBiomes", CustomStatistic::AchExploreAllBiomes},
+		{"AchSpawnWither", CustomStatistic::AchSpawnWither},
+		{"AchKillWither", CustomStatistic::AchKillWither},
+		{"AchFullBeacon", CustomStatistic::AchFullBeacon},
+		{"AchBreedCow", CustomStatistic::AchBreedCow},
+		{"AchDiamondsToYou", CustomStatistic::AchDiamondsToYou},
+	};
+	const auto It = Map.find(a_Name);
+	if (It == Map.end())
+	{
+		return false;
+	}
+	a_Ach = It->second;
+	return true;
 }
 
 
@@ -1498,6 +1573,20 @@ void cPlayer::OnAdvancementCompleted(const cAdvancement & a_Advancement)
 			Output,
 			SuccessCount
 		);
+	}
+
+	// Legacy achievement bridge (M6): the advancement completion awards the mapped 1.8-1.11 achievement:
+	if (!a_Advancement.LegacyAchievement.empty())
+	{
+		CustomStatistic Ach;
+		if (LegacyAchievementFromName(a_Advancement.LegacyAchievement, Ach))
+		{
+			AwardLegacyAchievement(Ach);
+		}
+		else
+		{
+			LOGWARNING("Advancement \"%s\" has an unknown legacy_achievement \"%s\"", a_Advancement.ID.c_str(), a_Advancement.LegacyAchievement.c_str());
+		}
 	}
 }
 

@@ -55,3 +55,11 @@
 - 覆盖 adventuring_time 的 36 个 biome criteria（不再打 unsupported 警告）。
 - 实测：bot 的 biome=132（FlowerForest），映射为 forest，HasAdvancementCriterion(minecraft:adventure/adventuring_time, forest)=true。
 - 剩余：location 的 feature/light/block 等谓词、effects 谓词、villager_trade、rewards、35 条精确抓包、旧成就桥、客户端实机、门禁、合并。
+
+## 旧成就桥（M6，本轮）
+
+- cPlayer::AwardLegacyAchievement(CustomStatistic)：不做旧成就树的前置检查；首次授予时广播 "Achievement get!" 并 SendStatistics。
+- OnAdvancementCompleted：advancement 的 legacy_achievement 非空时，名字映射为 CustomStatistic 并调用 AwardLegacyAchievement；已映射 17 条（story/root→AchBuildWorkBench、upgrade_tools→AchBuildBetterPickaxe、smelt_iron→AchAcquireIron、mine_diamond→AchDiamonds、enter_the_nether→AchPortal、enter_the_end→AchTheEnd、enchant_item→AchEnchantments、adventure/kill_a_mob→AchKillEnemy、sniper_duel→AchSnipeSkeleton、adventuring_time→AchExploreAllBiomes、nether/obtain_blaze_rod→AchBlazeRod、return_to_sender→AchGhast、brew_potion→AchPotion、summon_wither→AchSpawnWither、create_full_beacon→AchFullBeacon、husbandry/breed_an_animal→AchBreedCow、end/kill_dragon→AchTheEnd2）。
+- 实测：grant minecraft:story/mine_diamond → 聊天里同时出现 "has made the advancement [Diamonds!]" 与 "[INFO] Achievement get!"（旧成就广播由桥触发）。
+- 旧成就 → advancement 的反向桥未实现（按 M6 字段语义只做 advancement → 旧成就；老代码路径仍走 AwardAchievement 的前置检查）。
+- 剩余：35 条精确抓包坐标/flags、其余谓词、rewards、客户端实机、门禁、合并。

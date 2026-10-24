@@ -311,6 +311,9 @@ public:
 	If the achievement has been already awarded to the player, this method will just increment the stat counter. */
 	void AwardAchievement(CustomStatistic a_Ach);
 
+	/** Awards a legacy achievement without prerequisite checks; used by the advancement bridge. */
+	void AwardLegacyAchievement(CustomStatistic a_Ach);
+
 	/** Forces the player to move in the given direction.
 	@deprecated Use SetSpeed instead. */
 	void ForceSetSpeed(const Vector3d & a_Speed);  // tolua_export

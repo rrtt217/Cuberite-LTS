@@ -221,5 +221,6 @@
       "zombie",
       "zombie_villager"
     ]
-  ]
+  ],
+  "legacy_achievement": "AchKillEnemy"
 }
