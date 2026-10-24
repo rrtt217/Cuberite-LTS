@@ -1393,6 +1393,25 @@ protected:
 	/** All the pieces of this city. */
 	std::vector<sPlacedPiece> m_Pieces;
 
+
+	/** Returns true if the specified block position is inside one of the city's pieces. */
+	virtual bool IsInside(const Vector3i & a_Position) const override
+	{
+		for (const auto & Piece : m_Pieces)
+		{
+			const Vector3i Size = Piece.m_Prefab->GetSize();
+			if (
+				(a_Position.x >= Piece.m_Pos.x) && (a_Position.x < Piece.m_Pos.x + Size.x) &&
+				(a_Position.y >= Piece.m_Pos.y) && (a_Position.y < Piece.m_Pos.y + Size.y) &&
+				(a_Position.z >= Piece.m_Pos.z) && (a_Position.z < Piece.m_Pos.z + Size.z)
+			)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** The boxes cleared after drawing, to connect the pieces. */
 	std::vector<sCarve> m_Carves;
 
@@ -1888,4 +1907,17 @@ bool cEndCityGen::GetNearestStructureTarget(const AString & a_Structure, Vector3
 		return false;
 	}
 	return Super::GetNearestStructureTarget(a_Position, a_Target);
+}
+
+
+
+
+
+bool cEndCityGen::IsInsideStructure(const AString & a_Structure, const Vector3i & a_Position)
+{
+	if (a_Structure != "EndCity")
+	{
+		return false;
+	}
+	return Super::IsInsideStructure(a_Position);
 }

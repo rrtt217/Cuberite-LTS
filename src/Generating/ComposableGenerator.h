@@ -199,6 +199,14 @@ public:
 		UNUSED(a_Target);
 		return false;
 	}
+
+	/** Returns true if the specified block position is inside the structure with the specified name. */
+	virtual bool IsInsideStructure(const AString & a_Structure, const Vector3i & a_Position)
+	{
+		UNUSED(a_Structure);
+		UNUSED(a_Position);
+		return false;
+	}
 } ;
 
 
@@ -219,6 +227,7 @@ public:
 	virtual void GenerateBiomes(cChunkCoords a_ChunkCoords, cChunkDef::BiomeMap & a_BiomeMap) override;
 	virtual void Generate(cChunkDesc & a_ChunkDesc) override;
 	virtual bool GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target) override;
+	virtual bool IsInsideStructure(const AString & a_Structure, const Vector3i & a_Position) override;
 
 	/** If there's no particular sub-generator set in the INI file,
 	adds the default one, based on the dimension. */

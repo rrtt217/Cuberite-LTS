@@ -46,6 +46,9 @@ public:
 	may be touched - so that it can be called from the tick thread while chunks are being generated. */
 	virtual bool GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target);
 
+	/** Returns true if the specified block position is inside the named structure. */
+	virtual bool IsInsideStructure(const AString & a_Structure, const Vector3i & a_Position);
+
 	/** Returns the seed that was read from the INI file. */
 	int GetSeed(void) const { return m_Seed; }
 

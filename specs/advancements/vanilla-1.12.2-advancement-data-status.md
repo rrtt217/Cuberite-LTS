@@ -147,3 +147,9 @@
 - 改为启动时建索引：m_InventoryItemIndex（item type -> entries）、m_InventorySlotEntries（slots 条件）、m_InventoryUnconditional（无 items/slots）。
 - cInventory::OnSlotChanged 把变更槽位的 item type 传给 TriggerInventoryChanged；只评估该 type 的条目 + slots/unconditional，并去重。
 - 实测：revoke story/root 的 crafting_table criterion -> false；给 1 个 crafting table -> criterion/advancement 在一个 tick 内变为 true。
+
+## location feature 真实包围盒（本轮，维护者反馈修复）
+
+- 实现 cGridStructGen::IsInsideStructure：按位置所在 chunk 取结构（带缓存锁），调用结构的 IsInside；stronghold 用 cPrefabStructure 各 piece 的 hitbox，end city 用 cEndCity 各 room 的 prefab 尺寸。
+- 调用链：cWorld::GetGenerator -> cChunkGeneratorThread -> cComposableGenerator -> 各 finisher -> cGridStructGen；manager 的 location.feature 改为 IsInsideStructure（删掉水平半径近似）。
+- 实测：stronghold 目标 (144,36,-189)；把 bot 放到目标 +200 格（344,-189）不触发（正确）；放到目标点本身暂未触发 —— 待查 hitbox/坐标（本轮未完成）。

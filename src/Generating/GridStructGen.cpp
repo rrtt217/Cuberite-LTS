@@ -171,6 +171,7 @@ bool cGridStructGen::GetNearestStructureTarget(Vector3i a_Position, Vector3i & a
 
 void cGridStructGen::GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructurePtrs & a_Structures)
 {
+	cCSLock Lock(m_CacheCS);
 	// Calculate the min and max grid coords of the structures to be returned:
 	int MinBlockX = a_ChunkX * cChunkDef::Width - m_MaxStructureSizeX - m_MaxOffsetX;
 	int MinBlockZ = a_ChunkZ * cChunkDef::Width - m_MaxStructureSizeZ - m_MaxOffsetZ;
@@ -250,6 +251,25 @@ void cGridStructGen::GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructur
 			break;
 		}
 	}
+}
+
+
+
+
+
+bool cGridStructGen::IsInsideStructure(const Vector3i & a_Position)
+{
+	cStructurePtrs Structures;
+	const auto ChunkCoords = cChunkDef::BlockToChunk(Vector3i(a_Position.x, 0, a_Position.z));
+	GetStructuresForChunk(ChunkCoords.m_ChunkX, ChunkCoords.m_ChunkZ, Structures);
+	for (const auto & Structure : Structures)
+	{
+		if (Structure->IsInside(a_Position))
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 
