@@ -1,0 +1,31 @@
+{
+  "parent": "minecraft:nether/all_potions",
+  "display": {
+    "title": {
+      "translate": "advancements.nether.all_effects.title"
+    },
+    "description": {
+      "translate": "advancements.nether.all_effects.description"
+    },
+    "icon": {
+      "item": 325,
+      "data": 0
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "x": 5.0,
+    "y": 1.0
+  },
+  "criteria": {
+    "main": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "main"
+    ]
+  ]
+}

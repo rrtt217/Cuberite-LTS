@@ -2,7 +2,7 @@
 
 > 分支 feature/advancements-vanilla-data（叠在 feature/advancements-vanilla-list 之上）。数据来源：M0 入服包解码（20 条有 display 的可见条目）+ wiki 列表（列表/父链/要求文本）。
 
-## 已导入（20/55）
+## 已导入（55/55；20 条精确抓包 + 35 条撰写）
 
 - story 3：root（stone 背景，0,1.25）、mine_stone（1,1.25）、upgrade_tools（2,1.25）。
 - adventure 10：root、kill_a_mob（22 个 mob 条件）、kill_all_mobs（22 个）、sniper_duel、trade、adventuring_time（36 个 biome）、sleep_in_bed、summon_iron_golem、totem_of_undying。
@@ -32,3 +32,10 @@
 2. recipes 21 条（无 display）+ recipe_unlocked 名称映射。
 3. biome/effects/entity 列表等谓词扩展；villager_trade/铁傀儡等触发路径。
 4. rewards 逐条确认；旧成就桥；客户端实机（页签/树/公告）验证。
+
+## 35 条补充导入（本轮）
+
+- story 13、nether 13、end 9：translate key（advancements.<path>.title/description）、图标（映射表，含药水/头颅的 data）、帧（wiki bg）、roots 背景（nether/end.png）、flags（根=1/非根=2）、坐标（按父链的 tidy 布局撰写，**非抓包精确值**）。
+- 条件按 wiki 要求文本撰写；复杂/无对应谓词的条目使用 minecraft:impossible 占位（follow_ender_eye、find_fortress、uneasy_alliance、all_potions、all_effects、enter_end_gateway、find_end_city、levitate）；deflect_arrow 用 entity_hurt_player + arrow 近似；obtain_armor/shiny_gear 用四件套 criteria OR。
+- 实测：Loaded 87 advancement(s)；smelt_iron（铁锭）、nether/root + story/enter_the_nether（下界维度）、end/root + story/enter_the_end（末地维度）均完成；mine_stone、adventure/root、adventure/kill_a_mob 上一轮已验证。
+- 剩余：recipes 21、35 条的精确坐标/flags/条件（完整抓包）、biome/effects 等谓词、rewards、旧成就桥、客户端实机、门禁、合并。

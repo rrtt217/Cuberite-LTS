@@ -1,0 +1,31 @@
+{
+  "parent": "minecraft:nether/return_to_sender",
+  "display": {
+    "title": {
+      "translate": "advancements.nether.uneasy_alliance.title"
+    },
+    "description": {
+      "translate": "advancements.nether.uneasy_alliance.description"
+    },
+    "icon": {
+      "item": 370,
+      "data": 0
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "x": 2.0,
+    "y": 3.0
+  },
+  "criteria": {
+    "main": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "main"
+    ]
+  ]
+}

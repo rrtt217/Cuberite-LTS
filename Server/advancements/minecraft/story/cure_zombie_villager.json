@@ -1,0 +1,31 @@
+{
+  "parent": "minecraft:story/enter_the_nether",
+  "display": {
+    "title": {
+      "translate": "advancements.story.cure_zombie_villager.title"
+    },
+    "description": {
+      "translate": "advancements.story.cure_zombie_villager.description"
+    },
+    "icon": {
+      "item": 322,
+      "data": 0
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "x": 7.0,
+    "y": 1.0
+  },
+  "criteria": {
+    "main": {
+      "trigger": "minecraft:cured_zombie_villager"
+    }
+  },
+  "requirements": [
+    [
+      "main"
+    ]
+  ]
+}

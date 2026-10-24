@@ -1,0 +1,77 @@
+{
+  "parent": "minecraft:story/smelt_iron",
+  "display": {
+    "title": {
+      "translate": "advancements.story.obtain_armor.title"
+    },
+    "description": {
+      "translate": "advancements.story.obtain_armor.description"
+    },
+    "icon": {
+      "item": 307,
+      "data": 0
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false,
+    "x": 4.0,
+    "y": 1.0
+  },
+  "criteria": {
+    "h": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": "minecraft:iron_helmet"
+          }
+        ]
+      }
+    },
+    "c": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": "minecraft:iron_chestplate"
+          }
+        ]
+      }
+    },
+    "l": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": "minecraft:iron_leggings"
+          }
+        ]
+      }
+    },
+    "b": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": "minecraft:iron_boots"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "h"
+    ],
+    [
+      "c"
+    ],
+    [
+      "l"
+    ],
+    [
+      "b"
+    ]
+  ]
+}
