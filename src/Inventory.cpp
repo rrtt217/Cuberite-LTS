@@ -906,6 +906,6 @@ void cInventory::OnSlotChanged(cItemGrid * a_ItemGrid, int a_SlotNum)
 	auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
 	if (AdvancementManager != nullptr)
 	{
-		AdvancementManager->TriggerInventoryChanged(m_Owner);
+		AdvancementManager->TriggerInventoryChanged(m_Owner, a_ItemGrid->GetSlot(a_SlotNum).m_ItemType);
 	}
 }

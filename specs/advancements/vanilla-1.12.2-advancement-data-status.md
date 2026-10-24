@@ -140,3 +140,10 @@
 - EndCity 目标 (83,0,-68)：bot 传送到末地后 in_city=true，minecraft:end/find_end_city 完成。
 - 下界要塞/末地传送门结构在本服不存在，find_fortress/enter_end_gateway 的条件永不触发（底层结构缺口）。
 - 半径仍是近似（原版是结构 bounding box）。
+
+## inventory_changed 索引（本轮，维护者反馈修复）
+
+- 原实现每次槽位变化扫描全部 inventory_changed 条目（488 数据下为数百条），导致背包触发器明显变慢。
+- 改为启动时建索引：m_InventoryItemIndex（item type -> entries）、m_InventorySlotEntries（slots 条件）、m_InventoryUnconditional（无 items/slots）。
+- cInventory::OnSlotChanged 把变更槽位的 item type 传给 TriggerInventoryChanged；只评估该 type 的条目 + slots/unconditional，并去重。
+- 实测：revoke story/root 的 crafting_table criterion -> false；给 1 个 crafting table -> criterion/advancement 在一个 tick 内变为 true。

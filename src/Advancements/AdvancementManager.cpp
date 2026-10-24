@@ -1214,6 +1214,7 @@ void cAdvancementManager::LoadFromFolder(const AString & a_Folder)
 		}
 		m_Triggers.emplace(Trigger, Entry);
 	}
+	BuildInventoryIndex();
 
 	LOGINFO("Loaded %zu advancement(s) from \"%s\"", m_Advancements.size(), a_Folder.c_str());
 }
@@ -1714,24 +1715,91 @@ cAdvancementUpdate cAdvancementManager::BuildUpdate(
 
 
 
-void cAdvancementManager::TriggerInventoryChanged(cPlayer & a_Player)
+void cAdvancementManager::TriggerInventoryChanged(cPlayer & a_Player, short a_ChangedItemType)
 {
-	const auto Range = m_Triggers.equal_range("minecraft:inventory_changed");
-	if (Range.first == Range.second)
+	std::vector<const cTriggerEntry *> Candidates;
+	const auto It = m_InventoryItemIndex.find(a_ChangedItemType);
+	if (It != m_InventoryItemIndex.end())
 	{
-		return;
+		Candidates.insert(Candidates.end(), It->second.begin(), It->second.end());
 	}
+	Candidates.insert(Candidates.end(), m_InventorySlotEntries.begin(), m_InventorySlotEntries.end());
+	Candidates.insert(Candidates.end(), m_InventoryUnconditional.begin(), m_InventoryUnconditional.end());
+	std::sort(Candidates.begin(), Candidates.end());
+	Candidates.erase(std::unique(Candidates.begin(), Candidates.end()), Candidates.end());
+
 	const auto & Inventory = a_Player.GetInventory();
-	for (auto It = Range.first; It != Range.second; ++It)
+	for (const auto * Entry : Candidates)
 	{
-		const auto & Entry = It->second;
-		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		if (a_Player.HasAdvancementCriterion(Entry->AdvancementID, Entry->Criterion))
 		{
 			continue;
 		}
-		if (MatchInventoryChanged(Entry.Conditions, Inventory))
+		if (MatchInventoryChanged(Entry->Conditions, Inventory))
 		{
-			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+			a_Player.GrantAdvancementCriterion(Entry->AdvancementID, Entry->Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::BuildInventoryIndex(void)
+{
+	m_InventoryItemIndex.clear();
+	m_InventorySlotEntries.clear();
+	m_InventoryUnconditional.clear();
+	const auto Range = m_Triggers.equal_range("minecraft:inventory_changed");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		const auto & Conditions = Entry.Conditions;
+		bool HasItems = false;
+		bool HasSlots = false;
+		if (Conditions.isObject())
+		{
+			if (Conditions.isMember("items") && Conditions["items"].isArray())
+			{
+				for (const auto & Predicate : Conditions["items"])
+				{
+					if (!Predicate.isObject() || !Predicate.isMember("item"))
+					{
+						continue;
+					}
+					const auto & Item = Predicate["item"];
+					short ItemType = 0;
+					if (Item.isInt())
+					{
+						ItemType = static_cast<short>(Item.asInt());
+					}
+					else if (Item.isString())
+					{
+						cItem Resolved;
+						if (!StringToItem(Item.asString(), Resolved))
+						{
+							continue;
+						}
+						ItemType = Resolved.m_ItemType;
+					}
+					if (ItemType == 0)
+					{
+						continue;
+					}
+					HasItems = true;
+					m_InventoryItemIndex[ItemType].push_back(&Entry);
+				}
+			}
+			HasSlots = Conditions.isMember("slots");
+		}
+		if (HasSlots)
+		{
+			m_InventorySlotEntries.push_back(&Entry);
+		}
+		if (!HasItems && !HasSlots)
+		{
+			m_InventoryUnconditional.push_back(&Entry);
 		}
 	}
 }

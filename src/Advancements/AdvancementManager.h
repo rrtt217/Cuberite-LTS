@@ -41,7 +41,7 @@ public:
 	bool IsValid(const AString & a_ID) const;
 
 	/** Runs the minecraft:inventory_changed criteria against the player's current inventory. */
-	void TriggerInventoryChanged(cPlayer & a_Player);
+	void TriggerInventoryChanged(cPlayer & a_Player, short a_ChangedItemType);
 
 	/** Runs the minecraft:player_killed_entity criteria for the killing player. */
 	void TriggerPlayerKilledEntity(cPlayer & a_Player, const cEntity & a_Victim);
@@ -172,6 +172,18 @@ private:
 
 	/** Trigger entries collected while loading, filtered against m_Advancements after validation. */
 	std::vector<std::pair<AString, cTriggerEntry>> m_PendingTriggers;
+
+	/** inventory_changed entries grouped by the required item type (avoids scanning all entries on each slot change). */
+	std::map<Int16, std::vector<const cTriggerEntry *>> m_InventoryItemIndex;
+
+	/** inventory_changed entries with slot-count conditions (need a full inventory check). */
+	std::vector<const cTriggerEntry *> m_InventorySlotEntries;
+
+	/** inventory_changed entries without item or slot conditions (match on any change). */
+	std::vector<const cTriggerEntry *> m_InventoryUnconditional;
+
+	/** Builds m_InventoryItemIndex / m_InventorySlotEntries / m_InventoryUnconditional from m_Triggers. */
+	void BuildInventoryIndex(void);
 
 	/** Adds one parsed JSON file to the manager. */
 	void AddFile(const AString & a_FileName, const AString & a_RelativePath);
