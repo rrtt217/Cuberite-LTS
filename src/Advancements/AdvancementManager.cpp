@@ -498,7 +498,7 @@ namespace
 				for (auto PredIt = it->begin(); PredIt != it->end(); ++PredIt)
 				{
 					const AString PredKey = PredIt.key().asString();
-					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location") && (PredKey != "distance") && (PredKey != "flags") && (PredKey != "effects"))
+					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location") && (PredKey != "distance") && (PredKey != "flags") && (PredKey != "effects") && (PredKey != "equipment"))
 					{
 						a_Reason = "unsupported entity predicate \"" + PredKey + "\"";
 						return false;
@@ -1026,6 +1026,41 @@ namespace
 		if (!a_Predicate.isObject())
 		{
 			return true;
+		}
+		if (a_Predicate.isMember("equipment") && a_Predicate["equipment"].isObject())
+		{
+			if (!a_Entity.IsPlayer())
+			{
+				return false;
+			}
+			const auto & Player = static_cast<const cPlayer &>(a_Entity);
+			const auto & Equipment = a_Predicate["equipment"];
+			const auto & Inventory = Player.GetInventory();
+			if (Equipment.isMember("mainhand") && !MatchItemPredicate(Equipment["mainhand"], Player.GetEquippedItem()))
+			{
+				return false;
+			}
+			if (Equipment.isMember("offhand") && !MatchItemPredicate(Equipment["offhand"], Inventory.GetShieldSlot()))
+			{
+				return false;
+			}
+			// Armor slot order: 0 = head, 1 = chest, 2 = legs, 3 = feet (cSlotAreaArmor)
+			if (Equipment.isMember("head") && !MatchItemPredicate(Equipment["head"], Inventory.GetArmorSlot(0)))
+			{
+				return false;
+			}
+			if (Equipment.isMember("chest") && !MatchItemPredicate(Equipment["chest"], Inventory.GetArmorSlot(1)))
+			{
+				return false;
+			}
+			if (Equipment.isMember("legs") && !MatchItemPredicate(Equipment["legs"], Inventory.GetArmorSlot(2)))
+			{
+				return false;
+			}
+			if (Equipment.isMember("feet") && !MatchItemPredicate(Equipment["feet"], Inventory.GetArmorSlot(3)))
+			{
+				return false;
+			}
 		}
 		if (a_Predicate.isMember("effects") && a_Predicate["effects"].isObject())
 		{
