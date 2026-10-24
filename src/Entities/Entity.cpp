@@ -1673,18 +1673,33 @@ void cEntity::DoMoveToWorld(const sWorldChangeInfo & a_WorldChangeInfo)
 	const auto OldWorld = m_World;
 	const int OldDimension = OldWorld->GetDimension();
 	const int NewDimension = a_WorldChangeInfo.m_NewWorld->GetDimension();
+	const Vector3d OldPos = GetPosition();
 	auto Self = m_World->RemoveEntity(*this);
 
 	// Update entity:
 	ResetPosition(a_WorldChangeInfo.m_NewPosition);
 	SetWorld(a_WorldChangeInfo.m_NewWorld);
 
-	if (IsPlayer() && (OldDimension != NewDimension))
+	if (IsPlayer())
 	{
+		cPlayer & Player = static_cast<cPlayer &>(*this);
 		auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
-		if (AdvancementManager != nullptr)
+		if ((OldDimension != NewDimension) && (AdvancementManager != nullptr))
 		{
-			AdvancementManager->TriggerChangedDimension(*static_cast<cPlayer *>(this), OldDimension, NewDimension);
+			AdvancementManager->TriggerChangedDimension(Player, OldDimension, NewDimension);
+		}
+		if ((OldDimension == dimOverworld) && (NewDimension == dimNether))
+		{
+			Player.SetNetherEntry(OldPos);
+		}
+		else if ((OldDimension == dimNether) && (NewDimension == dimOverworld))
+		{
+			Vector3d Entry;
+			if (Player.GetNetherEntry(Entry) && (AdvancementManager != nullptr))
+			{
+				AdvancementManager->TriggerNetherTravel(Player, Entry, a_WorldChangeInfo.m_NewPosition);
+			}
+			Player.ClearNetherEntry();
 		}
 	}
 

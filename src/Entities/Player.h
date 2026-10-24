@@ -285,6 +285,15 @@ public:
 
 	// tolua_end
 
+	/** Records the Overworld position where the player entered the Nether. */
+	void SetNetherEntry(const Vector3d & a_Position) { m_NetherEntry = a_Position; m_HasNetherEntry = true; }
+
+	/** Returns the recorded Overworld entry position, if any. */
+	bool GetNetherEntry(Vector3d & a_Position) const { if (!m_HasNetherEntry) { return false; } a_Position = m_NetherEntry; return true; }
+
+	/** Clears the recorded Nether entry position. */
+	void ClearNetherEntry(void) { m_HasNetherEntry = false; }
+
 	/** Returns the achieved criteria of all advancements (internal, not exported to Lua). */
 	const std::map<AString, std::map<AString, Int64>> & GetAdvancementProgress(void) const { return m_AdvancementProgress; }
 
@@ -787,6 +796,10 @@ private:
 
 	/** Maps an advancement identifier to the achieved criteria and their timestamps (milliseconds). */
 	std::map<AString, std::map<AString, Int64>> m_AdvancementProgress;
+
+	/** The Overworld position where the player entered the Nether, for the nether_travel trigger. */
+	Vector3d m_NetherEntry;
+	bool m_HasNetherEntry = false;
 
 	/** The block the player was standing in at the previous tick, for the enter_block trigger. */
 	BLOCKTYPE m_LastEnteredBlock = E_BLOCK_AIR;

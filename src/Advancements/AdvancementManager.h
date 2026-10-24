@@ -112,6 +112,9 @@ public:
 	/** Runs the minecraft:location criteria for the player's current dimension and position. */
 	void TriggerLocation(cPlayer & a_Player);
 
+	/** Runs the minecraft:nether_travel criteria when the player returns from the Nether. */
+	void TriggerNetherTravel(cPlayer & a_Player, const Vector3d & a_Entry, const Vector3d & a_Exit);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 

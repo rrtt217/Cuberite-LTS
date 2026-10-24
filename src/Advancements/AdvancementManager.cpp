@@ -313,7 +313,8 @@ namespace
 			(a_Trigger == "minecraft:cured_zombie_villager") ||
 			(a_Trigger == "minecraft:brewed_potion") ||
 			(a_Trigger == "minecraft:construct_beacon") ||
-			(a_Trigger == "minecraft:location");
+			(a_Trigger == "minecraft:location") ||
+			(a_Trigger == "minecraft:nether_travel");
 	}
 
 
@@ -350,6 +351,34 @@ namespace
 					if ((Key != "type") && (Key != "player"))
 					{
 						a_Reason = "unsupported entity predicate \"" + Key + "\"";
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+		if (a_Trigger == "minecraft:nether_travel")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+			{
+				if (it.key().asString() != "distance")
+				{
+					a_Reason = "unsupported condition \"" + it.key().asString() + "\"";
+					return false;
+				}
+			}
+			if (a_Conditions.isMember("distance") && a_Conditions["distance"].isObject())
+			{
+				for (auto it = a_Conditions["distance"].begin(); it != a_Conditions["distance"].end(); ++it)
+				{
+					const AString Key = it.key().asString();
+					if ((Key != "absolute") && (Key != "horizontal") && (Key != "x") && (Key != "y") && (Key != "z"))
+					{
+						a_Reason = "unsupported distance condition \"" + Key + "\"";
 						return false;
 					}
 				}
@@ -748,6 +777,31 @@ namespace
 		const AString Expected = NormalizeBlockName(a_Value.asString());
 		const AString Actual = NormalizeBlockName(ItemToString(cItem(a_BlockType)));
 		return (Expected == Actual);
+	}
+
+
+
+
+
+	bool MatchDoubleRange(const Json::Value & a_Value, double a_Actual)
+	{
+		if (a_Value.isObject())
+		{
+			if (a_Value.isMember("min") && (a_Actual < a_Value["min"].asDouble()))
+			{
+				return false;
+			}
+			if (a_Value.isMember("max") && (a_Actual > a_Value["max"].asDouble()))
+			{
+				return false;
+			}
+			return true;
+		}
+		if (a_Value.isDouble() || a_Value.isInt())
+		{
+			return (std::abs(a_Actual - a_Value.asDouble()) < 1e-9);
+		}
+		return true;
 	}
 
 
@@ -2047,6 +2101,57 @@ void cAdvancementManager::TriggerLocation(cPlayer & a_Player)
 				{
 					Matches = false;
 				}
+			}
+		}
+		if (Matches)
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerNetherTravel(cPlayer & a_Player, const Vector3d & a_Entry, const Vector3d & a_Exit)
+{
+	const double DX = std::abs(a_Exit.x - a_Entry.x);
+	const double DY = std::abs(a_Exit.y - a_Entry.y);
+	const double DZ = std::abs(a_Exit.z - a_Entry.z);
+	const double Horizontal = std::hypot(DX, DZ);
+	const double Absolute = std::sqrt(DX * DX + DY * DY + DZ * DZ);
+	const auto Range = m_Triggers.equal_range("minecraft:nether_travel");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		bool Matches = true;
+		if (Entry.Conditions.isObject() && Entry.Conditions.isMember("distance"))
+		{
+			const auto & Distance = Entry.Conditions["distance"];
+			if (Distance.isMember("absolute") && !MatchDoubleRange(Distance["absolute"], Absolute))
+			{
+				Matches = false;
+			}
+			if (Distance.isMember("horizontal") && !MatchDoubleRange(Distance["horizontal"], Horizontal))
+			{
+				Matches = false;
+			}
+			if (Distance.isMember("x") && !MatchDoubleRange(Distance["x"], DX))
+			{
+				Matches = false;
+			}
+			if (Distance.isMember("y") && !MatchDoubleRange(Distance["y"], DY))
+			{
+				Matches = false;
+			}
+			if (Distance.isMember("z") && !MatchDoubleRange(Distance["z"], DZ))
+			{
+				Matches = false;
 			}
 		}
 		if (Matches)
