@@ -102,3 +102,10 @@
 - 其中 slab/boat/fence/fence_gate/sign/trapdoor 通过 sname 映射到本服名称；其余这些 advancement 的 has_the_recipe 条件使用原版配方名，本服没有对应配方，**条件永不触发**。
 - 这属于本服配方数据缺口（crafting.txt 的配方集比 vanilla 少/命名不同），不是 advancement 数据包本身的问题：advancement 的 ID/criteria/requirements 与原版包逐条一致。
 - recipes 材料条件已在上轮映射到本服 item type/data；iron_block 由 9 个铁锭的条件完成已实测。
+
+## recipes 同名/同配方改名映射（本轮）
+
+- 18 条 recipe 的 has_the_recipe 按「同结果 + 材料 type/data 子集」映射到本服名称：noteblock->note_block、brick_block->bricks、melon_block->melon、stonebrick->stone_bricks、red_nether_brick->red_nether_bricks、iron_ingot_from_block->iron_ingot_from_iron_block、gold_ingot_from_block->gold_ingot_from_gold_block、gold_ingot_from_nuggets->gold_ingot、pillar_quartz_block->quartz_pillar、magenta_dye_from_lapis_red_pink->magenta_dye_from_blue_red_pink、pink_dye_from_red_bonemeal->pink_dye_from_red_white_dye，以及 fence/sign/trapdoor/fence_gate/slab/boat 的既有映射。
+- 撤回 red_dye_from_poppy/tulip -> red_dye_from_rose_bush 的错误映射（花朵 data 不同、是不同配方）。
+- 实测：拾取 planks + redstone -> 本服 note_block 配方解锁 -> has_the_recipe=true -> minecraft:recipes/redstone/noteblock 完成。
+- 其余 83 条 recipes 的本服 crafting.txt 无对应配方（染色 hardened clay、各色床、花朵染料、部分方块），属本服配方数据缺口，独立于 advancement 数据。

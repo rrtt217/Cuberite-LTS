@@ -37,7 +37,7 @@
     "has_the_recipe": {
       "trigger": "minecraft:recipe_unlocked",
       "conditions": {
-        "recipe": "magenta_dye_from_lapis_red_pink"
+        "recipe": "magenta_dye_from_blue_red_pink"
       }
     }
   },

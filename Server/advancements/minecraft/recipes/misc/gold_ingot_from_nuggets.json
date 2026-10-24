@@ -17,7 +17,7 @@
     "has_the_recipe": {
       "trigger": "minecraft:recipe_unlocked",
       "conditions": {
-        "recipe": "gold_ingot_from_nuggets"
+        "recipe": "gold_ingot"
       }
     }
   },
