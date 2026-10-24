@@ -20,7 +20,12 @@
   },
   "criteria": {
     "tamed_animal": {
-      "trigger": "minecraft:impossible"
+      "trigger": "minecraft:tame_animal",
+      "conditions": {
+        "entity": {
+          "type": "minecraft:wolf"
+        }
+      }
     }
   },
   "requirements": [

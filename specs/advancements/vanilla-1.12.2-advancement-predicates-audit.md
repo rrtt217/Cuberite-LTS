@@ -58,3 +58,30 @@
 
 - 无「数据写了但被静默丢弃」的条件；
 - 规格层面仍有 7 处未匹配（killing_blow ×2、damage ×1、state ×2、item/location ×1、villager_trade 触发器）。
+## 5. 「未使用」的成因（维护者提问的核查结论）
+
+逐条比对 2017 wiki 的 55 条进度描述与我们的 488 条数据后，结论分三类：
+
+### 5.1 真正不需要（正常情况）
+
+绝大多数进度的条件本来就只是 `entity.type`（如 `kill_a_mob`、`kill_all_mobs` 的每个 mob 各一条 criterion），
+与 wiki 描述一致。这类「未使用」是正确的。
+
+### 5.2 编写时的谓词缺失（已修）
+
+- `adventure/sniper_duel`：wiki 描述明确要求「50 格以上用箭」，但数据只写了 `entity.type`，
+  没有 `entity.distance`。这是**当时 distance 谓词未实现**导致的遗漏，已补 `{"min": 50}`。
+
+### 5.3 当时用 impossible 占位（部分待修）
+
+4 条 criterion 用了 `minecraft:impossible` 占位：
+
+| 进度 | 原版触发 | 现状 |
+|---|---|---|
+| `husbandry/tame_an_animal` | `tame_animal` + `entity` | **已修**为 `tame_animal` + `entity.type = minecraft:wolf` |
+| `adventure/shoot_arrow` | `player_hurt_entity` + `damage.type.direct_entity` | 占位未修（`damage.type` 子谓词尚未匹配） |
+| `end/levitate` | `levitation`（距离 50）或 `effects_changed` | 占位未修（`levitation` 触发器未实现） |
+| `recipes/root` | `impossible` | 正确（根节点本就用 `impossible`） |
+
+因此对维护者问题的回答是：**两者都有**——大部分确实是原版就不需要；少数（sniper_duel、tame_an_animal、
+shoot_arrow、levitate）是当时谓词/触发器没实现而遗漏或用占位符绕过的。
