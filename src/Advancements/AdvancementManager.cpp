@@ -989,22 +989,32 @@ namespace
 
 
 
-	bool MatchDamageSource(const Json::Value & a_Conditions, const cEntity * a_Attacker)
+	bool MatchDamageSource(const Json::Value & a_Damage, const cEntity * a_Attacker, const TakeDamageInfo * a_TDI)
 	{
-		if (!a_Conditions.isObject() || !a_Conditions.isMember("damage"))
+		if (!a_Damage.isObject())
 		{
 			return true;
 		}
-		const auto & Damage = a_Conditions["damage"];
-		if (!Damage.isObject() || !Damage.isMember("source_entity"))
+		if (a_Damage.isMember("source_entity"))
 		{
-			return true;
+			if (a_Attacker == nullptr)
+			{
+				return false;
+			}
+			if (!MatchEntityPredicate(a_Damage["source_entity"], *a_Attacker, *a_Attacker))
+			{
+				return false;
+			}
 		}
-		if (a_Attacker == nullptr)
+		if (a_Damage.isMember("taken"))
 		{
-			return false;
+			const int Taken = (a_TDI == nullptr) ? 0 : static_cast<int>(a_TDI->FinalDamage);
+			if (!MatchRange(a_Damage["taken"], Taken))
+			{
+				return false;
+			}
 		}
-		return MatchEntityPredicate(Damage["source_entity"], *a_Attacker, *a_Attacker);
+		return true;
 	}
 
 
@@ -1068,6 +1078,28 @@ namespace
 					return false;
 				}
 			}
+		}
+		return true;
+	}
+
+
+
+
+
+	bool MatchKillingBlow(const Json::Value & a_Conditions, eDamageType a_DamageType)
+	{
+		if (!a_Conditions.isObject() || !a_Conditions.isMember("killing_blow"))
+		{
+			return true;
+		}
+		const auto & Blow = a_Conditions["killing_blow"];
+		if (!Blow.isObject())
+		{
+			return true;
+		}
+		if (Blow.isMember("is_projectile") && (Blow["is_projectile"].asBool() != (a_DamageType == dtRangedAttack)))
+		{
+			return false;
 		}
 		return true;
 	}
@@ -1829,7 +1861,7 @@ void cAdvancementManager::BuildInventoryIndex(void)
 
 
 
-void cAdvancementManager::TriggerPlayerKilledEntity(cPlayer & a_Player, const cEntity & a_Victim)
+void cAdvancementManager::TriggerPlayerKilledEntity(cPlayer & a_Player, const cEntity & a_Victim, eDamageType a_DamageType)
 {
 	const auto Range = m_Triggers.equal_range("minecraft:player_killed_entity");
 	for (auto It = Range.first; It != Range.second; ++It)
@@ -1843,7 +1875,7 @@ void cAdvancementManager::TriggerPlayerKilledEntity(cPlayer & a_Player, const cE
 		{
 			continue;
 		}
-		if (MatchEntityPredicate(Entry.Conditions, a_Victim, a_Player))
+		if (MatchEntityPredicate(Entry.Conditions, a_Victim, a_Player) && MatchKillingBlow(Entry.Conditions, a_DamageType))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
@@ -1854,7 +1886,7 @@ void cAdvancementManager::TriggerPlayerKilledEntity(cPlayer & a_Player, const cE
 
 
 
-void cAdvancementManager::TriggerEntityKilledPlayer(cPlayer & a_Player, const cEntity * a_Killer)
+void cAdvancementManager::TriggerEntityKilledPlayer(cPlayer & a_Player, const cEntity * a_Killer, const TakeDamageInfo & a_TDI)
 {
 	if (a_Killer == nullptr)
 	{
@@ -1868,7 +1900,7 @@ void cAdvancementManager::TriggerEntityKilledPlayer(cPlayer & a_Player, const cE
 		{
 			continue;
 		}
-		if (MatchEntityPredicate(Entry.Conditions, *a_Killer, a_Player))
+		if (MatchEntityPredicate(Entry.Conditions, *a_Killer, a_Player) && MatchKillingBlow(Entry.Conditions, a_TDI.DamageType))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
@@ -1879,7 +1911,7 @@ void cAdvancementManager::TriggerEntityKilledPlayer(cPlayer & a_Player, const cE
 
 
 
-void cAdvancementManager::TriggerPlayerHurtEntity(cPlayer & a_Player, const cEntity & a_Victim)
+void cAdvancementManager::TriggerPlayerHurtEntity(cPlayer & a_Player, const cEntity & a_Victim, const TakeDamageInfo & a_TDI)
 {
 	const auto Range = m_Triggers.equal_range("minecraft:player_hurt_entity");
 	for (auto It = Range.first; It != Range.second; ++It)
@@ -1889,7 +1921,10 @@ void cAdvancementManager::TriggerPlayerHurtEntity(cPlayer & a_Player, const cEnt
 		{
 			continue;
 		}
-		if (MatchEntityPredicate(Entry.Conditions, a_Victim, a_Player))
+		if (
+			MatchEntityPredicate(Entry.Conditions, a_Victim, a_Player) &&
+			(!Entry.Conditions.isMember("damage") || MatchDamageSource(Entry.Conditions["damage"], &a_Victim, &a_TDI))
+		)
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
@@ -1900,7 +1935,7 @@ void cAdvancementManager::TriggerPlayerHurtEntity(cPlayer & a_Player, const cEnt
 
 
 
-void cAdvancementManager::TriggerEntityHurtPlayer(cPlayer & a_Player, const cEntity * a_Attacker)
+void cAdvancementManager::TriggerEntityHurtPlayer(cPlayer & a_Player, const cEntity * a_Attacker, const TakeDamageInfo & a_TDI)
 {
 	const auto Range = m_Triggers.equal_range("minecraft:entity_hurt_player");
 	for (auto It = Range.first; It != Range.second; ++It)
@@ -1910,7 +1945,7 @@ void cAdvancementManager::TriggerEntityHurtPlayer(cPlayer & a_Player, const cEnt
 		{
 			continue;
 		}
-		if (MatchDamageSource(Entry.Conditions, a_Attacker))
+		if (MatchDamageSource(Entry.Conditions["damage"], a_Attacker, &a_TDI))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}

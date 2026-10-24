@@ -900,7 +900,7 @@ void cPlayer::KilledBy(TakeDamageInfo & a_TDI)
 	auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
 	if (AdvancementManager != nullptr)
 	{
-		AdvancementManager->TriggerEntityKilledPlayer(*this, a_TDI.Attacker);
+		AdvancementManager->TriggerEntityKilledPlayer(*this, a_TDI.Attacker, a_TDI);
 	}
 }
 
@@ -946,7 +946,7 @@ void cPlayer::Killed(const cEntity & a_Victim, eDamageType a_DamageType)
 	auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
 	if (AdvancementManager != nullptr)
 	{
-		AdvancementManager->TriggerPlayerKilledEntity(*this, a_Victim);
+		AdvancementManager->TriggerPlayerKilledEntity(*this, a_Victim, a_DamageType);
 	}
 }
 

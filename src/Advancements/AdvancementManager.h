@@ -9,6 +9,12 @@
 
 #include <json/json.h>
 
+
+
+
+
+struct TakeDamageInfo;
+
 #include <map>
 #include <set>
 #include <utility>
@@ -44,16 +50,16 @@ public:
 	void TriggerInventoryChanged(cPlayer & a_Player, short a_ChangedItemType);
 
 	/** Runs the minecraft:player_killed_entity criteria for the killing player. */
-	void TriggerPlayerKilledEntity(cPlayer & a_Player, const cEntity & a_Victim);
+	void TriggerPlayerKilledEntity(cPlayer & a_Player, const cEntity & a_Victim, eDamageType a_DamageType);
 
 	/** Runs the minecraft:entity_killed_player criteria for the dying player. */
-	void TriggerEntityKilledPlayer(cPlayer & a_Player, const cEntity * a_Killer);
+	void TriggerEntityKilledPlayer(cPlayer & a_Player, const cEntity * a_Killer, const TakeDamageInfo & a_TDI);
 
 	/** Runs the minecraft:player_hurt_entity criteria for the attacking player. */
-	void TriggerPlayerHurtEntity(cPlayer & a_Player, const cEntity & a_Victim);
+	void TriggerPlayerHurtEntity(cPlayer & a_Player, const cEntity & a_Victim, const TakeDamageInfo & a_TDI);
 
 	/** Runs the minecraft:entity_hurt_player criteria for the hurt player. */
-	void TriggerEntityHurtPlayer(cPlayer & a_Player, const cEntity * a_Attacker);
+	void TriggerEntityHurtPlayer(cPlayer & a_Player, const cEntity * a_Attacker, const TakeDamageInfo & a_TDI);
 
 	/** Runs the minecraft:item_durability_changed criteria for the player's item. */
 	void TriggerItemDurabilityChanged(cPlayer & a_Player, const cItem & a_ItemBefore, int a_Delta, int a_Durability);
