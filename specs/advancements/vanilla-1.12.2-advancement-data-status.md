@@ -216,3 +216,9 @@
 - 恢复 IsInsideStructure 为只读：cache-only + GetNearestStructureTarget 保守盒，不再在 tick 线程 CreateStructure（末地城 Build 会触发 deadlock detector）。
 - 实测：服务器保持在线；stronghold 144=true，344=true（fallback 盒太宽，m_MaxStructureSize=384 覆盖 344）。
 - end city：GetNearestStructureTarget('EndCity',1500,64,0) 返回 (0,0,0)（未命中/零向量）；IsInsideStructure('EndCity',0,0,0)=true（缓存结构命中，需进一步核对）。
+
+## 结构查询改为严格模式（轮 46）
+
+- 按维护者要求：IsInsideStructure 只认 generator 线程已生成并仍在缓存里的结构；结构未生成时永远返回 false。删除保守盒 fallback。
+- 实测：stronghold 144=false、344=false；end city (0,0,0)=false；服务器保持在线（无 deadlock）。
+- 结论：144=false 说明目标 chunk 的 stronghold 结构当时不在缓存；下一步需要保证目标 chunk 已生成/结构在缓存后再查询，或把结构缓存与生成的时序对齐。

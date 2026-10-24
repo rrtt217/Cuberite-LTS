@@ -265,8 +265,9 @@ bool cGridStructGen::IsInsideStructure(const Vector3i & a_Position)
 {
 	// Take the structures that may intersect the position's chunk (the cache creates them in the generator
 	// thread, so the pieces have the final terrain-adjusted height), and test their real bounding boxes:
-	// Read-only query: never create structures here (the tick thread must not run the generator's heavy
-	// placement code, e.g. the end city layout, or the deadlock detector will trip):
+	// Strict, read-only query: only structures that the generator thread has already placed (and that are
+	// still cached) count. A structure that has not been generated must never report "inside", and the tick
+	// thread must never create structures itself (the end city layout would trip the deadlock detector):
 	cStructurePtrs Structures;
 	const auto ChunkCoords = cChunkDef::BlockToChunk(Vector3i(a_Position.x, 0, a_Position.z));
 	GetStructuresForChunk(ChunkCoords.m_ChunkX, ChunkCoords.m_ChunkZ, Structures, false);
@@ -277,18 +278,7 @@ bool cGridStructGen::IsInsideStructure(const Vector3i & a_Position)
 			return true;
 		}
 	}
-
-	// The structure may have been evicted from the cache; fall back to a conservative box around the
-	// nearest structure target, using the generator's maximum structure extent:
-	Vector3i Target;
-	if (!GetNearestStructureTarget(a_Position, Target))
-	{
-		return false;
-	}
-	return (
-		(std::abs(a_Position.x - Target.x) <= m_MaxStructureSizeX) &&
-		(std::abs(a_Position.z - Target.z) <= m_MaxStructureSizeZ)
-	);
+	return false;
 }
 
 
