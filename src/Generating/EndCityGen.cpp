@@ -1930,6 +1930,7 @@ bool cEndCityGen::GetNearestStructureTarget(const AString & a_Structure, Vector3
 			MaxH = std::max(MaxH, H);
 		}
 	}
+	LOGINFO("endnearest footprint maxh=%d minh=%d landmin=%d maxdiff=%d", MaxH, MinH, END_CITY_MIN_LAND_Y, END_CITY_MAX_HEIGHT_DIFFERENCE);
 	if ((MaxH < END_CITY_MIN_LAND_Y) || ((MaxH - MinH) > END_CITY_MAX_HEIGHT_DIFFERENCE))
 	{
 		return false;

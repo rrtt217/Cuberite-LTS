@@ -2238,20 +2238,64 @@ void cAdvancementManager::TriggerSleptInBed(cPlayer & a_Player)
 
 
 
-void cAdvancementManager::TriggerSummonedEntity(cPlayer & a_Player, const cEntity & a_Entity)
+void cAdvancementManager::TriggerSummonedEntity(const cEntity & a_Entity)
 {
+	// Vanilla: a player-built iron or snow golem triggers for everyone within Chebyshev distance 5 of the
+	// golem; a player-built wither triggers within Chebyshev distance 50. The ender dragon is handled by
+	// its own caller (all players in the End within 192 blocks of the origin):
+	cWorld * World = a_Entity.GetWorld();
+	if (World == nullptr)
+	{
+		return;
+	}
+	int Radius = 5;
+	if (a_Entity.IsMob())
+	{
+		switch (static_cast<const cMonster &>(a_Entity).GetMobType())
+		{
+			case mtWither:    Radius = 50; break;
+			case mtIronGolem:
+			case mtSnowGolem: Radius = 5;  break;
+			default:          Radius = 5;  break;
+		}
+	}
+
 	const auto Range = m_Triggers.equal_range("minecraft:summoned_entity");
+	if (Range.first == Range.second)
+	{
+		return;
+	}
+	const auto Pos = a_Entity.GetPosition();
 	for (auto It = Range.first; It != Range.second; ++It)
 	{
 		const auto & Entry = It->second;
-		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		if (!MatchEntityPredicate(Entry.Conditions, a_Entity))
 		{
 			continue;
 		}
-		if (MatchEntityPredicate(Entry.Conditions, a_Entity))
-		{
-			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
-		}
+		World->ForEachPlayer([&](cPlayer & a_Player)
+			{
+				if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+				{
+					return false;
+				}
+				if (Entry.Conditions.isMember("player") && !MatchEntityPredicateValue(Entry.Conditions["player"], a_Player))
+				{
+					return false;
+				}
+				const auto PlayerPos = a_Player.GetPosition();
+				if (
+					(std::abs(PlayerPos.x - Pos.x) > Radius) ||
+					(std::abs(PlayerPos.y - Pos.y) > Radius) ||
+					(std::abs(PlayerPos.z - Pos.z) > Radius)
+				)
+				{
+					return false;
+				}
+				a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+				return false;
+			}
+		);
 	}
 }
 

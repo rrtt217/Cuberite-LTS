@@ -1794,7 +1794,7 @@ void cPlayer::TriggerSummonedEntity(cEntity & a_Entity)
 	auto * Manager = cRoot::Get()->GetAdvancementManager();
 	if (Manager != nullptr)
 	{
-		Manager->TriggerSummonedEntity(*this, a_Entity);
+		Manager->TriggerSummonedEntity(a_Entity);
 	}
 }
 

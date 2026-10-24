@@ -95,7 +95,21 @@ private:
 
 		// Spawn the golem:
 		auto GolemPos = Vector3d(a_PumpkinPos) + Vector3d(0.5, -2, 0.5);
-		a_World.SpawnMob(GolemPos.x, GolemPos.y, GolemPos.z, mtSnowGolem, false);
+		const UInt32 GolemID = a_World.SpawnMob(GolemPos.x, GolemPos.y, GolemPos.z, mtSnowGolem, false);
+		if (GolemID != cEntity::INVALID_ID)
+		{
+			// The player built the golem, so this counts as summoning it (everyone within 5 blocks):
+			a_World.DoWithEntityByID(GolemID, [](cEntity & a_Entity)
+				{
+					auto * Manager = cRoot::Get()->GetAdvancementManager();
+					if (Manager != nullptr)
+					{
+						Manager->TriggerSummonedEntity(a_Entity);
+					}
+					return true;
+				}
+			);
+		}
 		return true;
 	}
 
@@ -152,7 +166,21 @@ private:
 
 			// Spawn the golem:
 			auto GolemPos = Vector3d(a_PumpkinPos) + Vector3d(0.5, -2, 0.5);
-			a_World.SpawnMob(GolemPos.x, GolemPos.y, GolemPos.z, mtIronGolem, false);
+			const UInt32 GolemID = a_World.SpawnMob(GolemPos.x, GolemPos.y, GolemPos.z, mtIronGolem, false);
+			if (GolemID != cEntity::INVALID_ID)
+			{
+				// The player built the golem, so this counts as summoning it (everyone within 5 blocks):
+				a_World.DoWithEntityByID(GolemID, [](cEntity & a_Entity)
+					{
+						auto * Manager = cRoot::Get()->GetAdvancementManager();
+						if (Manager != nullptr)
+						{
+							Manager->TriggerSummonedEntity(a_Entity);
+						}
+						return true;
+					}
+				);
+			}
 			return true;
 		}  // for i - ArmOffsets[]
 
