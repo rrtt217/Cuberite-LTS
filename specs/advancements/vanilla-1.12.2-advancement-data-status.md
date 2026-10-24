@@ -222,3 +222,8 @@
 - 按维护者要求：IsInsideStructure 只认 generator 线程已生成并仍在缓存里的结构；结构未生成时永远返回 false。删除保守盒 fallback。
 - 实测：stronghold 144=false、344=false；end city (0,0,0)=false；服务器保持在线（无 deadlock）。
 - 结论：144=false 说明目标 chunk 的 stronghold 结构当时不在缓存；下一步需要保证目标 chunk 已生成/结构在缓存后再查询，或把结构缓存与生成的时序对齐。
+
+## 结构缓存时序验证（轮 48）
+
+- bot 移回主世界并停在 stronghold 144 后，t+16s 时 IsInsideStructure('Stronghold',144,37,-189)=true，344=false —— 严格模式 + 缓存时序正确，维护者“太松/未生成不该 true”两条都满足。
+- criterion 仍 false：MoveToWorld 是排队生效，立即 GetWorld 还是 world_the_end，触发路径拿到的世界/位置可能还是末地；需要等世界切换完成后再触发。
