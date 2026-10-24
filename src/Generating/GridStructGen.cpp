@@ -259,17 +259,23 @@ void cGridStructGen::GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructur
 
 bool cGridStructGen::IsInsideStructure(const Vector3i & a_Position)
 {
-	cStructurePtrs Structures;
-	const auto ChunkCoords = cChunkDef::BlockToChunk(Vector3i(a_Position.x, 0, a_Position.z));
-	GetStructuresForChunk(ChunkCoords.m_ChunkX, ChunkCoords.m_ChunkZ, Structures);
-	for (const auto & Structure : Structures)
+	// Locate the nearest structure and test exactly that structure (not the whole chunk's candidate set,
+	// which may not contain the structure nearest to the position):
+	Vector3i Target;
+	if (!GetNearestStructureTarget(a_Position, Target))
 	{
-		if (Structure->IsInside(a_Position))
-		{
-			return true;
-		}
+		return false;
 	}
-	return false;
+
+	// The origin is offset from the cell's grid point by at most m_MaxOffsetX / m_MaxOffsetZ:
+	const int CellX = FAST_FLOOR_DIV(Target.x + m_MaxOffsetX, m_GridSizeX);
+	const int CellZ = FAST_FLOOR_DIV(Target.z + m_MaxOffsetZ, m_GridSizeZ);
+	const int GridX = CellX * m_GridSizeX;
+	const int GridZ = CellZ * m_GridSizeZ;
+
+	// Create the structure for that cell directly, so the result does not depend on the cache state:
+	cStructurePtr Structure = CreateStructure(GridX, GridZ, Target.x, Target.z);
+	return (Structure != nullptr) && Structure->IsInside(a_Position);
 }
 
 

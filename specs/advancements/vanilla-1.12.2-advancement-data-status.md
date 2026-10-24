@@ -179,3 +179,9 @@
 - teleport 到 144,37,-189 后 in_stronghold 仍为 false（revoke 后等待 1.5s）。
 - 轮 27 的 prefab 日志已证明 cPrefabStructure::IsInside 在该位置能命中 stronghold 的 133-piece 结构（box 144 36 -189 .. 156 43 -176）；因此问题在 TriggerLocation 调用时 IsInsideStructure 拿到的结构集合不稳定：GetStructuresForChunk 有时返回 4 个不含 stronghold 结构的候选。
 - 下一步：IsInsideStructure 改为先 GetNearestStructureTarget 定位目标，再取目标所在 grid 的结构做 IsInside，不再依赖 chunk 候选集合；同时检查 GetStructuresForChunk 的缓存/淘汰行为。
+
+## location feature 修复（轮 29）
+
+- IsInsideStructure 改为先 GetNearestStructureTarget 定位目标结构，再直接 CreateStructure 做 IsInside，不再依赖 GetStructuresForChunk 的 chunk 候选集合（该集合曾返回 4 个不含 stronghold 结构的候选）。
+- Lua 实测：Stronghold 144,37,-189 = true；344,37,-189 = false。
+- bot 传到 144,37,-189 后 in_stronghold 仍 false —— TriggerLocation 触发路径内仍有问题，下一轮在触发路径内直接记录 IsInside 结果与 entry 信息。
