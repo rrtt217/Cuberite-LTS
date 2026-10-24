@@ -16,10 +16,10 @@
     "announce_to_chat": true,
     "hidden": false,
     "x": 5.0,
-    "y": 2.0
+    "y": 1.5
   },
   "criteria": {
-    "main": {
+    "beacon": {
       "trigger": "minecraft:construct_beacon",
       "conditions": {
         "level": 4
@@ -28,7 +28,7 @@
   },
   "requirements": [
     [
-      "main"
+      "beacon"
     ]
   ],
   "legacy_achievement": "AchFullBeacon"

@@ -16,10 +16,10 @@
     "announce_to_chat": true,
     "hidden": false,
     "x": 2.0,
-    "y": 3.0
+    "y": 2.5
   },
   "criteria": {
-    "main": {
+    "killed_ghast": {
       "trigger": "minecraft:player_killed_entity",
       "conditions": {
         "entity": {
@@ -35,7 +35,7 @@
   },
   "requirements": [
     [
-      "main"
+      "killed_ghast"
     ]
   ]
 }

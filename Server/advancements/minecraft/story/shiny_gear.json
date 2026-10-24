@@ -19,27 +19,7 @@
     "y": 2.0
   },
   "criteria": {
-    "h": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "item": "minecraft:diamond_helmet"
-          }
-        ]
-      }
-    },
-    "c": {
-      "trigger": "minecraft:inventory_changed",
-      "conditions": {
-        "items": [
-          {
-            "item": "minecraft:diamond_chestplate"
-          }
-        ]
-      }
-    },
-    "l": {
+    "diamond_leggings": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
@@ -49,7 +29,27 @@
         ]
       }
     },
-    "b": {
+    "diamond_helmet": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": "minecraft:diamond_helmet"
+          }
+        ]
+      }
+    },
+    "diamond_chestplate": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": "minecraft:diamond_chestplate"
+          }
+        ]
+      }
+    },
+    "diamond_boots": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
@@ -62,16 +62,10 @@
   },
   "requirements": [
     [
-      "h"
-    ],
-    [
-      "c"
-    ],
-    [
-      "l"
-    ],
-    [
-      "b"
+      "diamond_helmet",
+      "diamond_chestplate",
+      "diamond_leggings",
+      "diamond_boots"
     ]
   ]
 }

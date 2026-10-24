@@ -16,20 +16,20 @@
     "announce_to_chat": true,
     "hidden": false,
     "x": 4.0,
-    "y": 1.0
+    "y": 0.0
   },
   "criteria": {
-    "h": {
+    "iron_boots": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "item": "minecraft:iron_helmet"
+            "item": "minecraft:iron_boots"
           }
         ]
       }
     },
-    "c": {
+    "iron_chestplate": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
@@ -39,7 +39,7 @@
         ]
       }
     },
-    "l": {
+    "iron_leggings": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
@@ -49,12 +49,12 @@
         ]
       }
     },
-    "b": {
+    "iron_helmet": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
           {
-            "item": "minecraft:iron_boots"
+            "item": "minecraft:iron_helmet"
           }
         ]
       }
@@ -62,16 +62,10 @@
   },
   "requirements": [
     [
-      "h"
-    ],
-    [
-      "c"
-    ],
-    [
-      "l"
-    ],
-    [
-      "b"
+      "iron_helmet",
+      "iron_chestplate",
+      "iron_leggings",
+      "iron_boots"
     ]
   ]
 }

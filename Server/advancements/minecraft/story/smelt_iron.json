@@ -19,7 +19,7 @@
     "y": 1.25
   },
   "criteria": {
-    "main": {
+    "iron": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
@@ -32,7 +32,7 @@
   },
   "requirements": [
     [
-      "main"
+      "iron"
     ]
   ],
   "legacy_achievement": "AchAcquireIron"

@@ -16,10 +16,10 @@
     "announce_to_chat": true,
     "hidden": false,
     "x": 4.0,
-    "y": 2.0
+    "y": 2.5
   },
   "criteria": {
-    "main": {
+    "iron_pickaxe": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
@@ -32,7 +32,7 @@
   },
   "requirements": [
     [
-      "main"
+      "iron_pickaxe"
     ]
   ]
 }

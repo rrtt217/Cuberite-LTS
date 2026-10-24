@@ -14,12 +14,12 @@
     "show_toast": false,
     "announce_to_chat": false,
     "hidden": false,
+    "background": "minecraft:textures/gui/advancements/backgrounds/nether.png",
     "x": 0.0,
-    "y": 1.5,
-    "background": "minecraft:textures/gui/advancements/backgrounds/nether.png"
+    "y": 1.25
   },
   "criteria": {
-    "main": {
+    "entered_nether": {
       "trigger": "minecraft:changed_dimension",
       "conditions": {
         "from": "overworld",
@@ -29,7 +29,7 @@
   },
   "requirements": [
     [
-      "main"
+      "entered_nether"
     ]
   ]
 }

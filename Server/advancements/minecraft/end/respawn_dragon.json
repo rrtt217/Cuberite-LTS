@@ -16,10 +16,10 @@
     "announce_to_chat": true,
     "hidden": false,
     "x": 2.0,
-    "y": 1.5
+    "y": 2.0
   },
   "criteria": {
-    "main": {
+    "summoned_dragon": {
       "trigger": "minecraft:summoned_entity",
       "conditions": {
         "entity": {
@@ -30,7 +30,7 @@
   },
   "requirements": [
     [
-      "main"
+      "summoned_dragon"
     ]
   ]
 }

@@ -78,3 +78,12 @@
 - 实测：console 依次 effect TestBot <id> 30 0 施加 11 个效果 -> HasAdvancement(minecraft:nether/all_potions)=true。
 - nether/all_effects 用 20 个效果的完整条件；服务端 eType 只有 1..23，缺 glowing/levitation -> 加载期跳过该 criterion，advancement 不可完成（属状态效果子系统的独立缺口）。
 - 剩余：feature 谓词（find_fortress/enter_end_gateway/find_end_city）、glowing/levitation 效果、rewards、35 条精确坐标/flags、客户端实机、门禁、合并。
+
+## 全量原版数据整合（本轮）
+
+- 用 119277 字节的原版包（488 条：55 主树 + 433 recipes）替换/更新全部数据；逐条 diff（display 字段、criteria 名称、requirements）= **0**。
+- 主树：display 的 translate key/icon/frame/flags/背景/x/y/parent 全部按包；criteria 名称与 requirements 按包；已撰写的 conditions 与 legacy_achievement 保留。
+- recipes：433 条（含 root），criteria/requirements 按包；has_the_recipe 的 recipe 名映射到 crafting.txt（含 oak_wooden_slab -> oak_slab、trapdoor -> oak_trapdoor、fence -> oak_fence、fence_gate -> oak_fence_gate、sign -> oak_sign）；材料 criteria -> inventory_changed。
+- 修复：cProtocol 输出缓冲区 64 KiB -> 2 MiB（原版 488 条入服包 119277 字节，超缓冲区导致 SendAdvancements 崩溃）。
+- 加载 488；bot 入服不再崩溃；story/smelt_iron、recipes/oak_planks、adventure/root 命令正常；ctest 49/49。
+- 已知：follow_ender_eye 的 location.feature=Stronghold 未实现；all_effects 的 glowing/levitation 未实现；find_fortress/enter_end_gateway/find_end_city/levitate 仍为 impossible 占位；recipes 的部分材料 item 名与本服 items.ini 未逐一核对。

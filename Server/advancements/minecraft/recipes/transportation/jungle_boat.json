@@ -1,0 +1,20 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "entered_water": {
+      "trigger": "minecraft:impossible"
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "jungle_boat"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "entered_water",
+      "has_the_recipe"
+    ]
+  ]
+}

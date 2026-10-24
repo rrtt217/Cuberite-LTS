@@ -16,10 +16,10 @@
     "announce_to_chat": true,
     "hidden": false,
     "x": 1.0,
-    "y": 0.5
+    "y": 0.0
   },
   "criteria": {
-    "main": {
+    "travelled": {
       "trigger": "minecraft:nether_travel",
       "conditions": {
         "distance": {
@@ -32,7 +32,7 @@
   },
   "requirements": [
     [
-      "main"
+      "travelled"
     ]
   ]
 }

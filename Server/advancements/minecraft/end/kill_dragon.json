@@ -16,10 +16,10 @@
     "announce_to_chat": true,
     "hidden": false,
     "x": 1.0,
-    "y": 1.0
+    "y": 1.5
   },
   "criteria": {
-    "main": {
+    "killed_dragon": {
       "trigger": "minecraft:player_killed_entity",
       "conditions": {
         "entity": {
@@ -30,7 +30,7 @@
   },
   "requirements": [
     [
-      "main"
+      "killed_dragon"
     ]
   ],
   "legacy_achievement": "AchTheEnd2"

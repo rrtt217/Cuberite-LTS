@@ -19,7 +19,7 @@
     "y": 0.5
   },
   "criteria": {
-    "main": {
+    "elytra": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
@@ -32,7 +32,7 @@
   },
   "requirements": [
     [
-      "main"
+      "elytra"
     ]
   ]
 }

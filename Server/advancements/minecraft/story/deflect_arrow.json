@@ -16,10 +16,10 @@
     "announce_to_chat": true,
     "hidden": false,
     "x": 5.0,
-    "y": 1.0
+    "y": 0.0
   },
   "criteria": {
-    "main": {
+    "deflected_projectile": {
       "trigger": "minecraft:entity_hurt_player",
       "conditions": {
         "damage": {
@@ -32,7 +32,7 @@
   },
   "requirements": [
     [
-      "main"
+      "deflected_projectile"
     ]
   ]
 }

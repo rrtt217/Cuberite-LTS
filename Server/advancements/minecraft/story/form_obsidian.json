@@ -16,10 +16,10 @@
     "announce_to_chat": true,
     "hidden": false,
     "x": 5.0,
-    "y": 1.5
+    "y": 1.0
   },
   "criteria": {
-    "main": {
+    "obsidian": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
@@ -32,7 +32,7 @@
   },
   "requirements": [
     [
-      "main"
+      "obsidian"
     ]
   ]
 }

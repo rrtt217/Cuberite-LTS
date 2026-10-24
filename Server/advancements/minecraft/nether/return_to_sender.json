@@ -19,7 +19,7 @@
     "y": 2.5
   },
   "criteria": {
-    "main": {
+    "killed_ghast": {
       "trigger": "minecraft:player_killed_entity",
       "conditions": {
         "entity": {
@@ -30,7 +30,7 @@
   },
   "requirements": [
     [
-      "main"
+      "killed_ghast"
     ]
   ],
   "legacy_achievement": "AchGhast"

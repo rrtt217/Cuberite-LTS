@@ -16,10 +16,10 @@
     "announce_to_chat": true,
     "hidden": false,
     "x": 5.0,
-    "y": 2.0
+    "y": 2.5
   },
   "criteria": {
-    "main": {
+    "diamond": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
@@ -32,7 +32,7 @@
   },
   "requirements": [
     [
-      "main"
+      "diamond"
     ]
   ],
   "legacy_achievement": "AchDiamonds"

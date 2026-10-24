@@ -16,10 +16,10 @@
     "announce_to_chat": true,
     "hidden": false,
     "x": 2.0,
-    "y": 0.5
+    "y": 0.0
   },
   "criteria": {
-    "main": {
+    "dragon_egg": {
       "trigger": "minecraft:inventory_changed",
       "conditions": {
         "items": [
@@ -32,7 +32,7 @@
   },
   "requirements": [
     [
-      "main"
+      "dragon_egg"
     ]
   ]
 }

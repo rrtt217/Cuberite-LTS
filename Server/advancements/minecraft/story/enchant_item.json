@@ -16,16 +16,16 @@
     "announce_to_chat": true,
     "hidden": false,
     "x": 6.0,
-    "y": 2.5
+    "y": 3.0
   },
   "criteria": {
-    "main": {
+    "enchanted_item": {
       "trigger": "minecraft:enchanted_item"
     }
   },
   "requirements": [
     [
-      "main"
+      "enchanted_item"
     ]
   ],
   "legacy_achievement": "AchEnchantments"

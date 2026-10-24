@@ -6,7 +6,7 @@
 ## 1. 分支与提交
 
 - feature/advancements-vanilla-list：2d4bf9b（55 条列表规格）、b01a4f3（入服包解码记录）。
-- feature/advancements-vanilla-data（叠在 list 分支之上）：653334e（20 条抓包条目）、f8fd2d4（剩余 35 条）、0b61571（21 条 recipes + crafting.txt 名称修复）、0b4160d（biome location 谓词）、8fa714a（旧成就桥）、1f8f26d（player location 谓词 + 两个占位条件）、496599b（effects 谓词 + all_potions）。
+- feature/advancements-vanilla-data（叠在 list 分支之上）：653334e（20 条抓包条目）、f8fd2d4（剩余 35 条）、0b61571（433 条 recipes + crafting.txt 名称修复）、0b4160d（biome location 谓词）、8fa714a（旧成就桥）、1f8f26d（player location 谓词 + 两个占位条件）、496599b（effects 谓词 + all_potions）。
 - master 基线：c5db1e2；本分支栈可用 fast-forward 合并，尚未推送。
 
 ## 2. 交付范围
@@ -20,7 +20,7 @@
 ## 3. 验证
 
 - 风格 0；构建通过；ctest 49/49（排除 UrlClient-test|Google-test）。
-- 数据加载：Loaded 76 advancement(s)；仅 all_effects 的 minecraft:glowing 报 unsupported（底层效果缺失，预期）。
+- 数据加载：Loaded 488 advancement(s)；仅 all_effects 的 minecraft:glowing 报 unsupported（底层效果缺失，预期）。
 - 实机（自动 bot）：story/mine_stone、story/smelt_iron、story/enter_the_nether、story/enter_the_end、story/follow_ender_eye、adventure/root、adventure/kill_a_mob、adventure/kill_a_mob(ghast 条件)、nether/root、nether/uneasy_alliance、nether/return_to_sender、end/root、hubandry... 见各轮记录；recipes/building_blocks/oak_planks（log pickup -> recipe unlock）；nether/all_potions（11 效果）；旧成就桥 grant story/mine_diamond -> 聊天出现 [Diamonds!] 与 Achievement get!。
 - adventuring_time：bot 的 FlowerForest 映射 forest -> criterion forest = true。
 
@@ -39,3 +39,9 @@
 - 维护者确认已知偏差可接受；
 - 可选：人类客户端连 25565 后 console grant everything，按 L 核对 5 个页签与树；
 - 维护者明确同意后 fast-forward 合并并推送（AGENTS §3）。
+
+## 全量数据与缓冲区修复（更新）
+
+- 数据已按原版 119277 字节包整合：488 条（55 主树 + 433 recipes）；display/criteria/requirements 逐条 diff = 0。
+- cProtocol 输出缓冲区 64 KiB -> 2 MiB；否则 488 条入服包（119277 字节）会让 SendAdvancements 崩溃。
+- ctest 49/49；bot 入服与命令测试通过。

@@ -9,23 +9,23 @@
     },
     "icon": {
       "item": 373,
-      "data": 8193
+      "data": 0
     },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": false,
     "x": 3.0,
-    "y": 1.0
+    "y": 0.5
   },
   "criteria": {
-    "main": {
+    "potion": {
       "trigger": "minecraft:brewed_potion"
     }
   },
   "requirements": [
     [
-      "main"
+      "potion"
     ]
   ],
   "legacy_achievement": "AchPotion"

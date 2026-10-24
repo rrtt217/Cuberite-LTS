@@ -19,13 +19,16 @@
     "y": 1.5
   },
   "criteria": {
-    "main": {
-      "trigger": "minecraft:used_ender_eye"
+    "in_stronghold": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "feature": "Stronghold"
+      }
     }
   },
   "requirements": [
     [
-      "main"
+      "in_stronghold"
     ]
   ]
 }

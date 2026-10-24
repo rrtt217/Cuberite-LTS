@@ -16,10 +16,10 @@
     "announce_to_chat": true,
     "hidden": false,
     "x": 3.0,
-    "y": 2.0
+    "y": 1.5
   },
   "criteria": {
-    "main": {
+    "summoned": {
       "trigger": "minecraft:summoned_entity",
       "conditions": {
         "entity": {
@@ -30,7 +30,7 @@
   },
   "requirements": [
     [
-      "main"
+      "summoned"
     ]
   ],
   "legacy_achievement": "AchSpawnWither"
