@@ -85,3 +85,16 @@
 
 因此对维护者问题的回答是：**两者都有**——大部分确实是原版就不需要；少数（sniper_duel、tame_an_animal、
 shoot_arrow、levitate）是当时谓词/触发器没实现而遗漏或用占位符绕过的。
+## 6. 仍缺项及其阻塞原因（逐条核对）
+
+| 缺口 | 阻塞原因 | 建议 |
+|---|---|---|
+| `state`（`enter_block` / `placed_block`） | 1.12.2 用方块状态**名称**（如 `{"facing": "west"}`），本仓库只有 metadata；`src/Registries/BlockStates.*` 是 1.13+ 的状态 ID 生成物，不能直接反查名称 | 需要一张 metadata → 状态名的按方块映射表，或改走 1.13 状态 ID 路径 |
+| `villager_trade` 触发器 | `src/Mobs/Villager.cpp` 没有交易逻辑，无调用点 | 依赖村民交易子系统 |
+| `shoot_arrow` 的 `damage.type` | `TakeDamageInfo` 不携带 `direct_entity`（投射物实体），只有 `Attacker` | 需要给 `TakeDamageInfo` 增加投射物实体字段 |
+| `end/levitate` 的 `levitation` | levitation 状态效果未实现 | 依赖状态效果子系统 |
+| 实体谓词 `nbt` | 需要实体 NBT 与 SNBT 匹配器 | 独立工作量 |
+| 实体谓词 `vehicle` / `passenger` | 本仓库未实现骑乘（`cEntity` 无 vehicle/passenger） | 依赖骑乘子系统 |
+| 76 条 recipe 奖励 | `crafting.txt` 缺这些配方（16 色床、`slime` 等） | 配方系统缺口 |
+
+以上均**未被现存 488 条数据使用**（`sniper_duel` 的 `distance`、`tame_an_animal` 的占位已在前面修复），因此不阻塞数据加载与主要触发路径。
