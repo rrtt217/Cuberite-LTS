@@ -153,3 +153,10 @@
 - 实现 cGridStructGen::IsInsideStructure：按位置所在 chunk 取结构（带缓存锁），调用结构的 IsInside；stronghold 用 cPrefabStructure 各 piece 的 hitbox，end city 用 cEndCity 各 room 的 prefab 尺寸。
 - 调用链：cWorld::GetGenerator -> cChunkGeneratorThread -> cComposableGenerator -> 各 finisher -> cGridStructGen；manager 的 location.feature 改为 IsInsideStructure（删掉水平半径近似）。
 - 实测：stronghold 目标 (144,36,-189)；把 bot 放到目标 +200 格（344,-189）不触发（正确）；放到目标点本身暂未触发 —— 待查 hitbox/坐标（本轮未完成）。
+
+## 结构包围盒 hitbox 修复（本轮）
+
+- 根因：cPlacedPiece::MoveToGroundBy 只更新 m_Coords.y，没更新 m_HitBox，stronghold 的 piece 被移到地面后 hitbox 仍停在移动前高度，导致 IsInside 判断失败。
+- 修复：MoveToGroundBy 同步 m_HitBox 的 p1.y / p2.y。
+- 新增 cWorld:IsInsideStructure Lua API（APIDump 同步），便于直接核对。
+- 实测：w:IsInsideStructure("Stronghold",144,37,-189)=true，344 处=false；但 bot 传到目标点后 in_stronghold criterion 仍为 false（location trigger 侧待查，下一轮）。

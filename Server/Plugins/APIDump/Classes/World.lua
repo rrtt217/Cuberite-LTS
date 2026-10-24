@@ -1467,6 +1467,21 @@ function OnAllChunksAvailable()</pre> All return values from the callbacks are i
 				},
 				Notes = "Returns the nearest structure target of the specified type (for example Stronghold or EndCity), or false if the generator cannot place that structure.",
 			},
+			IsInsideStructure =
+			{
+				Params =
+				{
+					{ Name = "Structure", Type = "string" },
+					{ Name = "BlockX", Type = "number" },
+					{ Name = "BlockY", Type = "number" },
+					{ Name = "BlockZ", Type = "number" },
+				},
+				Returns =
+				{
+					{ Name = "IsInside", Type = "boolean" },
+				},
+				Notes = "Returns true if the specified block position is inside the named structure (using the structure's pieces' bounding boxes).",
+			},
 			GetBiomeAt =
 			{
 				Params =

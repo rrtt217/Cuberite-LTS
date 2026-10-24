@@ -865,6 +865,12 @@ public:
 		return Target;
 	}
 
+	/** Returns true if the specified block position is inside the named structure. */
+	bool IsInsideStructure(const AString & a_Structure, int a_BlockX, int a_BlockY, int a_BlockZ)
+	{
+		return m_Generator.IsInsideStructure(a_Structure, Vector3i(a_BlockX, a_BlockY, a_BlockZ));
+	}
+
 	// tolua_end
 
 	cChunkGeneratorThread & GetGenerator(void) { return m_Generator; }
