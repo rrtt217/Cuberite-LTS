@@ -106,6 +106,9 @@ public:
 	/** Runs the minecraft:brewed_potion criteria for an item taken out of a brewing stand. */
 	void TriggerBrewedPotion(cPlayer & a_Player, const cItem & a_Item);
 
+	/** Runs the minecraft:construct_beacon criteria for a player using a beacon of the given level. */
+	void TriggerConstructBeacon(cPlayer & a_Player, int a_Level);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 

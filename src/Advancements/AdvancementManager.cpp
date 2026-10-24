@@ -311,7 +311,8 @@ namespace
 			(a_Trigger == "minecraft:tame_animal") ||
 			(a_Trigger == "minecraft:bred_animals") ||
 			(a_Trigger == "minecraft:cured_zombie_villager") ||
-			(a_Trigger == "minecraft:brewed_potion");
+			(a_Trigger == "minecraft:brewed_potion") ||
+			(a_Trigger == "minecraft:construct_beacon");
 	}
 
 
@@ -350,6 +351,22 @@ namespace
 						a_Reason = "unsupported entity predicate \"" + Key + "\"";
 						return false;
 					}
+				}
+			}
+			return true;
+		}
+		if (a_Trigger == "minecraft:construct_beacon")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+			{
+				if (it.key().asString() != "level")
+				{
+					a_Reason = "unsupported condition \"" + it.key().asString() + "\"";
+					return false;
 				}
 			}
 			return true;
@@ -1925,6 +1942,28 @@ void cAdvancementManager::TriggerBrewedPotion(cPlayer & a_Player, const cItem & 
 			continue;
 		}
 		if (!Entry.Conditions.isObject() || (Entry.Conditions.size() == 0))
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerConstructBeacon(cPlayer & a_Player, int a_Level)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:construct_beacon");
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		if (!Entry.Conditions.isObject() || !Entry.Conditions.isMember("level") ||
+			MatchRange(Entry.Conditions["level"], a_Level))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}

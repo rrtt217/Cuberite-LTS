@@ -2,9 +2,11 @@
 #include "Globals.h"  // NOTE: MSVC stupidness requires this to be the same across all modules
 
 #include "BeaconEntity.h"
+#include "../Advancements/AdvancementManager.h"
 #include "../BlockInfo.h"
 #include "../BlockArea.h"
 #include "../Entities/Player.h"
+#include "../Root.h"
 #include "../UI/BeaconWindow.h"
 #include "../ClientHandle.h"
 
@@ -314,6 +316,15 @@ bool cBeaconEntity::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 bool cBeaconEntity::UsedBy(cPlayer * a_Player)
 {
 	a_Player->GetStatistics().Custom[CustomStatistic::InteractWithBeacon]++;
+
+	// Refresh the pyramid in case the structure changed since the last update:
+	UpdateBeacon();
+
+	auto * AdvancementManager = cRoot::Get()->GetAdvancementManager();
+	if (AdvancementManager != nullptr)
+	{
+		AdvancementManager->TriggerConstructBeacon(*a_Player, GetBeaconLevel());
+	}
 
 	cWindow * Window = GetWindow();
 	if (Window == nullptr)
