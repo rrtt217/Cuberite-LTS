@@ -904,7 +904,7 @@ namespace
 
 
 
-	bool MatchEntityPredicate(const Json::Value & a_Conditions, const cEntity & a_Entity);
+	bool MatchEntityPredicate(const Json::Value & a_Conditions, const cEntity & a_Entity, const cEntity & a_Origin);
 
 
 
@@ -1004,18 +1004,26 @@ namespace
 		{
 			return false;
 		}
-		return MatchEntityPredicate(Damage["source_entity"], *a_Attacker);
+		return MatchEntityPredicate(Damage["source_entity"], *a_Attacker, *a_Attacker);
 	}
 
 
 
 
 
-	bool MatchEntityPredicateValue(const Json::Value & a_Predicate, const cEntity & a_Entity)
+	bool MatchEntityPredicateValue(const Json::Value & a_Predicate, const cEntity & a_Entity, const cEntity & a_Origin)
 	{
 		if (!a_Predicate.isObject())
 		{
 			return true;
+		}
+		if (a_Predicate.isMember("distance"))
+		{
+			const double Distance = (a_Entity.GetPosition() - a_Origin.GetPosition()).Length();
+			if (!MatchRange(a_Predicate["distance"], static_cast<int>(Distance)))
+			{
+				return false;
+			}
 		}
 		if (a_Predicate.isMember("type"))
 		{
@@ -1068,13 +1076,13 @@ namespace
 
 
 
-	bool MatchEntityPredicate(const Json::Value & a_Conditions, const cEntity & a_Entity)
+	bool MatchEntityPredicate(const Json::Value & a_Conditions, const cEntity & a_Entity, const cEntity & a_Origin)
 	{
 		if (!a_Conditions.isObject() || !a_Conditions.isMember("entity"))
 		{
 			return true;
 		}
-		return MatchEntityPredicateValue(a_Conditions["entity"], a_Entity);
+		return MatchEntityPredicateValue(a_Conditions["entity"], a_Entity, a_Origin);
 	}
 
 
@@ -1831,11 +1839,11 @@ void cAdvancementManager::TriggerPlayerKilledEntity(cPlayer & a_Player, const cE
 		{
 			continue;
 		}
-		if (Entry.Conditions.isMember("player") && (!MatchEntityPredicateValue(Entry.Conditions["player"], a_Player)))
+		if (Entry.Conditions.isMember("player") && (!MatchEntityPredicateValue(Entry.Conditions["player"], a_Player, a_Player)))
 		{
 			continue;
 		}
-		if (MatchEntityPredicate(Entry.Conditions, a_Victim))
+		if (MatchEntityPredicate(Entry.Conditions, a_Victim, a_Player))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
@@ -1860,7 +1868,7 @@ void cAdvancementManager::TriggerEntityKilledPlayer(cPlayer & a_Player, const cE
 		{
 			continue;
 		}
-		if (MatchEntityPredicate(Entry.Conditions, *a_Killer))
+		if (MatchEntityPredicate(Entry.Conditions, *a_Killer, a_Player))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
@@ -1881,7 +1889,7 @@ void cAdvancementManager::TriggerPlayerHurtEntity(cPlayer & a_Player, const cEnt
 		{
 			continue;
 		}
-		if (MatchEntityPredicate(Entry.Conditions, a_Victim))
+		if (MatchEntityPredicate(Entry.Conditions, a_Victim, a_Player))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
@@ -2282,7 +2290,7 @@ void cAdvancementManager::TriggerSummonedEntity(const cEntity & a_Entity)
 	for (auto It = Range.first; It != Range.second; ++It)
 	{
 		const auto & Entry = It->second;
-		if (!MatchEntityPredicate(Entry.Conditions, a_Entity))
+		if (!MatchEntityPredicate(Entry.Conditions, a_Entity, a_Entity))
 		{
 			continue;
 		}
@@ -2292,7 +2300,7 @@ void cAdvancementManager::TriggerSummonedEntity(const cEntity & a_Entity)
 				{
 					return false;
 				}
-				if (Entry.Conditions.isMember("player") && !MatchEntityPredicateValue(Entry.Conditions["player"], a_Player))
+				if (Entry.Conditions.isMember("player") && !MatchEntityPredicateValue(Entry.Conditions["player"], a_Player, a_Player))
 				{
 					return false;
 				}
@@ -2326,7 +2334,7 @@ void cAdvancementManager::TriggerTameAnimal(cPlayer & a_Player, const cEntity & 
 		{
 			continue;
 		}
-		if (MatchEntityPredicate(Entry.Conditions, a_Animal))
+		if (MatchEntityPredicate(Entry.Conditions, a_Animal, a_Player))
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}
@@ -2350,15 +2358,15 @@ void cAdvancementManager::TriggerBredAnimals(cPlayer & a_Player, const cEntity &
 		bool Matches = true;
 		if (Entry.Conditions.isObject())
 		{
-			if (Entry.Conditions.isMember("parent") && !MatchEntityPredicateValue(Entry.Conditions["parent"], a_Parent))
+			if (Entry.Conditions.isMember("parent") && !MatchEntityPredicateValue(Entry.Conditions["parent"], a_Parent, a_Player))
 			{
 				Matches = false;
 			}
-			if (Entry.Conditions.isMember("partner") && !MatchEntityPredicateValue(Entry.Conditions["partner"], a_Partner))
+			if (Entry.Conditions.isMember("partner") && !MatchEntityPredicateValue(Entry.Conditions["partner"], a_Partner, a_Player))
 			{
 				Matches = false;
 			}
-			if (Entry.Conditions.isMember("child") && ((a_Child == nullptr) || !MatchEntityPredicateValue(Entry.Conditions["child"], *a_Child)))
+			if (Entry.Conditions.isMember("child") && ((a_Child == nullptr) || !MatchEntityPredicateValue(Entry.Conditions["child"], *a_Child, a_Player)))
 			{
 				Matches = false;
 			}
@@ -2387,12 +2395,12 @@ void cAdvancementManager::TriggerCuredZombieVillager(cPlayer & a_Player, const c
 		bool Matches = true;
 		if (Entry.Conditions.isObject())
 		{
-			if (Entry.Conditions.isMember("zombie") && !MatchEntityPredicateValue(Entry.Conditions["zombie"], a_Zombie))
+			if (Entry.Conditions.isMember("zombie") && !MatchEntityPredicateValue(Entry.Conditions["zombie"], a_Zombie, a_Player))
 			{
 				Matches = false;
 			}
 			if (Entry.Conditions.isMember("villager") &&
-				((a_Villager == nullptr) || !MatchEntityPredicateValue(Entry.Conditions["villager"], *a_Villager)))
+				((a_Villager == nullptr) || !MatchEntityPredicateValue(Entry.Conditions["villager"], *a_Villager, a_Player)))
 			{
 				Matches = false;
 			}
