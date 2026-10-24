@@ -117,3 +117,10 @@
   - progress 488 条；发现 7 条材料 criterion 在加载时被当作 date=0（vanilla 是 null）→ 修复 cPlayer::LoadFromDisk 跳过 null；修复后入服包 119306 bytes（少 56 字节）。
   - 结论：客户端收到与 vanilla 相同的 488 条定义；进度语义一致。
 - 已知服务器问题：advancement grant everything 经 MCP 控制台触发 deadlock 检测（Core/MCPServer Lua 状态），服务器中止；客户端核对可改用离线玩家数据注入（advancements=vanilla progress）或 RCON。
+
+## grant everything deadlock 修复（本轮）
+
+- 原因：GrantAdvancementTree 对每条 advancement 调 GrantAdvancement，每条都 ComputeVisible + SendAdvancementUpdate；488 条时主线程长时间占用，触发 deadlock 检测（world age）并中止服务器。
+- 修复：拆分 GrantAdvancementInternal（只改进度/完成/公告）与公共 GrantAdvancement；Grant/RevokeAdvancementTree 批量执行 internal，最后只发一次 SendAdvancementUpdate。
+- 实测：新玩家数据下 advancement grant TestBot everything 返回 Granted all advancements，耗时 917ms，服务器保持在线；无新 deadlock。
+- 客户端核对：人类客户端连 25565 后可直接 console grant everything，然后按 L 看 5 页签。

@@ -55,3 +55,7 @@
 
 - ProtoProxy 解码 Cuberite 自己的 488 条入服包：definitions 与 vanilla 包 diff = 0；progress 语义一致（修复 null criterion 加载）。
 - grant everything 经 MCP 触发 deadlock；客户端实机核对请用离线进度注入或 RCON。
+
+## grant everything 修复（更新）
+
+- GrantAdvancementTree 改为批量（一次 SendAdvancementUpdate）；488 条 grant everything 从触发 deadlock 变为 ~917ms 完成，服务器保持在线。

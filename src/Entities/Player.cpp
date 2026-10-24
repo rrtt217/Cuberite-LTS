@@ -1597,13 +1597,33 @@ void cPlayer::OnAdvancementCompleted(const cAdvancement & a_Advancement)
 bool cPlayer::GrantAdvancement(const AString & a_ID)
 {
 	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	if (Manager == nullptr)
+	{
+		return false;
+	}
+	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
+	if (!GrantAdvancementInternal(a_ID))
+	{
+		return false;
+	}
+	const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+	SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
+	return true;
+}
+
+
+
+
+
+bool cPlayer::GrantAdvancementInternal(const AString & a_ID)
+{
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
 	const auto * Advancement = (Manager == nullptr) ? nullptr : Manager->GetAdvancement(a_ID);
 	if (Advancement == nullptr)
 	{
 		return false;
 	}
 
-	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
 	auto & Progress = m_AdvancementProgress[a_ID];
 	const bool WasCompleted = Manager->IsCompleted(*Advancement, Progress);
 	bool Changed = false;
@@ -1623,8 +1643,6 @@ bool cPlayer::GrantAdvancement(const AString & a_ID)
 	{
 		OnAdvancementCompleted(*Advancement);
 	}
-	const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
-	SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
 	return true;
 }
 
@@ -1635,13 +1653,33 @@ bool cPlayer::GrantAdvancement(const AString & a_ID)
 bool cPlayer::GrantAdvancementCriterion(const AString & a_ID, const AString & a_Criterion)
 {
 	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	if (Manager == nullptr)
+	{
+		return false;
+	}
+	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
+	if (!GrantAdvancementCriterionInternal(a_ID, a_Criterion))
+	{
+		return false;
+	}
+	const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+	SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
+	return true;
+}
+
+
+
+
+
+bool cPlayer::GrantAdvancementCriterionInternal(const AString & a_ID, const AString & a_Criterion)
+{
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
 	const auto * Advancement = (Manager == nullptr) ? nullptr : Manager->GetAdvancement(a_ID);
 	if ((Advancement == nullptr) || (Advancement->Criteria.find(a_Criterion) == Advancement->Criteria.end()))
 	{
 		return false;
 	}
 
-	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
 	auto & Progress = m_AdvancementProgress[a_ID];
 	if (Progress.find(a_Criterion) != Progress.end())
 	{
@@ -1654,8 +1692,6 @@ bool cPlayer::GrantAdvancementCriterion(const AString & a_ID, const AString & a_
 	{
 		OnAdvancementCompleted(*Advancement);
 	}
-	const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
-	SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
 	return true;
 }
 
@@ -1665,19 +1701,33 @@ bool cPlayer::GrantAdvancementCriterion(const AString & a_ID, const AString & a_
 
 bool cPlayer::RevokeAdvancement(const AString & a_ID)
 {
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	if (Manager == nullptr)
+	{
+		return false;
+	}
+	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
+	if (!RevokeAdvancementInternal(a_ID))
+	{
+		return false;
+	}
+	const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+	SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
+	return true;
+}
+
+
+
+
+
+bool cPlayer::RevokeAdvancementInternal(const AString & a_ID)
+{
 	const auto it = m_AdvancementProgress.find(a_ID);
 	if (it == m_AdvancementProgress.end())
 	{
 		return false;
 	}
-	const auto * Manager = cRoot::Get()->GetAdvancementManager();
-	const auto VisibleBefore = (Manager == nullptr) ? std::set<AString>() : Manager->ComputeVisible(m_AdvancementProgress);
 	m_AdvancementProgress.erase(it);
-	if (Manager != nullptr)
-	{
-		const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
-		SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
-	}
 	return true;
 }
 
@@ -1686,6 +1736,27 @@ bool cPlayer::RevokeAdvancement(const AString & a_ID)
 
 
 bool cPlayer::RevokeAdvancementCriterion(const AString & a_ID, const AString & a_Criterion)
+{
+	const auto * Manager = cRoot::Get()->GetAdvancementManager();
+	if (Manager == nullptr)
+	{
+		return false;
+	}
+	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
+	if (!RevokeAdvancementCriterionInternal(a_ID, a_Criterion))
+	{
+		return false;
+	}
+	const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+	SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
+	return true;
+}
+
+
+
+
+
+bool cPlayer::RevokeAdvancementCriterionInternal(const AString & a_ID, const AString & a_Criterion)
 {
 	const auto it = m_AdvancementProgress.find(a_ID);
 	if (it == m_AdvancementProgress.end())
@@ -1697,14 +1768,7 @@ bool cPlayer::RevokeAdvancementCriterion(const AString & a_ID, const AString & a
 	{
 		return false;
 	}
-	const auto * Manager = cRoot::Get()->GetAdvancementManager();
-	const auto VisibleBefore = (Manager == nullptr) ? std::set<AString>() : Manager->ComputeVisible(m_AdvancementProgress);
 	it->second.erase(Criterion);
-	if (Manager != nullptr)
-	{
-		const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
-		SendAdvancementUpdate(VisibleBefore, VisibleAfter, a_ID);
-	}
 	return true;
 }
 
@@ -1828,20 +1892,26 @@ int cPlayer::GrantAdvancementTree(const AString & a_ID, const AString & a_Mode, 
 	{
 		return -1;
 	}
+	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
 	int Changed = 0;
 	for (const auto & ID : IDs)
 	{
 		if (a_Criterion.empty())
 		{
-			if (GrantAdvancement(ID))
+			if (GrantAdvancementInternal(ID))
 			{
 				++Changed;
 			}
 		}
-		else if (GrantAdvancementCriterion(ID, a_Criterion))
+		else if (GrantAdvancementCriterionInternal(ID, a_Criterion))
 		{
 			++Changed;
 		}
+	}
+	if (Changed > 0)
+	{
+		const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+		SendAdvancementUpdate(VisibleBefore, VisibleAfter, AString());
 	}
 	return Changed;
 }
@@ -1862,20 +1932,26 @@ int cPlayer::RevokeAdvancementTree(const AString & a_ID, const AString & a_Mode,
 	{
 		return -1;
 	}
+	const auto VisibleBefore = Manager->ComputeVisible(m_AdvancementProgress);
 	int Changed = 0;
 	for (const auto & ID : IDs)
 	{
 		if (a_Criterion.empty())
 		{
-			if (RevokeAdvancement(ID))
+			if (RevokeAdvancementInternal(ID))
 			{
 				++Changed;
 			}
 		}
-		else if (RevokeAdvancementCriterion(ID, a_Criterion))
+		else if (RevokeAdvancementCriterionInternal(ID, a_Criterion))
 		{
 			++Changed;
 		}
+	}
+	if (Changed > 0)
+	{
+		const auto VisibleAfter = Manager->ComputeVisible(m_AdvancementProgress);
+		SendAdvancementUpdate(VisibleBefore, VisibleAfter, AString());
 	}
 	return Changed;
 }

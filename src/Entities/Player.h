@@ -665,6 +665,18 @@ public:
 
 private:
 
+	/** Grants the advancement's missing criteria without sending an incremental update; used by the tree batch. */
+	bool GrantAdvancementInternal(const AString & a_ID);
+
+	/** Grants a single criterion without sending an incremental update; used by the tree batch. */
+	bool GrantAdvancementCriterionInternal(const AString & a_ID, const AString & a_Criterion);
+
+	/** Revokes the advancement without sending an incremental update; used by the tree batch. */
+	bool RevokeAdvancementInternal(const AString & a_ID);
+
+	/** Revokes a single criterion without sending an incremental update; used by the tree batch. */
+	bool RevokeAdvancementCriterionInternal(const AString & a_ID, const AString & a_Criterion);
+
 	typedef std::vector<std::vector<AString> > AStringVectorVector;
 
 	/** The current body stance the player has adopted. */
