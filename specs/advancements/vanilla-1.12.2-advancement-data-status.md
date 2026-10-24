@@ -132,3 +132,11 @@
 - 数据：follow_ender_eye(Stronghold)、find_end_city(EndCity)、find_fortress(Fortress)、enter_end_gateway(EndGateway)。
 - 已知：半径是近似；本服无下界要塞/末地传送门结构时对应条件永不触发；Lua 侧 out 参数调用方式仍待修（本轮未完成实机测试）。
 - 客户端：rrtt217 已 grant everything（933ms，服务器在线）；等待人类按 L 核对 5 页签。
+
+## location feature 实机验证（本轮）
+
+- cWorld::GetNearestStructureTarget 改为返回 Vector3i（Lua 友好），APIDump 同步。
+- Stronghold 目标 (144,36,-189)：bot 传送后 in_stronghold=true，minecraft:story/follow_ender_eye 完成。
+- EndCity 目标 (83,0,-68)：bot 传送到末地后 in_city=true，minecraft:end/find_end_city 完成。
+- 下界要塞/末地传送门结构在本服不存在，find_fortress/enter_end_gateway 的条件永不触发（底层结构缺口）。
+- 半径仍是近似（原版是结构 bounding box）。

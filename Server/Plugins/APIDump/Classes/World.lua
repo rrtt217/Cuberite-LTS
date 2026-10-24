@@ -1463,10 +1463,7 @@ function OnAllChunksAvailable()</pre> All return values from the callbacks are i
 				},
 				Returns =
 				{
-					{ Name = "WasFound", Type = "boolean" },
-					{ Name = "TargetX", Type = "number" },
-					{ Name = "TargetY", Type = "number" },
-					{ Name = "TargetZ", Type = "number" },
+					{ Name = "Target", Type = "Vector3i" },
 				},
 				Notes = "Returns the nearest structure target of the specified type (for example Stronghold or EndCity), or false if the generator cannot place that structure.",
 			},
