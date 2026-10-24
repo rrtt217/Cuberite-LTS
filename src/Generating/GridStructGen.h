@@ -168,7 +168,7 @@ protected:
 	/** Returns all structures that may intersect the given chunk.
 	The structures are considered as intersecting iff their bounding box (defined by m_MaxStructureSize)
 	around their gridpoint intersects the chunk. */
-	void GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructurePtrs & a_Structures);
+	void GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructurePtrs & a_Structures, bool a_CreateIfNeeded = true);
 
 	// Functions for the descendants to override:
 	/** Create a new structure at the specified gridpoint */

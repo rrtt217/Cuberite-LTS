@@ -191,3 +191,10 @@
 - trigloc 日志显示：manager 的 TriggerLocation 内 IsInsideStructure("Stronghold",144,37,-189) = 0，而同一位置 Lua 直调 = 1。
 - 差异只在调用上下文（TriggerLocation 在 cPlayer::Tick 的世界线程；Lua 在 MCP 线程），下一轮在 cWorld::IsInsideStructure -> cChunkGeneratorThread -> cComposableGenerator 三层各记录一次，定位是哪一层返回 false。
 - 临时日志已移除；构建/风格恢复通过。
+
+## location feature 触发路径（轮 32）
+
+- 回退到 GetStructuresForChunk 路径并加 cache-only 模式（a_CreateIfNeeded=false），避免在触发线程里 CreateStructure。
+- 实测：cache-only 模式下 144,37,-189 与 344,37,-189 都返回 false —— stronghold 结构已不在缓存（被淘汰）；create 路径返回 4 个非 stronghold 候选。
+- 结论：问题在结构缓存：触发时刻目标结构可能已被 m_MaxCacheSize 淘汰，而重新 CreateStructure 在触发线程得到不一致的 piece 高度。
+- 下一步：让 IsInsideStructure 在 cache 命中时用缓存结构，未命中时不用 CreateStructure，而是用 GetNearestStructureTarget + 结构最大包围盒（m_MaxStructureSizeX/Z）做保守判定，或促使目标 chunk 先生成再查询。

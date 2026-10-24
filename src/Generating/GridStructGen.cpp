@@ -169,7 +169,7 @@ bool cGridStructGen::GetNearestStructureTarget(Vector3i a_Position, Vector3i & a
 
 
 
-void cGridStructGen::GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructurePtrs & a_Structures)
+void cGridStructGen::GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructurePtrs & a_Structures, bool a_CreateIfNeeded)
 {
 	cCSLock Lock(m_CacheCS);
 	// Calculate the min and max grid coords of the structures to be returned:
@@ -223,6 +223,10 @@ void cGridStructGen::GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructur
 			}  // for itr - a_Structures[]
 			if (!Found)
 			{
+				if (!a_CreateIfNeeded)
+				{
+					continue;
+				}
 				int OriginX = GridX + ((m_Noise.IntNoise2DInt(GridX + 3, GridZ + 5) / 7) % (m_MaxOffsetX * 2)) - m_MaxOffsetX;
 				int OriginZ = GridZ + ((m_Noise.IntNoise2DInt(GridX + 5, GridZ + 3) / 7) % (m_MaxOffsetZ * 2)) - m_MaxOffsetZ;
 				cStructurePtr Structure = CreateStructure(GridX, GridZ, OriginX, OriginZ);
@@ -259,23 +263,19 @@ void cGridStructGen::GetStructuresForChunk(int a_ChunkX, int a_ChunkZ, cStructur
 
 bool cGridStructGen::IsInsideStructure(const Vector3i & a_Position)
 {
-	// Locate the nearest structure and test exactly that structure (not the whole chunk's candidate set,
-	// which may not contain the structure nearest to the position):
-	Vector3i Target;
-	if (!GetNearestStructureTarget(a_Position, Target))
+	// Take the structures that may intersect the position's chunk (the cache creates them in the generator
+	// thread, so the pieces have the final terrain-adjusted height), and test their real bounding boxes:
+	cStructurePtrs Structures;
+	const auto ChunkCoords = cChunkDef::BlockToChunk(Vector3i(a_Position.x, 0, a_Position.z));
+	GetStructuresForChunk(ChunkCoords.m_ChunkX, ChunkCoords.m_ChunkZ, Structures, false);
+	for (const auto & Structure : Structures)
 	{
-		return false;
+		if (Structure->IsInside(a_Position))
+		{
+			return true;
+		}
 	}
-
-	// The origin is offset from the cell's grid point by at most m_MaxOffsetX / m_MaxOffsetZ:
-	const int CellX = FAST_FLOOR_DIV(Target.x + m_MaxOffsetX, m_GridSizeX);
-	const int CellZ = FAST_FLOOR_DIV(Target.z + m_MaxOffsetZ, m_GridSizeZ);
-	const int GridX = CellX * m_GridSizeX;
-	const int GridZ = CellZ * m_GridSizeZ;
-
-	// Create the structure for that cell directly, so the result does not depend on the cache state:
-	cStructurePtr Structure = CreateStructure(GridX, GridZ, Target.x, Target.z);
-	return (Structure != nullptr) && Structure->IsInside(a_Position);
+	return false;
 }
 
 
