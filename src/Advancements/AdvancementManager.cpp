@@ -1017,9 +1017,22 @@ namespace
 		{
 			return true;
 		}
-		if (a_Predicate.isMember("type") && (a_Predicate["type"].asString() != EntityTypeName(a_Entity)))
+		if (a_Predicate.isMember("type"))
 		{
-			return false;
+			AString Expected = a_Predicate["type"].asString();
+			if (Expected.compare(0, 10, "minecraft:") == 0)
+			{
+				Expected.erase(0, 10);
+			}
+			AString Actual = EntityTypeName(a_Entity);
+			if (Actual.compare(0, 10, "minecraft:") == 0)
+			{
+				Actual.erase(0, 10);
+			}
+			if (Expected != Actual)
+			{
+				return false;
+			}
 		}
 		if (a_Predicate.isMember("player") && (a_Predicate["player"].asBool() != a_Entity.IsPlayer()))
 		{

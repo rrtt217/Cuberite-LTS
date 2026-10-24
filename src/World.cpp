@@ -7,6 +7,7 @@
 #include "Physics/Explodinator.h"
 #include "Server.h"
 #include "Root.h"
+#include "Advancements/AdvancementManager.h"
 #include "IniFile.h"
 #include "Generating/ChunkDesc.h"
 #include "Generating/ComposableGenerator.h"
@@ -3981,6 +3982,14 @@ UInt32 cWorld::SpawnMobFinalize(std::unique_ptr<cMonster> a_Monster)
 	}
 
 	cPluginManager::Get()->CallHookSpawnedMonster(*this, Monster);
+
+	// The entity is only queued for chunk insertion at this point, so callbacks that look it up by ID
+	// would not find it yet; fire the summoning trigger immediately with the live object:
+	auto * Manager = cRoot::Get()->GetAdvancementManager();
+	if (Manager != nullptr)
+	{
+		Manager->TriggerSummonedEntity(Monster);
+	}
 
 	return Monster.GetUniqueID();
 }
