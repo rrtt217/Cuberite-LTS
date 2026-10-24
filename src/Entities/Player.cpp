@@ -3660,6 +3660,7 @@ void cPlayer::Tick(std::chrono::milliseconds a_Dt, cChunk & a_Chunk)
 	if (AdvancementManager != nullptr)
 	{
 		AdvancementManager->TriggerTick(*this);
+		AdvancementManager->TriggerLocation(*this);
 	}
 
 	// Detect entering a new block (enter_block trigger):

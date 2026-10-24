@@ -312,7 +312,8 @@ namespace
 			(a_Trigger == "minecraft:bred_animals") ||
 			(a_Trigger == "minecraft:cured_zombie_villager") ||
 			(a_Trigger == "minecraft:brewed_potion") ||
-			(a_Trigger == "minecraft:construct_beacon");
+			(a_Trigger == "minecraft:construct_beacon") ||
+			(a_Trigger == "minecraft:location");
 	}
 
 
@@ -349,6 +350,35 @@ namespace
 					if ((Key != "type") && (Key != "player"))
 					{
 						a_Reason = "unsupported entity predicate \"" + Key + "\"";
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+		if (a_Trigger == "minecraft:location")
+		{
+			if (!a_Conditions.isObject() || (a_Conditions.size() == 0))
+			{
+				return true;
+			}
+			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
+			{
+				const AString Key = it.key().asString();
+				if ((Key != "dimension") && (Key != "position"))
+				{
+					a_Reason = "unsupported location condition \"" + Key + "\"";
+					return false;
+				}
+			}
+			if (a_Conditions.isMember("position") && a_Conditions["position"].isObject())
+			{
+				for (auto it = a_Conditions["position"].begin(); it != a_Conditions["position"].end(); ++it)
+				{
+					const AString Key = it.key().asString();
+					if ((Key != "x") && (Key != "y") && (Key != "z"))
+					{
+						a_Reason = "unsupported position condition \"" + Key + "\"";
 						return false;
 					}
 				}
@@ -1964,6 +1994,62 @@ void cAdvancementManager::TriggerConstructBeacon(cPlayer & a_Player, int a_Level
 		}
 		if (!Entry.Conditions.isObject() || !Entry.Conditions.isMember("level") ||
 			MatchRange(Entry.Conditions["level"], a_Level))
+		{
+			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
+		}
+	}
+}
+
+
+
+
+
+void cAdvancementManager::TriggerLocation(cPlayer & a_Player)
+{
+	const auto Range = m_Triggers.equal_range("minecraft:location");
+	if (Range.first == Range.second)
+	{
+		return;
+	}
+	const auto Pos = a_Player.GetPosition();
+	const int BlockX = static_cast<int>(std::floor(Pos.x));
+	const int BlockY = static_cast<int>(std::floor(Pos.y));
+	const int BlockZ = static_cast<int>(std::floor(Pos.z));
+	const auto * World = a_Player.GetWorld();
+	const AString Dimension = (World != nullptr) ? DimensionName(World->GetDimension()) : "overworld";
+	for (auto It = Range.first; It != Range.second; ++It)
+	{
+		const auto & Entry = It->second;
+		if (a_Player.HasAdvancementCriterion(Entry.AdvancementID, Entry.Criterion))
+		{
+			continue;
+		}
+		bool Matches = true;
+		if (Entry.Conditions.isObject())
+		{
+			if (Entry.Conditions.isMember("dimension") &&
+				(NormalizeDimensionName(Entry.Conditions["dimension"].asString()) != Dimension))
+			{
+				Matches = false;
+			}
+			if (Entry.Conditions.isMember("position") && Entry.Conditions["position"].isObject())
+			{
+				const auto & Position = Entry.Conditions["position"];
+				if (Position.isMember("x") && !MatchRange(Position["x"], BlockX))
+				{
+					Matches = false;
+				}
+				if (Position.isMember("y") && !MatchRange(Position["y"], BlockY))
+				{
+					Matches = false;
+				}
+				if (Position.isMember("z") && !MatchRange(Position["z"], BlockZ))
+				{
+					Matches = false;
+				}
+			}
+		}
+		if (Matches)
 		{
 			a_Player.GrantAdvancementCriterion(Entry.AdvancementID, Entry.Criterion);
 		}

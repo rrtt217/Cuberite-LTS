@@ -1,0 +1,30 @@
+{
+  "parent": "cuberite:m1/root",
+  "display": {
+    "title": {
+      "text": "M5 Somewhere"
+    },
+    "description": {
+      "text": "Be in the overworld"
+    },
+    "icon": {
+      "item": 395
+    },
+    "frame": "task",
+    "x": 1,
+    "y": 27
+  },
+  "criteria": {
+    "here": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "dimension": "overworld"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "here"
+    ]
+  ]
+}

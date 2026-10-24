@@ -109,6 +109,9 @@ public:
 	/** Runs the minecraft:construct_beacon criteria for a player using a beacon of the given level. */
 	void TriggerConstructBeacon(cPlayer & a_Player, int a_Level);
 
+	/** Runs the minecraft:location criteria for the player's current dimension and position. */
+	void TriggerLocation(cPlayer & a_Player);
+
 	/** Returns the parent of the specified advancement, or an empty string for roots / unknown IDs. */
 	AString GetParent(const AString & a_ID) const;
 
