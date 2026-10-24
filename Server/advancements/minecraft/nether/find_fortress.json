@@ -20,7 +20,10 @@
   },
   "criteria": {
     "fortress": {
-      "trigger": "minecraft:impossible"
+      "trigger": "minecraft:location",
+      "conditions": {
+        "feature": "Fortress"
+      }
     }
   },
   "requirements": [

@@ -555,7 +555,7 @@ namespace
 			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
 			{
 				const AString Key = it.key().asString();
-				if ((Key != "dimension") && (Key != "position") && (Key != "biome"))
+				if ((Key != "dimension") && (Key != "position") && (Key != "biome") && (Key != "feature"))
 				{
 					a_Reason = "unsupported location condition \"" + Key + "\"";
 					return false;
@@ -2377,6 +2377,26 @@ void cAdvancementManager::TriggerLocation(cPlayer & a_Player)
 				if (Position.isMember("z") && !MatchRange(Position["z"], BlockZ))
 				{
 					Matches = false;
+				}
+			}
+			if (Entry.Conditions.isMember("feature"))
+			{
+				Vector3i Target;
+				const AString Feature = Entry.Conditions["feature"].asString();
+				if ((World == nullptr) || !World->GetGenerator().GetNearestStructureTarget(Feature, Vector3i(BlockX, BlockY, BlockZ), Target))
+				{
+					Matches = false;
+				}
+				else
+				{
+					// Approximate the structure's bounding box with a horizontal radius around its nearest target:
+					const int Radius = ((Feature == "EndCity") ? 128 : ((Feature == "EndGateway") ? 16 : 64));
+					const Int64 DeltaX = BlockX - Target.x;
+					const Int64 DeltaZ = BlockZ - Target.z;
+					if ((DeltaX * DeltaX + DeltaZ * DeltaZ) > (static_cast<Int64>(Radius) * Radius))
+					{
+						Matches = false;
+					}
 				}
 			}
 		}

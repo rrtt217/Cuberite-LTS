@@ -124,3 +124,11 @@
 - 修复：拆分 GrantAdvancementInternal（只改进度/完成/公告）与公共 GrantAdvancement；Grant/RevokeAdvancementTree 批量执行 internal，最后只发一次 SendAdvancementUpdate。
 - 实测：新玩家数据下 advancement grant TestBot everything 返回 Granted all advancements，耗时 917ms，服务器保持在线；无新 deadlock。
 - 客户端核对：人类客户端连 25565 后可直接 console grant everything，然后按 L 看 5 页签。
+
+## location feature 谓词（本轮）
+
+- location 条件新增 feature；通过 GetNearestStructureTarget 找最近结构目标，用水平半径近似结构边界（Stronghold/Fortress 64、EndCity 128、EndGateway 16）。
+- EndCityGen 增加按名称的 GetNearestStructureTarget；cWorld 暴露 Lua API GetNearestStructureTarget（int out 参数）。
+- 数据：follow_ender_eye(Stronghold)、find_end_city(EndCity)、find_fortress(Fortress)、enter_end_gateway(EndGateway)。
+- 已知：半径是近似；本服无下界要塞/末地传送门结构时对应条件永不触发；Lua 侧 out 参数调用方式仍待修（本轮未完成实机测试）。
+- 客户端：rrtt217 已 grant everything（933ms，服务器在线）；等待人类按 L 核对 5 页签。

@@ -854,6 +854,20 @@ public:
 	/** Returns the seed of the world. */
 	int GetSeed(void) const { return m_Generator.GetSeed(); }
 
+	/** Returns the nearest structure target of the specified type, or false if the generator cannot place it. */
+	bool GetNearestStructureTarget(const AString & a_Structure, int a_BlockX, int a_BlockY, int a_BlockZ, int & a_TargetX, int & a_TargetY, int & a_TargetZ)
+	{
+		Vector3i Target;
+		if (!m_Generator.GetNearestStructureTarget(a_Structure, Vector3i(a_BlockX, a_BlockY, a_BlockZ), Target))
+		{
+			return false;
+		}
+		a_TargetX = Target.x;
+		a_TargetY = Target.y;
+		a_TargetZ = Target.z;
+		return true;
+	}
+
 	// tolua_end
 
 	cChunkGeneratorThread & GetGenerator(void) { return m_Generator; }

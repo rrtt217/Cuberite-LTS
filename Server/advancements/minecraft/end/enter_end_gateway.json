@@ -20,7 +20,10 @@
   },
   "criteria": {
     "entered_end_gateway": {
-      "trigger": "minecraft:impossible"
+      "trigger": "minecraft:location",
+      "conditions": {
+        "feature": "EndGateway"
+      }
     }
   },
   "requirements": [

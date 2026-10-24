@@ -20,7 +20,10 @@
   },
   "criteria": {
     "in_city": {
-      "trigger": "minecraft:impossible"
+      "trigger": "minecraft:location",
+      "conditions": {
+        "feature": "EndCity"
+      }
     }
   },
   "requirements": [

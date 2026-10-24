@@ -1452,6 +1452,24 @@ function OnAllChunksAvailable()</pre> All return values from the callbacks are i
 				},
 				Notes = "Queues the specified chunk in the chunk generator. Ignored if the chunk is already generated (use RegenerateChunk() to force chunk re-generation).",
 			},
+			GetNearestStructureTarget =
+			{
+				Params =
+				{
+					{ Name = "Structure", Type = "string" },
+					{ Name = "BlockX", Type = "number" },
+					{ Name = "BlockY", Type = "number" },
+					{ Name = "BlockZ", Type = "number" },
+				},
+				Returns =
+				{
+					{ Name = "WasFound", Type = "boolean" },
+					{ Name = "TargetX", Type = "number" },
+					{ Name = "TargetY", Type = "number" },
+					{ Name = "TargetZ", Type = "number" },
+				},
+				Notes = "Returns the nearest structure target of the specified type (for example Stronghold or EndCity), or false if the generator cannot place that structure.",
+			},
 			GetBiomeAt =
 			{
 				Params =

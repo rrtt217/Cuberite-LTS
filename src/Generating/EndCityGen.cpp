@@ -1876,3 +1876,16 @@ cGridStructGen::cStructurePtr cEndCityGen::CreateStructure(int a_GridX, int a_Gr
 	}
 	return std::make_shared<cEndCity>(m_Seed, a_GridX, a_GridZ, Origin.x, Origin.z, m_HeightGen);
 }
+
+
+
+
+
+bool cEndCityGen::GetNearestStructureTarget(const AString & a_Structure, Vector3i a_Position, Vector3i & a_Target)
+{
+	if (a_Structure != "EndCity")
+	{
+		return false;
+	}
+	return Super::GetNearestStructureTarget(a_Position, a_Target);
+}
