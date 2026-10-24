@@ -160,3 +160,10 @@
 - 修复：MoveToGroundBy 同步 m_HitBox 的 p1.y / p2.y。
 - 新增 cWorld:IsInsideStructure Lua API（APIDump 同步），便于直接核对。
 - 实测：w:IsInsideStructure("Stronghold",144,37,-189)=true，344 处=false；但 bot 传到目标点后 in_stronghold criterion 仍为 false（location trigger 侧待查，下一轮）。
+
+## location feature 调试（本轮）
+
+- Lua 侧 w:IsInsideStructure("Stronghold",144,37,-189) = true；同一位置在 manager 的 location trigger 内返回 false。
+- 网格调试日志：GetStructuresForChunk 返回 4 个候选结构（origin -9,-297 / 83,-68 / 220,-205 / 275,-123），逐个 IsInside=0；但 Lua 对同一位置的调用却是 true。
+- 结论：问题在结构对象的 pieces/hitbox 状态在两次调用间不一致（或候选结构集合不同）；下一轮直接记录 cPrefabStructure 的 piece hitbox 与 cPlacedPiece 坐标。
+- 临时调试日志已移除；构建/风格恢复通过。
