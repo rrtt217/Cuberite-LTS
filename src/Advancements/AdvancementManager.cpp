@@ -3,6 +3,7 @@
 #include "Globals.h"
 #include "AdvancementManager.h"
 
+#include "../BiomeDef.h"
 #include "../BlockType.h"
 #include "../CraftingRecipes.h"
 #include "../Root.h"
@@ -394,7 +395,7 @@ namespace
 			for (auto it = a_Conditions.begin(); it != a_Conditions.end(); ++it)
 			{
 				const AString Key = it.key().asString();
-				if ((Key != "dimension") && (Key != "position"))
+				if ((Key != "dimension") && (Key != "position") && (Key != "biome"))
 				{
 					a_Reason = "unsupported location condition \"" + Key + "\"";
 					return false;
@@ -883,6 +884,91 @@ namespace
 			return true;
 		}
 		return MatchEntityPredicateValue(a_Conditions["entity"], a_Entity);
+	}
+
+
+
+
+
+	AString BiomeToAdvancementID(EMCSBiome a_Biome)
+	{
+		switch (a_Biome)
+		{
+			case biOcean:              return "ocean";
+			case biPlains:             return "plains";
+			case biDesert:             return "desert";
+			case biExtremeHills:       return "extreme_hills";
+			case biForest:             return "forest";
+			case biTaiga:              return "taiga";
+			case biSwampland:          return "swampland";
+			case biRiver:              return "river";
+			case biFrozenOcean:        return "frozen_ocean";
+			case biFrozenRiver:        return "frozen_river";
+			case biIcePlains:          return "ice_flats";
+			case biIceMountains:       return "ice_mountains";
+			case biMushroomIsland:     return "mushroom_island";
+			case biMushroomShore:      return "mushroom_island_shore";
+			case biBeach:              return "beaches";
+			case biDesertHills:        return "desert_hills";
+			case biForestHills:        return "forest_hills";
+			case biTaigaHills:         return "taiga_hills";
+			case biExtremeHillsEdge:   return "extreme_hills_edge";
+			case biJungle:             return "jungle";
+			case biJungleHills:        return "jungle_hills";
+			case biJungleEdge:         return "jungle_edge";
+			case biDeepOcean:          return "deep_ocean";
+			case biStoneBeach:         return "stone_beach";
+			case biColdBeach:          return "cold_beach";
+			case biBirchForest:        return "birch_forest";
+			case biBirchForestHills:   return "birch_forest_hills";
+			case biRoofedForest:       return "roofed_forest";
+			case biColdTaiga:          return "taiga_cold";
+			case biColdTaigaHills:     return "taiga_cold_hills";
+			case biMegaTaiga:          return "redwood_taiga";
+			case biMegaTaigaHills:     return "redwood_taiga_hills";
+			case biExtremeHillsPlus:   return "extreme_hills_with_trees";
+			case biSavanna:            return "savanna";
+			case biSavannaPlateau:     return "savanna_rock";
+			case biMesa:               return "mesa";
+			case biMesaPlateauF:       return "mesa_rock";
+			case biMesaPlateau:        return "mesa_clear_rock";
+			case biSunflowerPlains:    return "plains";
+			case biDesertM:            return "desert";
+			case biExtremeHillsM:      return "extreme_hills";
+			case biFlowerForest:       return "forest";
+			case biTaigaM:             return "taiga";
+			case biSwamplandM:         return "swampland";
+			case biIcePlainsSpikes:    return "ice_flats";
+			case biJungleM:            return "jungle";
+			case biJungleEdgeM:        return "jungle_edge";
+			case biBirchForestM:       return "birch_forest";
+			case biBirchForestHillsM:  return "birch_forest_hills";
+			case biRoofedForestM:      return "roofed_forest";
+			case biColdTaigaM:         return "taiga_cold";
+			case biMegaSpruceTaiga:    return "redwood_taiga";
+			case biMegaSpruceTaigaHills: return "redwood_taiga_hills";
+			case biExtremeHillsPlusM:  return "extreme_hills_with_trees";
+			case biSavannaM:           return "savanna";
+			case biSavannaPlateauM:    return "savanna_rock";
+			case biMesaBryce:          return "mesa_rock";
+			case biMesaPlateauFM:      return "mesa_rock";
+			case biMesaPlateauM:       return "mesa_clear_rock";
+			default:                   return "";
+		}
+	}
+
+
+
+
+
+	AString NormalizeBiomeName(const AString & a_Name)
+	{
+		AString Name = a_Name;
+		if (Name.compare(0, 10, "minecraft:") == 0)
+		{
+			Name.erase(0, 10);
+		}
+		return Name;
 	}
 
 
@@ -2069,7 +2155,7 @@ void cAdvancementManager::TriggerLocation(cPlayer & a_Player)
 	const int BlockX = static_cast<int>(std::floor(Pos.x));
 	const int BlockY = static_cast<int>(std::floor(Pos.y));
 	const int BlockZ = static_cast<int>(std::floor(Pos.z));
-	const auto * World = a_Player.GetWorld();
+	auto * World = a_Player.GetWorld();
 	const AString Dimension = (World != nullptr) ? DimensionName(World->GetDimension()) : "overworld";
 	for (auto It = Range.first; It != Range.second; ++It)
 	{
@@ -2085,6 +2171,15 @@ void cAdvancementManager::TriggerLocation(cPlayer & a_Player)
 				(NormalizeDimensionName(Entry.Conditions["dimension"].asString()) != Dimension))
 			{
 				Matches = false;
+			}
+			if (Entry.Conditions.isMember("biome"))
+			{
+				const AString ActualBiome = (World != nullptr) ? BiomeToAdvancementID(World->GetBiomeAt(BlockX, BlockZ)) : AString();
+				const AString ExpectedBiome = NormalizeBiomeName(Entry.Conditions["biome"].asString());
+				if (ActualBiome != ExpectedBiome)
+				{
+					Matches = false;
+				}
 			}
 			if (Entry.Conditions.isMember("position") && Entry.Conditions["position"].isObject())
 			{

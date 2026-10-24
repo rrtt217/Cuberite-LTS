@@ -48,3 +48,10 @@
 - 配方名映射：oak_wooden_slab->oak_slab、trapdoor->oak_trapdoor、fence->oak_fence、fence_gate->oak_fence_gate、sign->oak_sign；其余与 crafting.txt 同名。
 - 实测：Loaded 108 advancement(s)；bot 在 overworld 捡起一个 log（pickup 生命周期 6000）-> has_log=true、has_the_recipe=true、minecraft:recipes/building_blocks/oak_planks=true。
 - 剩余：35 条的精确坐标/flags/条件（完整抓包）、biome/effects 等谓词、rewards、旧成就桥、客户端实机、门禁、合并。
+
+## biome location predicate（本轮）
+
+- 实现：location 条件新增 biome；cAdvancementManager 增加 BiomeToAdvancementID（把服务端 EMCSBiome 名称映射到 1.12.2 advancement biome id，变种地图到基础 biome）；TriggerLocation 用 World->GetBiomeAt 匹配；NormalizeBiomeName 去掉 minecraft: 前缀。
+- 覆盖 adventuring_time 的 36 个 biome criteria（不再打 unsupported 警告）。
+- 实测：bot 的 biome=132（FlowerForest），映射为 forest，HasAdvancementCriterion(minecraft:adventure/adventuring_time, forest)=true。
+- 剩余：location 的 feature/light/block 等谓词、effects 谓词、villager_trade、rewards、35 条精确抓包、旧成就桥、客户端实机、门禁、合并。
