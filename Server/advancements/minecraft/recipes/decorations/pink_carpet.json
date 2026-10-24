@@ -24,5 +24,10 @@
       "has_pink_wool",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:pink_carpet"
+    ]
+  }
 }

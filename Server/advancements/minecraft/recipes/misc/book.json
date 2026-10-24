@@ -23,5 +23,10 @@
       "has_paper",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:book"
+    ]
+  }
 }

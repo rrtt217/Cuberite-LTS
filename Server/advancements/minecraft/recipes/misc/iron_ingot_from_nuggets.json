@@ -26,5 +26,10 @@
       "has_at_least_9_iron_nugget",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:iron_ingot_from_nuggets"
+    ]
+  }
 }

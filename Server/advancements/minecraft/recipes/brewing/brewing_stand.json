@@ -23,5 +23,10 @@
       "has_blaze_rod",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:brewing_stand"
+    ]
+  }
 }

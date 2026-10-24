@@ -23,5 +23,10 @@
       "has_pumpkin",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:pumpkin_seeds"
+    ]
+  }
 }

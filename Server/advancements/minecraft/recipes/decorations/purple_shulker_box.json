@@ -23,5 +23,10 @@
       "has_the_recipe",
       "has_shulker_shell"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:purpur_shulker_box"
+    ]
+  }
 }

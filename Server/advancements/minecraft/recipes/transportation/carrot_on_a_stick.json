@@ -23,5 +23,10 @@
       "has_the_recipe",
       "has_carrot"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:carrot_on_a_stick"
+    ]
+  }
 }

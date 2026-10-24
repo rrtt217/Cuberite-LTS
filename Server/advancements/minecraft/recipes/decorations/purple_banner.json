@@ -24,5 +24,10 @@
       "has_the_recipe",
       "has_purple_wool"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:purple_banner"
+    ]
+  }
 }

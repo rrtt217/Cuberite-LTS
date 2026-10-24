@@ -24,5 +24,10 @@
       "has_brown_wool",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:brown_carpet"
+    ]
+  }
 }

@@ -36,5 +36,10 @@
       "has_the_recipe",
       "has_yellow_dye"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:orange_dye_from_red_yellow"
+    ]
+  }
 }

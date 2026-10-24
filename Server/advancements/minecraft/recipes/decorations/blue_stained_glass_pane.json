@@ -23,5 +23,10 @@
       "has_glass",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:blue_stained_glass_pane"
+    ]
+  }
 }

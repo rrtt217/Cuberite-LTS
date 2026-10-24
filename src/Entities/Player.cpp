@@ -1551,8 +1551,14 @@ void cPlayer::OnAdvancementCompleted(const cAdvancement & a_Advancement)
 	if (!a_Advancement.Rewards.Recipes.empty())
 	{
 		const auto & RecipeNameMap = cRoot::Get()->GetCraftingRecipes()->GetRecipeNameMap();
-		for (const auto & Name : a_Advancement.Rewards.Recipes)
+		for (auto Name : a_Advancement.Rewards.Recipes)
 		{
+			// The data uses namespaced recipe IDs ("minecraft:stick"), while the crafting table is keyed
+			// by the bare recipe name:
+			if (Name.compare(0, 10, "minecraft:") == 0)
+			{
+				Name.erase(0, 10);
+			}
 			const auto it = RecipeNameMap.find(Name);
 			if (it == RecipeNameMap.end())
 			{

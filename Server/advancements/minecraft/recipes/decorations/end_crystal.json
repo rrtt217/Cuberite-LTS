@@ -23,5 +23,10 @@
       "has_ender_eye",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:end_crystal"
+    ]
+  }
 }

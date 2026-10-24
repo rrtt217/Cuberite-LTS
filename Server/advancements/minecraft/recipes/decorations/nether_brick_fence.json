@@ -23,5 +23,10 @@
       "has_nether_brick",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:nether_brick_fence"
+    ]
+  }
 }

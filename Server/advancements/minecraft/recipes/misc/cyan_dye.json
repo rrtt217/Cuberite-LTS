@@ -36,5 +36,10 @@
       "has_lapis",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:cyan_dye"
+    ]
+  }
 }

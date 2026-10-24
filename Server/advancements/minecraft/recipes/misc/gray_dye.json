@@ -36,5 +36,10 @@
       "has_the_recipe",
       "has_black_dye"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:gray_dye"
+    ]
+  }
 }

@@ -24,5 +24,10 @@
       "has_the_recipe",
       "has_lime_wool"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:lime_banner"
+    ]
+  }
 }

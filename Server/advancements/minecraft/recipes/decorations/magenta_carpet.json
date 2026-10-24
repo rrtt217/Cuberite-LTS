@@ -24,5 +24,10 @@
       "has_magenta_wool",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:magenta_carpet"
+    ]
+  }
 }

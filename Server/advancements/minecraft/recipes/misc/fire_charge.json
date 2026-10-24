@@ -23,5 +23,10 @@
       "has_blaze_powder",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:fire_charge"
+    ]
+  }
 }

@@ -23,5 +23,10 @@
       "has_cocoa",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:cookie"
+    ]
+  }
 }

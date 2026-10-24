@@ -24,5 +24,10 @@
       "has_yellow_wool",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:yellow_carpet"
+    ]
+  }
 }

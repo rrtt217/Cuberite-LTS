@@ -23,5 +23,10 @@
       "has_rail",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:detector_rail"
+    ]
+  }
 }

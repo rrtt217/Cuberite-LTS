@@ -24,5 +24,10 @@
       "has_cyan_wool",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:cyan_carpet"
+    ]
+  }
 }

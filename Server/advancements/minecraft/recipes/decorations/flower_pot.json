@@ -23,5 +23,10 @@
       "has_the_recipe",
       "has_brick"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:flower_pot"
+    ]
+  }
 }

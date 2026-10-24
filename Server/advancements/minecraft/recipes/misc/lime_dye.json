@@ -36,5 +36,10 @@
       "has_bonemeal",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:lime_dye"
+    ]
+  }
 }

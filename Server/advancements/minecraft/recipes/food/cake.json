@@ -23,5 +23,10 @@
       "has_the_recipe",
       "has_egg"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:cake"
+    ]
+  }
 }

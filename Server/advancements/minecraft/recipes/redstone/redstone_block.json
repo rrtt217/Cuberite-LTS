@@ -26,5 +26,10 @@
       "has_at_least_9_redstone",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:redstone_block"
+    ]
+  }
 }

@@ -23,5 +23,10 @@
       "has_the_recipe",
       "has_glowstone_dust"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:spectral_arrow"
+    ]
+  }
 }

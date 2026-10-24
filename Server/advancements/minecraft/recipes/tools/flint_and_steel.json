@@ -34,5 +34,10 @@
       "has_the_recipe",
       "has_obsidian"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:flint_and_steel"
+    ]
+  }
 }

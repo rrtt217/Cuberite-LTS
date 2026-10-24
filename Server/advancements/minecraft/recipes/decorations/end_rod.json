@@ -23,5 +23,10 @@
       "has_chorus_fruit_popped",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:end_rod"
+    ]
+  }
 }

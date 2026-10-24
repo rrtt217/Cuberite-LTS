@@ -23,5 +23,10 @@
       "has_iron_block",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:iron_ingot_from_iron_block"
+    ]
+  }
 }

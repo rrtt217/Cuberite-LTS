@@ -23,5 +23,10 @@
       "has_wheat",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:bread"
+    ]
+  }
 }

@@ -23,5 +23,10 @@
       "has_the_recipe",
       "has_planks"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:jungle_fence_gate"
+    ]
+  }
 }

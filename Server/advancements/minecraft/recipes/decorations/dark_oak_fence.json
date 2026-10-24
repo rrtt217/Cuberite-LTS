@@ -23,5 +23,10 @@
       "has_the_recipe",
       "has_planks"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:dark_oak_fence"
+    ]
+  }
 }

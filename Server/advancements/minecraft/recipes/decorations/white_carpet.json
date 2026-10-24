@@ -24,5 +24,10 @@
       "has_white_wool",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:white_carpet"
+    ]
+  }
 }

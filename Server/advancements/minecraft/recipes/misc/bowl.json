@@ -34,5 +34,10 @@
       "has_red_mushroom",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:bowl"
+    ]
+  }
 }

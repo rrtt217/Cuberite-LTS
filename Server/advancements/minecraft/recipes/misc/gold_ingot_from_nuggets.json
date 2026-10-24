@@ -26,5 +26,10 @@
       "has_at_least_9_gold_nugget",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:gold_ingot"
+    ]
+  }
 }

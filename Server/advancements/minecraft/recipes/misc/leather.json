@@ -23,5 +23,10 @@
       "has_rabbit_hide",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:leather"
+    ]
+  }
 }

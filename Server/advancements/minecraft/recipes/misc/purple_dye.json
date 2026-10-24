@@ -36,5 +36,10 @@
       "has_red_dye",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:purple_dye"
+    ]
+  }
 }

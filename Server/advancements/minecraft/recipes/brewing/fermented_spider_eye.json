@@ -23,5 +23,10 @@
       "has_spider_eye",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:fermented_spider_eye"
+    ]
+  }
 }

@@ -23,5 +23,10 @@
       "has_redstone",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:redstone_torch"
+    ]
+  }
 }

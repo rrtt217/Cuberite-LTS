@@ -24,5 +24,10 @@
       "has_gray_wool",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:gray_carpet"
+    ]
+  }
 }

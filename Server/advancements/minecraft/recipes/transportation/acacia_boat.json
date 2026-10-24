@@ -19,5 +19,10 @@
       "entered_water",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:acacia_boat"
+    ]
+  }
 }

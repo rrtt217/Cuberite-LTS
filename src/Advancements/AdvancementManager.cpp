@@ -498,7 +498,7 @@ namespace
 				for (auto PredIt = it->begin(); PredIt != it->end(); ++PredIt)
 				{
 					const AString PredKey = PredIt.key().asString();
-					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location") && (PredKey != "distance") && (PredKey != "flags") && (PredKey != "effects") && (PredKey != "equipment") && (PredKey != "advancements"))
+					if ((PredKey != "type") && (PredKey != "player") && (PredKey != "location") && (PredKey != "distance") && (PredKey != "flags") && (PredKey != "effects") && (PredKey != "equipment") && (PredKey != "advancements") && (PredKey != "scores") && (PredKey != "team"))
 					{
 						a_Reason = "unsupported entity predicate \"" + PredKey + "\"";
 						return false;
@@ -1026,6 +1026,42 @@ namespace
 		if (!a_Predicate.isObject())
 		{
 			return true;
+		}
+		if (a_Predicate.isMember("scores") && a_Predicate["scores"].isObject())
+		{
+			if (!a_Entity.IsPlayer())
+			{
+				return false;
+			}
+			const auto & Player = static_cast<const cPlayer &>(a_Entity);
+			auto * World = Player.GetWorld();
+			if (World == nullptr)
+			{
+				return false;
+			}
+			for (auto it = a_Predicate["scores"].begin(); it != a_Predicate["scores"].end(); ++it)
+			{
+				auto * Objective = World->GetScoreBoard().GetObjective(it.key().asString());
+				const cObjective::Score Actual = (Objective == nullptr) ? 0 : Objective->GetScore(Player.GetName());
+				if (!MatchRange(*it, static_cast<int>(Actual)))
+				{
+					return false;
+				}
+			}
+		}
+		if (a_Predicate.isMember("team"))
+		{
+			if (!a_Entity.IsPlayer())
+			{
+				return false;
+			}
+			const auto & Player = static_cast<const cPlayer &>(a_Entity);
+			const auto * Team = Player.GetTeam();
+			const AString TeamName = (Team == nullptr) ? AString() : Team->GetName();
+			if (TeamName != a_Predicate["team"].asString())
+			{
+				return false;
+			}
 		}
 		if (a_Predicate.isMember("advancements") && a_Predicate["advancements"].isObject())
 		{

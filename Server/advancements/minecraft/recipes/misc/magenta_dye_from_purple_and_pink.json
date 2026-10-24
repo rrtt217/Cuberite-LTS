@@ -36,5 +36,10 @@
       "has_purple_dye",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:magenta_dye_from_purple_and_pink"
+    ]
+  }
 }

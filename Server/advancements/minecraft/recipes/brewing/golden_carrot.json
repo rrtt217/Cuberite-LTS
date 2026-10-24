@@ -23,5 +23,10 @@
       "has_gold_nugget",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:golden_carrot"
+    ]
+  }
 }

@@ -34,5 +34,10 @@
       "has_flint",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:arrow"
+    ]
+  }
 }

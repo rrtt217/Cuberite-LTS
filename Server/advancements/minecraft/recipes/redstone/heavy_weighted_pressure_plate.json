@@ -23,5 +23,10 @@
       "has_the_recipe",
       "has_iron_ingot"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:heavy_weighted_pressure_plate"
+    ]
+  }
 }

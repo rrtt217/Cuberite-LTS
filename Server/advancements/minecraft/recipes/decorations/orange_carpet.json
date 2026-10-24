@@ -24,5 +24,10 @@
       "has_the_recipe",
       "has_orange_wool"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:orange_carpet"
+    ]
+  }
 }

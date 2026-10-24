@@ -23,5 +23,10 @@
       "has_cobblestone",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:furnace"
+    ]
+  }
 }

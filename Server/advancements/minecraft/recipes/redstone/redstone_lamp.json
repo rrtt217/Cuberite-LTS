@@ -23,5 +23,10 @@
       "has_the_recipe",
       "has_glowstone"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:redstone_lamp"
+    ]
+  }
 }

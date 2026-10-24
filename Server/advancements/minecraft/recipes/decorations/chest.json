@@ -26,5 +26,10 @@
       "has_the_recipe",
       "has_lots_of_items"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:chest"
+    ]
+  }
 }

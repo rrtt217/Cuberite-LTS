@@ -23,5 +23,10 @@
       "has_bone",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:bone_meal_from_bone"
+    ]
+  }
 }

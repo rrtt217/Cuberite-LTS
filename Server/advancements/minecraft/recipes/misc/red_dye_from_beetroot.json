@@ -23,5 +23,10 @@
       "has_beetroot",
       "has_the_recipe"
     ]
-  ]
+  ],
+  "rewards": {
+    "recipes": [
+      "minecraft:red_dye_from_beetroot"
+    ]
+  }
 }
