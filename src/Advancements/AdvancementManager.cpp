@@ -932,7 +932,13 @@ namespace
 		}
 		const AString Expected = NormalizeBlockName(a_Value.asString());
 		const AString Actual = NormalizeBlockName(ItemToString(cItem(a_BlockType)));
-		return (Expected == Actual);
+		if (Expected == Actual)
+		{
+			return true;
+		}
+		// items.ini names the water blocks "water" (8) and "stationarywater" (9), while the 1.12.2
+		// block predicates use "minecraft:water" for both the flowing and the still variant:
+		return (Expected == "water") && ((a_BlockType == E_BLOCK_WATER) || (a_BlockType == E_BLOCK_STATIONARY_WATER));
 	}
 
 
